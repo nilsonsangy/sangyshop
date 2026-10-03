@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8"><title>SangyShop - Login</title>
+<link rel="stylesheet" href="/style.css"></head><body>
+<header><a href="/products" class="brand">SangyShop</a>
+<nav><a href="/products">Loja</a><a href="/defenses">Defesas</a><a href="/logs">Logs</a><a href="/login">Login</a></nav></header>
+<main class="narrow">
+<h1>Entrar</h1>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<form method="post" action="/login">
+<label>Usuario <input name="username" autofocus></label>
+<label>Senha <input name="password" type="password"></label>
+<button type="submit">Entrar</button>
+</form>
+<p class="hint">Contas de teste: alice/alice123, bob/bob123, admin/SangyAdmin!2025</p>
+</main></body></html>

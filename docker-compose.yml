@@ -1,0 +1,8 @@
+services:
+  sangyshop:
+    build: .
+    image: sangyshop:1.0
+    container_name: sangyshop
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

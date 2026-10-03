@@ -1,0 +1,21 @@
+{
+  "name": "sangyshop",
+  "version": "1.0.0",
+  "description": "Aplicacao web propositalmente vulneravel para ensino do OWASP Top 10:2025 na visao de defesa (Blue Team). Cada vulnerabilidade tem um toggle de defesa: ataca com a defesa desligada, liga a defesa e reproduz para ver o bloqueio. USO EXCLUSIVAMENTE EDUCACIONAL EM AMBIENTE ISOLADO.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": ["owasp", "owasp-top-10", "security", "blue-team", "vulnerable-app", "education", "appsec"],
+  "author": "Prof. Nilson Sangy",
+  "license": "MIT",
+  "dependencies": {
+    "express": "4.18.2",
+    "express-session": "1.17.3",
+    "sql.js": "1.8.0",
+    "ejs": "3.1.9",
+    "lodash": "4.17.11",
+    "minimist": "1.2.0",
+    "marked": "0.3.6"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "A05_injection": false,
+  "A01_access_control": false,
+  "A02_misconfiguration": false,
+  "A09_logging": false
+}

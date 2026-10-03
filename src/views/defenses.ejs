@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8"><title>SangyShop - Painel de Defesas</title>
+<link rel="stylesheet" href="/style.css"></head><body>
+<header><a href="/products" class="brand">SangyShop</a>
+<nav><a href="/products">Loja</a><a href="/defenses">Defesas</a><a href="/logs">Logs</a><a href="/login">Login</a></nav></header>
+<main>
+<h1>Painel de Defesas (Blue Team)</h1>
+<p class="hint">Ligue cada defesa, reproduza o mesmo ataque e compare o resultado. Toggle OFF = vulneravel; ON = mitigado.</p>
+<form method="post" action="/defenses">
+<% Object.keys(labels).forEach(function(key){ %>
+<label class="toggle">
+<input type="checkbox" name="<%= key %>" <%= defenses[key] ? "checked" : "" %>>
+<span class="state <%= defenses[key] ? 'on' : 'off' %>"><%= defenses[key] ? "ON" : "OFF" %></span>
+<%= labels[key] %>
+</label>
+<% }); %>
+<button type="submit">Salvar defesas</button>
+</form>
+<pre class="sql">Via terminal: curl -X POST .../api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"</pre>
+</main></body></html>
