@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SangyShop - My Orders</title>
+<link rel="stylesheet" href="/style.css"></head><body>
+<%- include('partials/navbar', { user: user }) %>
+<main>
+<h1>My Orders</h1>
+<p class="hint">These are the orders linked to your account. Each order links to its API endpoint
+(<code>/api/orders/:id</code>) — the starting point for the access-control exercise.</p>
+<% if (orders.length === 0) { %>
+<p class="error">You have no orders yet.</p>
+<% } else { %>
+<table><thead><tr><th>#</th><th>Product</th><th>Quantity</th><th>Total</th><th></th></tr></thead><tbody>
+<% orders.forEach(function(o){ %>
+<tr>
+  <td><%= o.id %></td>
+  <td><%= o.product_name %></td>
+  <td><%= o.quantity %></td>
+  <td>$ <%= Number(o.total).toFixed(2) %></td>
+  <td><a href="/api/orders/<%= o.id %>">View (API)</a></td>
+</tr>
+<% }); %>
+</tbody></table>
+<% } %>
+</main></body></html>

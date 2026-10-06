@@ -1,28 +1,28 @@
 # SangyShop
 
-Aplicacao web **propositalmente vulneravel** para o ensino do **OWASP Top 10:2025** na
-**visao de defesa (Blue Team)**. Diferente de um alvo so para atacar, a SangyShop traz um
-**Painel de Defesas**: cada vulnerabilidade tem um *toggle*. O fluxo pedagogico e sempre o
-mesmo: **ataca com a defesa desligada, liga a defesa e reproduz o mesmo ataque para ver o
-bloqueio**, comparando o comportamento e inspecionando o codigo dos dois lados.
+A **deliberately vulnerable** web application for teaching the **OWASP Top 10:2025** from a
+**defensive (Blue Team) perspective**. Unlike a target meant only for attacking, SangyShop
+ships a **Defenses panel**: each vulnerability has a *toggle*. The teaching flow is always the
+same: **attack with the defense off, turn the defense on, and replay the same attack to see
+the block**, comparing the behavior and inspecting the code on both sides.
 
-> **Aviso.** Esta aplicacao contem vulnerabilidades reais de proposito. Use **somente em
-> ambiente isolado** (seu notebook / VM / WSL), **nunca** exposta na internet. E material
-> didatico do curso de Blue Team da Strong Security Brasil.
+> **Warning.** This application contains real vulnerabilities on purpose. Use it **only in an
+> isolated environment** (your laptop / VM / WSL), **never** exposed to the internet. It is
+> teaching material from the Blue Team course by Strong Security Brasil.
 
-## Vulnerabilidades cobertas (5 das 10 categorias)
+## Vulnerabilities covered (5 of the 10 categories)
 
-| Categoria OWASP 2025 | Onde | Defesa (toggle) |
+| OWASP 2025 category | Where | Defense (toggle) |
 |---|---|---|
-| **A01** Broken Access Control (IDOR) | `/api/orders/:id`, `/api/users/:id` | verificacao de propriedade do recurso |
-| **A02** Security Misconfiguration | headers HTTP, pagina de erro | security headers + erro generico |
-| **A03** Software Supply Chain Failures | `package.json` | `npm audit` + pinning de versoes |
-| **A05** Injection (SQL) | login e busca de produtos | consulta parametrizada (prepared statement) |
-| **A09** Security Logging & Alerting Failures | login / brute force | log de autenticacao + alerta |
+| **A01** Broken Access Control (IDOR) | `/api/orders/:id`, `/api/users/:id` | resource ownership check |
+| **A02** Security Misconfiguration | HTTP headers, error page | security headers + generic error |
+| **A03** Software Supply Chain Failures | `package.json` | `npm audit` + version pinning |
+| **A05** Injection (SQL) | login and product search | parameterized query (prepared statement) |
+| **A09** Security Logging & Alerting Failures | login / brute force | authentication logging + alert |
 
-## Como subir
+## How to run
 
-### Opcao 1 - Docker (recomendado, mais leve)
+### Option 1 - Docker (recommended, lightest)
 
 ```
 git clone https://github.com/nilsonsangy/sangyshop
@@ -30,37 +30,42 @@ cd sangyshop
 docker compose up -d --build
 ```
 
-Acesse **http://localhost:3000**.
+Open **http://localhost:3000**.
 
-### Opcao 2 - Node local
+### Option 2 - Local Node
 
 ```
 git clone https://github.com/nilsonsangy/sangyshop
 cd sangyshop
-npm install        # repare no aviso de vulnerabilidades: e o exercicio A03
+npm install        # note the vulnerability warning: that is the A03 exercise
 npm start
 ```
 
-## Mapa da aplicacao
+## Application map
 
-- `/` e `/products` - catalogo (e a busca vulneravel a SQLi).
-- `/login` - autenticacao (SQLi + brute force). Contas: `alice/alice123`, `bob/bob123`, `admin/SangyAdmin!2025`.
-- `/api/orders/:id`, `/api/users/:id` - API com IDOR.
-- `/defenses` - **Painel de Defesas**: liga/desliga cada mitigacao.
-- `/logs` - eventos de autenticacao (so aparecem com a defesa A09 ligada).
-- `/debug/boom` - rota que gera erro, para demonstrar o A02.
+- `/` and `/products` - catalog (and the search vulnerable to SQLi).
+- `/login` - authentication (SQLi + brute force). Accounts: `alice/alice123`, `bob/bob123`, `admin/SangyAdmin!2025`.
+- `/orders` - **My Orders**: the logged-in user's orders, the visual starting point for the A01/IDOR exercise. Each order links to `/api/orders/:id`.
+- `/api/orders/:id`, `/api/users/:id` - API with IDOR.
+- `/defenses` - **Defenses panel**: toggles each mitigation on/off.
+- `/logs` - authentication events (only appear with the A09 defense on).
+- `/debug/boom` - route that raises an error, to demonstrate A02.
 
-Tambem da para alternar as defesas por linha de comando:
+The navigation bar is consistent across every page and reflects the login state: when signed
+out it shows **Store**, **Defenses**, **Logs** and **Login**; when signed in it also shows
+**My Orders**, the current user (name and role) and **Logout**.
+
+You can also toggle the defenses from the command line:
 
 ```
 curl -X POST http://localhost:3000/api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
-## Para o professor
+## For the instructor
 
-O passo a passo completo de ataque e defesa de cada vulnerabilidade esta em
+The full step-by-step attack and defense walkthrough for each vulnerability is in
 [`GABARITO.md`](GABARITO.md).
 
-## Licenca
+## License
 
-MIT. Autor: Prof. Nilson Sangy. Material do curso de Blue Team.
+MIT. Author: Prof. Nilson Sangy. Blue Team course material.

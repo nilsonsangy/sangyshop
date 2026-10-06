@@ -1,10 +1,11 @@
 {
   "name": "sangyshop",
   "version": "1.0.0",
-  "description": "Aplicacao web propositalmente vulneravel para ensino do OWASP Top 10:2025 na visao de defesa (Blue Team). Cada vulnerabilidade tem um toggle de defesa: ataca com a defesa desligada, liga a defesa e reproduz para ver o bloqueio. USO EXCLUSIVAMENTE EDUCACIONAL EM AMBIENTE ISOLADO.",
+  "description": "Deliberately vulnerable web application for teaching the OWASP Top 10:2025 from a defensive (Blue Team) perspective. Each vulnerability has a defense toggle: attack with the defense off, turn the defense on, and replay to see the block. FOR EDUCATIONAL USE ONLY IN AN ISOLATED ENVIRONMENT.",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "keywords": ["owasp", "owasp-top-10", "security", "blue-team", "vulnerable-app", "education", "appsec"],
   "author": "Prof. Nilson Sangy",
@@ -17,5 +18,9 @@
     "lodash": "4.17.11",
     "minimist": "1.2.0",
     "marked": "0.3.6"
+  },
+  "devDependencies": {
+    "supertest": "7.3.1",
+    "fast-check": "4.10.2"
   }
 }

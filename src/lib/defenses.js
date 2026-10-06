@@ -1,6 +1,6 @@
 // src/lib/defenses.js
-// Painel central de toggles de defesa. Le e escreve config/defenses.json.
-// E o coracao pedagogico: o aluno liga/desliga cada defesa e reproduz o ataque.
+// Central defense toggle panel. Reads and writes config/defenses.json.
+// This is the pedagogical core: the student turns each defense on/off and reproduces the attack.
 const fs = require("fs");
 const path = require("path");
 
@@ -25,7 +25,7 @@ function isOn(key) {
 
 function setDefense(key, value) {
   const all = readAll();
-  if (!(key in all)) throw new Error("Defesa desconhecida: " + key);
+  if (!(key in all)) throw new Error("Unknown defense: " + key);
   all[key] = value === true || value === "true" || value === "on";
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(all, null, 2) + "\n", "utf8");
   return all;

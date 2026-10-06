@@ -1,9 +1,9 @@
 // src/db/database.js
-// Banco SQLite em memoria via sql.js (WebAssembly) - sem compilacao nativa,
-// roda em qualquer ambiente. Executa SQL real, entao a SQL Injection e autentica.
-// Expoe uma API minima compativel: db.prepare(sql).get(...)/.all(...)/.run(...)
-// e db.exec(sql). A inicializacao e sincrona na carga do modulo (initSqlJs e
-// resolvido com um pequeno loop de espera no boot do servidor).
+// In-memory SQLite database via sql.js (WebAssembly) - no native compilation,
+// runs in any environment. Executes real SQL, so the SQL Injection is authentic.
+// Exposes a minimal compatible API: db.prepare(sql).get(...)/.all(...)/.run(...)
+// and db.exec(sql). Initialization is synchronous at module load (initSqlJs is
+// resolved with a small wait loop during server boot).
 const initSqlJs = require("sql.js");
 
 let SQL = null;
@@ -17,7 +17,7 @@ const api = {
     return rawDb.exec(sql);
   },
 
-  // Retorna um objeto com get/all/run para um SQL (com ou sem placeholders ?).
+  // Returns an object with get/all/run for a SQL statement (with or without ? placeholders).
   prepare(sql) {
     return {
       get(...params) {
@@ -84,11 +84,11 @@ function createSchemaAndSeed() {
   u.forEach((r) => rawDb.run("INSERT INTO users (username,password,role,email,credit_card) VALUES (?,?,?,?,?)", r));
 
   const p = [
-    ["Camiseta SangyShop", "Algodao, estampa do curso Blue Team", 79.9],
-    ["Caneca Hacker", "Ceramica 300ml, tema OWASP", 49.9],
-    ["Adesivo Pack", "10 adesivos de seguranca ofensiva/defensiva", 19.9],
-    ["Moletom DFIR", "Capuz, forense digital", 189.9],
-    ["Chaveiro Token", "Chaveiro em formato de token OTP", 29.9],
+    ["SangyShop T-Shirt", "Cotton, Blue Team course print", 79.9],
+    ["Hacker Mug", "300ml ceramic, OWASP theme", 49.9],
+    ["Sticker Pack", "10 offensive/defensive security stickers", 19.9],
+    ["DFIR Hoodie", "Hooded, digital forensics", 189.9],
+    ["Token Keychain", "OTP-token-shaped keychain", 29.9],
   ];
   p.forEach((r) => rawDb.run("INSERT INTO products (name,description,price) VALUES (?,?,?)", r));
 

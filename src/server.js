@@ -1,6 +1,6 @@
 // src/server.js
-// Servidor principal da SangyShop. Amarra as rotas e implementa o A02
-// (Security Misconfiguration) via toggle: headers de seguranca e tratamento de erro.
+// SangyShop main server. Wires up the routes and implements A02
+// (Security Misconfiguration) via toggle: security headers and error handling.
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
@@ -24,7 +24,7 @@ app.use(
   })
 );
 
-// A02: headers de seguranca aplicados somente quando a defesa esta LIGADA.
+// A02: security headers applied only when the defense is ON.
 app.use((req, res, next) => {
   if (isOn("A02_misconfiguration")) {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -38,38 +38,39 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rotas
+// Routes
 app.get("/", (req, res) => res.redirect("/products"));
 app.use("/", require("./routes/auth"));
 app.use("/", require("./routes/products"));
 app.use("/api", require("./routes/api"));
 app.use("/", require("./routes/admin"));
+app.use("/", require("./routes/orders"));
 
-// Rota que gera erro de proposito, para demonstrar o A02 (stack trace exposto).
+// Route that throws an error on purpose, to demonstrate A02 (exposed stack trace).
 app.get("/debug/boom", (req, res) => {
-  throw new Error("Falha interna simulada em /debug/boom (objeto nulo)");
+  throw new Error("Simulated internal failure in /debug/boom (null object)");
 });
 
-// Handler de erro: A02 controla se o stack trace vaza ou nao.
+// Error handler: A02 controls whether the stack trace leaks or not.
 app.use((err, req, res, next) => {
   if (isOn("A02_misconfiguration")) {
-    res.status(500).send("Erro interno. Tente novamente mais tarde.");
+    res.status(500).send("Internal error. Please try again later.");
   } else {
     res.status(500).type("text/plain").send(
-      "ERRO 500 - SangyShop (modo vulneravel)\n\n" + (err.stack || err.message)
+      "ERROR 500 - SangyShop (vulnerable mode)\n\n" + (err.stack || err.message)
     );
   }
 });
 
-// Inicializa o banco (async, sql.js/WASM) e so entao comeca a ouvir.
+// Initialize the database (async, sql.js/WASM) and only then start listening.
 db.init()
   .then(() => {
     app.listen(PORT, () => {
-      console.log("SangyShop rodando em http://localhost:" + PORT);
-      console.log("Defesas atuais:", JSON.stringify(readAll()));
+      console.log("SangyShop running at http://localhost:" + PORT);
+      console.log("Current defenses:", JSON.stringify(readAll()));
     });
   })
   .catch((e) => {
-    console.error("Falha ao inicializar o banco:", e);
+    console.error("Failed to initialize the database:", e);
     process.exit(1);
   });

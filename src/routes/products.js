@@ -1,5 +1,5 @@
 // src/routes/products.js
-// A05 Injection (busca de produtos via SQL).
+// A05 Injection (product search via SQL).
 const express = require("express");
 const router = express.Router();
 const db = require("../db/database");
@@ -13,13 +13,13 @@ router.get("/products", (req, res) => {
   if (!q) {
     products = db.prepare("SELECT * FROM products").all();
   } else if (isOn("A05_injection")) {
-    // DEFESA LIGADA: parametro ligado com placeholder; LIKE seguro.
+    // DEFENSE ON: parameter bound with a placeholder; safe LIKE.
     products = db
       .prepare("SELECT * FROM products WHERE name LIKE ? OR description LIKE ?")
       .all(`%${q}%`, `%${q}%`);
   } else {
-    // VULNERAVEL: concatenacao. Permite UNION SELECT para extrair users.
-    // Ex.: ' UNION SELECT id,username,password,price FROM users --
+    // VULNERABLE: concatenation. Allows UNION SELECT to extract users.
+    // E.g.: ' UNION SELECT id,username,password,price FROM users --
     const sql =
       "SELECT id, name, description, price FROM products WHERE name LIKE '%" +
       q +
@@ -32,7 +32,7 @@ router.get("/products", (req, res) => {
         products: [],
         q,
         sqlShown,
-        error: isOn("A02_misconfiguration") ? "Busca invalida." : "Erro de SQL: " + e.message,
+        error: isOn("A02_misconfiguration") ? "Invalid search." : "SQL error: " + e.message,
         user: req.session.user || null,
       });
     }

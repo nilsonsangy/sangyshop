@@ -1,7 +1,7 @@
 // src/lib/logger.js
-// Logging de eventos de autenticacao e deteccao de brute force (exercicio A09).
-// Com a defesa A09 DESLIGADA: nada e registrado (o ataque passa despercebido).
-// Com a defesa A09 LIGADA: cada tentativa e registrada e um alerta dispara no brute force.
+// Authentication event logging and brute-force detection (exercise A09).
+// With defense A09 OFF: nothing is recorded (the attack goes unnoticed).
+// With defense A09 ON: every attempt is recorded and an alert fires on brute force.
 const fs = require("fs");
 const path = require("path");
 const { isOn } = require("./defenses");
@@ -11,7 +11,7 @@ const AUTH_LOG = path.join(LOG_DIR, "auth.log");
 
 if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
 
-// Janela simples de contagem de falhas por usuario/IP (em memoria) para o alerta.
+// Simple in-memory window counting failures per user/IP for the alert.
 const failures = new Map();
 const WINDOW_MS = 60 * 1000;
 const THRESHOLD = 5;
@@ -21,7 +21,7 @@ function write(line) {
 }
 
 function recordLogin({ username, ip, success }) {
-  // Se a defesa de logging esta DESLIGADA, nao registra nada: o ataque fica invisivel.
+  // If the logging defense is OFF, record nothing: the attack stays invisible.
   if (!isOn("A09_logging")) return { logged: false, alert: false };
 
   const ts = new Date().toISOString();
@@ -36,7 +36,7 @@ function recordLogin({ username, ip, success }) {
     arr.push(now);
     failures.set(key, arr);
     if (arr.length >= THRESHOLD) {
-      write(`${ts} ALERT brute_force_suspeito user=${username} ip=${ip} falhas=${arr.length} janela=60s`);
+      write(`${ts} ALERT brute_force_suspected user=${username} ip=${ip} failures=${arr.length} window=60s`);
       alert = true;
     }
   } else {

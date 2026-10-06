@@ -1,0 +1,19 @@
+<%
+  // Normalize session state: treat missing/undefined as "no session".
+  var navUser = (typeof user !== 'undefined' && user) ? user : null;
+%>
+<header>
+  <a href="/products" class="brand">SangyShop</a>
+  <nav>
+    <a href="/products">Store</a>
+    <a href="/defenses">Defenses</a>
+    <a href="/logs">Logs</a>
+    <% if (navUser) { %>
+      <a href="/orders">My Orders</a>
+      <span class="who"><%= navUser.username %> (<%= navUser.role %>)</span>
+      <a href="/logout">Logout</a>
+    <% } else { %>
+      <a href="/login">Login</a>
+    <% } %>
+  </nav>
+</header>

@@ -1,5 +1,5 @@
 // src/routes/auth.js
-// A05 Injection (login via SQL) + A09 Logging & Alerting (registro de tentativas).
+// A05 Injection (login via SQL) + A09 Logging & Alerting (attempt recording).
 const express = require("express");
 const router = express.Router();
 const db = require("../db/database");
@@ -12,17 +12,17 @@ router.get("/login", (req, res) => {
 
 router.post("/login", (req, res) => {
   const { username, password } = req.body;
-  const ip = req.ip || req.connection.remoteAddress || "desconhecido";
+  const ip = req.ip || req.connection.remoteAddress || "unknown";
   let user = null;
 
   if (isOn("A05_injection")) {
-    // DEFESA LIGADA: consulta parametrizada (prepared statement).
-    // A entrada do usuario nunca e interpretada como codigo SQL.
+    // DEFENSE ON: parameterized query (prepared statement).
+    // User input is never interpreted as SQL code.
     user = db
       .prepare("SELECT * FROM users WHERE username = ? AND password = ?")
       .get(username, password);
   } else {
-    // VULNERAVEL: concatenacao direta. Payload classico: admin' -- ou ' OR '1'='1
+    // VULNERABLE: direct concatenation. Classic payload: admin' -- or ' OR '1'='1
     const sql =
       "SELECT * FROM users WHERE username = '" +
       username +
@@ -32,11 +32,11 @@ router.post("/login", (req, res) => {
     try {
       user = db.prepare(sql).get();
     } catch (e) {
-      // Em modo vulneravel, o erro de SQL pode vazar (ligado ao A02 tambem).
+      // In vulnerable mode, the SQL error may leak (tied to A02 as well).
       return res.status(500).render("login", {
         error: isOn("A02_misconfiguration")
-          ? "Credenciais invalidas."
-          : "Erro de SQL: " + e.message,
+          ? "Invalid credentials."
+          : "SQL error: " + e.message,
         user: null,
       });
     }
@@ -49,11 +49,23 @@ router.post("/login", (req, res) => {
     req.session.user = { id: user.id, username: user.username, role: user.role };
     return res.redirect("/products");
   }
-  return res.status(401).render("login", { error: "Credenciais invalidas.", user: null });
+  return res.status(401).render("login", { error: "Invalid credentials.", user: null });
 });
 
 router.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+  req.session.destroy((err) => {
+    if (err) {
+      // Keep the user authenticated and signal that logout failed.
+      return res.status(500).render("products", {
+        products: [],
+        q: "",
+        sqlShown: null,
+        error: "Logout could not be completed. Please try again.",
+        user: req.session.user || null,
+      });
+    }
+    res.redirect("/login");
+  });
 });
 
 module.exports = router;

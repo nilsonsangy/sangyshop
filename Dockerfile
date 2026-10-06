@@ -1,13 +1,13 @@
-# SangyShop - imagem leve para o laboratorio do OWASP Top 10:2025 (visao de defesa)
+# SangyShop - lightweight image for the OWASP Top 10:2025 lab (defensive perspective)
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Instala dependencias (inclui as desatualizadas de proposito p/ o exercicio A03)
+# Install dependencies (includes the intentionally outdated ones for the A03 exercise)
 COPY package.json ./
 RUN npm install --omit=dev || npm install
 
-# Copia o restante do app
+# Copy the rest of the app
 COPY . .
 
 EXPOSE 3000

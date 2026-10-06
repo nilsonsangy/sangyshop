@@ -1,155 +1,158 @@
-# GABARITO - SangyShop (OWASP Top 10:2025 na visao de defesa)
+# ANSWER KEY - SangyShop (OWASP Top 10:2025 from a defensive perspective)
 
-Documento do professor. Cada secao e um exercicio: primeiro o **ataque** (defesa OFF),
-depois a **defesa** (toggle ON) e a **comprovacao** de que o mesmo ataque falha. Todos os
-comandos foram validados. Base URL: `http://localhost:3000`.
+Instructor document. Each section is an exercise: first the **attack** (defense OFF), then the
+**defense** (toggle ON), and the **proof** that the same attack now fails. Every command has
+been validated. Base URL: `http://localhost:3000`.
 
-Resetar todas as defesas para OFF (estado inicial de ataque): reinicie o container, ou
-poste `value:false` em cada chave em `/api/defenses/<chave>`.
+Reset all defenses to OFF (initial attack state): restart the container, or POST `value:false`
+to each key at `/api/defenses/<key>`.
 
 ---
 
-## Exercicio 1 - A05:2025 Injection (SQL Injection)
+## Exercise 1 - A05:2025 Injection (SQL Injection)
 
-**Alvo:** login (`/login`) e busca de produtos (`/products?q=`).
+**Target:** login (`/login`) and product search (`/products?q=`).
 
-### Ataque (defesa OFF)
-- **Bypass de login:** usuario `admin'--` com qualquer senha. A query vira
-  `... WHERE username = 'admin'--' AND password = '...'`; o `--` comenta o resto e
-  autentica como admin.
-- **Extracao via UNION na busca:**
+### Attack (defense OFF)
+- **Login bypass:** user `admin'--` with any password. The query becomes
+  `... WHERE username = 'admin'--' AND password = '...'`; the `--` comments out the rest and
+  authenticates as admin.
+- **Extraction via UNION in the search:**
   `/products?q=' UNION SELECT id,username,password,role FROM users --`
-  As senhas de todos os usuarios aparecem como se fossem produtos.
+  Every user's password shows up as if it were a product.
 
-### Defesa
-Ligar `A05_injection`. O codigo passa a usar **prepared statement**
-(`db.prepare("... WHERE username = ? AND password = ?").get(username, password)`): a
-entrada nunca e interpretada como SQL.
+### Defense
+Turn on `A05_injection`. The code switches to a **prepared statement**
+(`db.prepare("... WHERE username = ? AND password = ?").get(username, password)`): the input
+is never interpreted as SQL.
 
 ```
 curl -X POST http://localhost:3000/api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
-### Comprovacao
-- Login com `admin'--` retorna **401**.
-- A busca com UNION nao retorna senha nenhuma.
-- **Criterio:** explicar por que a parametrizacao separa codigo de dado e neutraliza o vetor.
+### Proof
+- Login with `admin'--` returns **401**.
+- The UNION search returns no password at all.
+- **Criterion:** explain why parameterization separates code from data and neutralizes the vector.
 
 ---
 
-## Exercicio 2 - A01:2025 Broken Access Control (IDOR)
+## Exercise 2 - A01:2025 Broken Access Control (IDOR)
 
-**Alvo:** `/api/orders/:id` (e `/api/users/:id`).
+**Target:** `/api/orders/:id` (and `/api/users/:id`).
 
-### Ataque (defesa OFF)
-1. Login como `alice` (que so tem os pedidos 1 e 2).
-2. `GET /api/orders/3` - a alice ve o pedido do **bob**. Trocar o id navega pelos recursos
-   de outros usuarios (IDOR). Em `/api/users/3` vaza email e cartao de outro usuario.
+### Attack (defense OFF)
+1. Log in as `alice` (who only has orders 1 and 2).
+2. In the interface, the starting point is the **My Orders** page (`/orders`): alice sees her
+   own orders and, for each one, a "View (API)" link to `/api/orders/:id`.
+3. `GET /api/orders/3` - alice sees **bob**'s order. Opening a link from My Orders and changing
+   the id navigates through other users' resources (IDOR). At `/api/users/3` another user's
+   email and credit card leak.
 
-### Defesa
-Ligar `A01_access_control`. O backend passa a **verificar a propriedade**: compara
-`order.user_id` com o id do usuario autenticado da sessao; so o dono (ou admin) acessa.
+### Defense
+Turn on `A01_access_control`. The backend now **checks ownership**: it compares
+`order.user_id` with the authenticated session user's id; only the owner (or admin) gets access.
 
 ```
 curl -X POST http://localhost:3000/api/defenses/A01_access_control -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
-### Comprovacao
-- `GET /api/orders/3` como alice retorna **403**.
-- `GET /api/orders/1` (proprio da alice) continua **200**: a defesa nao quebra a funcao legitima.
-- **Criterio:** a autorizacao deve ser do lado do servidor, amarrando recurso ao dono; o id
-  vindo do cliente nunca e confiavel sozinho.
+### Proof
+- `GET /api/orders/3` as alice returns **403**.
+- `GET /api/orders/1` (alice's own) still returns **200**: the defense does not break the legitimate function.
+- **Criterion:** authorization must happen server-side, binding the resource to its owner; the
+  id coming from the client is never trustworthy on its own.
 
 ---
 
-## Exercicio 3 - A03:2025 Software Supply Chain Failures
+## Exercise 3 - A03:2025 Software Supply Chain Failures
 
-**Alvo:** as dependencias do `package.json` (lodash 4.17.11, minimist 1.2.0, marked 0.3.6).
+**Target:** the dependencies in `package.json` (lodash 4.17.11, minimist 1.2.0, marked 0.3.6).
 
-### Ataque / diagnostico
+### Attack / diagnosis
 ```
-npm install          # ja exibe o aviso de vulnerabilidades
-npm audit            # relatorio detalhado: severidade, CWE, caminho da dependencia
+npm install          # already prints the vulnerability warning
+npm audit            # detailed report: severity, CWE, dependency path
 ```
-Identificar as vulnerabilidades (ex.: prototype pollution em lodash/minimist, ReDoS em
-marked) e entender o risco de dependencias desatualizadas e transitivas.
+Identify the vulnerabilities (e.g., prototype pollution in lodash/minimist, ReDoS in marked)
+and understand the risk of outdated and transitive dependencies.
 
-### Defesa
-- `npm audit fix` (ou atualizar manualmente para versoes corrigidas e fixar no lockfile).
-- Discutir pinning de versoes, commit do `package-lock.json`, geracao de SBOM e checagem
-  automatica no CI.
+### Defense
+- `npm audit fix` (or manually update to the fixed versions and pin them in the lockfile).
+- Discuss version pinning, committing `package-lock.json`, SBOM generation, and automated
+  checks in CI.
 
-### Comprovacao
+### Proof
 ```
-npm audit            # apos o fix, o numero de vulnerabilidades cai (idealmente a zero)
+npm audit            # after the fix, the number of vulnerabilities drops (ideally to zero)
 ```
-- **Criterio:** mostrar o antes/depois do `npm audit` e explicar a politica de atualizacao
-  e pinning que impede regressao.
+- **Criterion:** show the `npm audit` before/after and explain the update and pinning policy
+  that prevents regression.
 
 ---
 
-## Exercicio 4 - A02:2025 Security Misconfiguration
+## Exercise 4 - A02:2025 Security Misconfiguration
 
-**Alvo:** headers HTTP e pagina de erro.
+**Target:** HTTP headers and the error page.
 
-### Ataque (defesa OFF)
+### Attack (defense OFF)
 ```
 curl -I http://localhost:3000/products
 ```
-- Header `X-Powered-By: Express 4.18 / SangyShop 1.0` revela o stack.
-- Ausencia de `Content-Security-Policy`, `X-Content-Type-Options`, etc.
-- `GET /debug/boom` devolve **stack trace completo** (vazamento de informacao).
+- The `X-Powered-By: Express 4.18 / SangyShop 1.0` header reveals the stack.
+- Missing `Content-Security-Policy`, `X-Content-Type-Options`, etc.
+- `GET /debug/boom` returns the **full stack trace** (information disclosure).
 
-### Defesa
-Ligar `A02_misconfiguration`: aplica os security headers (CSP, X-Content-Type-Options,
-X-Frame-Options, Referrer-Policy), remove o `X-Powered-By` e troca o erro detalhado por uma
-mensagem generica.
+### Defense
+Turn on `A02_misconfiguration`: it applies the security headers (CSP, X-Content-Type-Options,
+X-Frame-Options, Referrer-Policy), removes `X-Powered-By`, and replaces the detailed error with
+a generic message.
 
 ```
 curl -X POST http://localhost:3000/api/defenses/A02_misconfiguration -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
-### Comprovacao
+### Proof
 ```
-curl -I http://localhost:3000/products   # X-Powered-By sumiu; CSP e nosniff presentes
-curl http://localhost:3000/debug/boom    # "Erro interno. Tente novamente mais tarde."
+curl -I http://localhost:3000/products   # X-Powered-By is gone; CSP and nosniff present
+curl http://localhost:3000/debug/boom    # "Internal error. Please try again later."
 ```
-- **Criterio:** comparar os headers antes/depois e o erro silenciado.
+- **Criterion:** compare the headers before/after and the silenced error.
 
 ---
 
-## Exercicio 5 - A09:2025 Security Logging & Alerting Failures
+## Exercise 5 - A09:2025 Security Logging & Alerting Failures
 
-**Alvo:** login sob brute force. (Amarra com a aula 12 - Wazuh/SIEM.)
+**Target:** login under brute force. (Ties back to lesson 12 - Wazuh/SIEM.)
 
-### Ataque (defesa OFF)
-Repetir varias tentativas de login com senha errada para a `alice`:
+### Attack (defense OFF)
+Repeat several login attempts with the wrong password for `alice`:
 ```
-for /l %i in (1,1,6) do curl -s -X POST http://localhost:3000/login -d "username=alice&password=errada%i" -o nul
+for /l %i in (1,1,6) do curl -s -X POST http://localhost:3000/login -d "username=alice&password=wrong%i" -o nul
 ```
-Abrir `/logs`: **nada aparece**. Sem registro, o ataque passa despercebido (tempo de
-deteccao infinito).
+Open `/logs`: **nothing appears**. Without a record, the attack goes unnoticed (infinite
+detection time).
 
-### Defesa
-Ligar `A09_logging`: cada tentativa passa a ser registrada em `logs/auth.log` e, ao
-ultrapassar 5 falhas em 60s para o mesmo usuario/IP, dispara `ALERT brute_force_suspeito`.
+### Defense
+Turn on `A09_logging`: each attempt is recorded in `logs/auth.log` and, when it exceeds 5
+failures in 60s for the same user/IP, it fires `ALERT brute_force_suspected`.
 
 ```
 curl -X POST http://localhost:3000/api/defenses/A09_logging -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
-### Comprovacao
-Repetir o brute force e abrir `/logs`: aparecem as linhas `FAILURE` e a linha
-`ALERT brute_force_suspeito`. O ataque agora e **visivel e detectavel**.
-- **Criterio:** sem log nao ha deteccao; com log + alerta, fecha-se o ciclo detectar ->
-  responder. Discutir o envio desses logs para um SIEM (Wazuh) como continuacao.
+### Proof
+Repeat the brute force and open `/logs`: the `FAILURE` lines and the
+`ALERT brute_force_suspected` line appear. The attack is now **visible and detectable**.
+- **Criterion:** no log means no detection; with log + alert, the detect -> respond cycle
+  closes. Discuss shipping these logs to a SIEM (Wazuh) as a follow-up.
 
 ---
 
-## Observacoes
+## Notes
 
-- As senhas estao em texto puro no seed de proposito (facilita a leitura do impacto da SQLi
-  e do IDOR). Em producao, discutir hashing com bcrypt/argon2 (relacionado a A07).
-- O SSRF, que era categoria propria ate 2021, foi consolidado em A01 na versao 2025.
-- As duas categorias novas de 2025 sao A03 (Software Supply Chain Failures) e A10
-  (Mishandling of Exceptional Conditions). O lab cobre A03; A10 e discutido na teoria.
+- Passwords are stored in plaintext in the seed on purpose (it makes the impact of SQLi and
+  IDOR easier to read). In production, discuss hashing with bcrypt/argon2 (related to A07).
+- SSRF, which was its own category until 2021, was consolidated into A01 in the 2025 version.
+- The two new 2025 categories are A03 (Software Supply Chain Failures) and A10 (Mishandling of
+  Exceptional Conditions). The lab covers A03; A10 is discussed in theory.

@@ -1,12 +1,11 @@
 <!doctype html>
-<html lang="pt-br"><head><meta charset="utf-8"><title>SangyShop - Logs</title>
+<html lang="en"><head><meta charset="utf-8"><title>SangyShop - Logs</title>
 <link rel="stylesheet" href="/style.css"></head><body>
-<header><a href="/products" class="brand">SangyShop</a>
-<nav><a href="/products">Loja</a><a href="/defenses">Defesas</a><a href="/logs">Logs</a><a href="/login">Login</a></nav></header>
+<%- include('partials/navbar', { user: user }) %>
 <main>
-<h1>Logs de autenticacao (A09)</h1>
-<p class="hint">Com a defesa A09 desligada, nada aparece aqui: o ataque passa despercebido. Ligue-a e repita o brute force.</p>
-<% if (lines.length === 0) { %><p class="error">Nenhum evento registrado.</p><% } else { %>
+<h1>Authentication logs (A09)</h1>
+<p class="hint">With the A09 defense turned off, nothing shows up here: the attack goes unnoticed. Turn it on and replay the brute force.</p>
+<% if (lines.length === 0) { %><p class="error">No events recorded.</p><% } else { %>
 <pre class="log"><% lines.forEach(function(l){ %><%= l %>
 <% }); %></pre>
 <% } %>

@@ -1,20 +1,18 @@
 <!doctype html>
-<html lang="pt-br"><head><meta charset="utf-8"><title>SangyShop - Loja</title>
+<html lang="en"><head><meta charset="utf-8"><title>SangyShop - Store</title>
 <link rel="stylesheet" href="/style.css"></head><body>
-<header><a href="/products" class="brand">SangyShop</a>
-<nav><a href="/products">Loja</a><a href="/defenses">Defesas</a><a href="/logs">Logs</a>
-<% if (user) { %><span class="who"><%= user.username %> (<%= user.role %>)</span><a href="/logout">Sair</a><% } else { %><a href="/login">Login</a><% } %></nav></header>
+<%- include('partials/navbar', { user: user }) %>
 <main>
-<h1>Catalogo</h1>
+<h1>Catalog</h1>
 <form method="get" action="/products" class="search">
-<input name="q" value="<%= q %>" placeholder="Buscar produto...">
-<button type="submit">Buscar</button>
+<input name="q" value="<%= q %>" placeholder="Search products...">
+<button type="submit">Search</button>
 </form>
-<% if (sqlShown) { %><pre class="sql">SQL executado: <%= sqlShown %></pre><% } %>
+<% if (sqlShown) { %><pre class="sql">SQL executed: <%= sqlShown %></pre><% } %>
 <% if (error) { %><p class="error"><%= error %></p><% } %>
-<table><thead><tr><th>#</th><th>Produto</th><th>Descricao</th><th>Preco</th></tr></thead><tbody>
+<table><thead><tr><th>#</th><th>Product</th><th>Description</th><th>Price</th></tr></thead><tbody>
 <% products.forEach(function(p){ %>
-<tr><td><%= p.id %></td><td><%= p.name %></td><td><%= p.description %></td><td>R$ <%= Number(p.price).toFixed(2) %></td></tr>
+<tr><td><%= p.id %></td><td><%= p.name %></td><td><%= p.description %></td><td>$ <%= Number(p.price).toFixed(2) %></td></tr>
 <% }); %>
 </tbody></table>
 </main></body></html>
