@@ -1,0 +1,94 @@
+# INSECURE ON PURPOSE - teaching baseline for Kubernetes.
+# Privileged Pod, hostPath/hostNetwork, cluster-admin RBAC, plaintext secret,
+# no NetworkPolicy, namespace without Pod Security Standards.
+# Compare with ../hardened/sangyshop-hardened.yaml.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sangyshop-insecure
+  # NO pod-security.kubernetes.io/* labels: admission does not block unsafe Pods.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sangyshop
+  namespace: sangyshop-insecure
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sangyshop-insecure-admin
+# Binds the app's ServiceAccount to cluster-admin: whoever steals the pod token owns the cluster.
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: sangyshop
+    namespace: sangyshop-insecure
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-insecure
+type: Opaque
+stringData:
+  DB_PASSWORD: "S3cr3t-in-plaintext"   # plaintext in a versioned manifest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sangyshop
+  namespace: sangyshop-insecure
+  labels: { app: sangyshop }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: sangyshop }
+  template:
+    metadata:
+      labels: { app: sangyshop }
+    spec:
+      serviceAccountName: sangyshop
+      hostNetwork: true          # shares the node network
+      hostPID: true              # sees the node processes
+      containers:
+        - name: sangyshop
+          image: sangyshop:insecure   # build via deployment-security/docker/insecure
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: sangyshop-db, key: DB_PASSWORD }
+          securityContext:
+            privileged: true            # near-total power over the node
+            runAsUser: 0                # root
+            allowPrivilegeEscalation: true
+          volumeMounts:
+            - name: host-root
+              mountPath: /host          # mounts the node filesystem into the Pod
+          # no resources.requests/limits
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop
+  namespace: sangyshop-insecure
+spec:
+  selector: { app: sangyshop }
+  ports:
+    - port: 3000
+      targetPort: 3000
+# No NetworkPolicy anywhere: every Pod can talk to every other Pod.

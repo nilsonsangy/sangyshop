@@ -1,0 +1,40 @@
+# HARDENED run of the same app. Compare with ../insecure/docker-compose.yml.
+services:
+  sangyshop:
+    build:
+      context: ../../..
+      dockerfile: deployment-security/docker/hardened/Dockerfile
+    image: sangyshop:hardened
+    container_name: sangyshop-hardened
+    user: "10001"                        # non-root
+    read_only: true                      # immutable root filesystem
+    cap_drop:
+      - ALL                              # drop every Linux capability
+    security_opt:
+      - no-new-privileges:true           # block privilege escalation
+      - seccomp=./seccomp.json           # restrict syscalls (default-like profile)
+    # The app writes two paths at runtime: config/defenses.json (Defenses panel) and a
+    # logs/ directory. Those two paths stay writable; the rest of the root FS is read-only.
+    tmpfs:
+      - /tmp
+    volumes:
+      - app-config:/app/config
+      - app-logs:/app/logs
+    environment:
+      - PORT=3000
+    secrets:
+      - db_password                      # provided out-of-band, not baked into the image
+    mem_limit: 256m                      # cgroup memory cap
+    cpus: 0.5                            # cgroup cpu cap
+    pids_limit: 128
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  app-config:
+  app-logs:
+
+secrets:
+  db_password:
+    file: ./db_password.txt              # local file, git-ignored; never commit the real value

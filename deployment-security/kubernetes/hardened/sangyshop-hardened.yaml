@@ -1,0 +1,147 @@
+# HARDENED deployment of the same app. Compare with ../insecure/sangyshop-insecure.yaml.
+# Pod Security Standards (restricted), least-privilege RBAC, default-deny + allow
+# NetworkPolicies, hardened securityContext, managed secret, resource limits.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sangyshop-hardened
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+automountServiceAccountToken: false   # the app does not call the API; do not mount the token
+---
+# Minimal, namespaced role (no cluster-admin, no wildcards). The app needs nothing
+# from the API, so this Role is intentionally empty-by-default; add rules only if required.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sangyshop
+subjects:
+  - kind: ServiceAccount
+    name: sangyshop
+    namespace: sangyshop-hardened
+---
+# The secret is still a Secret object, but it is created out-of-band (see cluster-setup.md),
+# NOT committed in plaintext. Enable encryption-at-rest for etcd in a real cluster.
+# Example (run once, do not commit the value):
+#   kubectl -n sangyshop-hardened create secret generic sangyshop-db \
+#     --from-literal=DB_PASSWORD="$DB_PASSWORD"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+  labels: { app: sangyshop }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: sangyshop }
+  template:
+    metadata:
+      labels: { app: sangyshop }
+    spec:
+      serviceAccountName: sangyshop
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: sangyshop
+          image: sangyshop:hardened   # build via deployment-security/docker/hardened
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: sangyshop-db, key: DB_PASSWORD }
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "256Mi" }
+          volumeMounts:
+            # SangyShop writes the Defenses-panel state to config/defenses.json, so this
+            # single path stays writable under the read-only root filesystem.
+            - name: app-config
+              mountPath: /app/config
+            - name: app-logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: app-config
+          emptyDir: {}
+        - name: app-logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+spec:
+  selector: { app: sangyshop }
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+# Default-deny all ingress in the namespace...
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: sangyshop-hardened
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+# ...then allow only HTTP to the app on 3000 from within the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web
+  namespace: sangyshop-hardened
+spec:
+  podSelector:
+    matchLabels: { app: sangyshop }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: sangyshop-hardened }
+      ports:
+        - protocol: TCP
+          port: 3000

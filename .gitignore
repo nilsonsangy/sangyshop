@@ -5,3 +5,7 @@ src/db/*.db
 src/db/*.db-wal
 src/db/*.db-shm
 .DS_Store
+
+# deployment-security: never commit real secrets
+deployment-security/docker/hardened/db_password.txt
+

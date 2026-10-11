@@ -1,0 +1,11 @@
+{
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "comment": "Teaching seccomp profile. Docker ships a strong default profile; this file is a readable starting point. Tighten defaultAction to SCMP_ACT_ERRNO and allowlist syscalls for a real deployment.",
+  "syscalls": [
+    {
+      "names": ["mount", "umount2", "reboot", "swapon", "swapoff", "kexec_load", "init_module", "delete_module"],
+      "action": "SCMP_ACT_ERRNO",
+      "comment": "Deny syscalls a web app never needs and that help host escape."
+    }
+  ]
+}
