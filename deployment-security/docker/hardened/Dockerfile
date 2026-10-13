@@ -1,4 +1,4 @@
-# HARDENED build of the same app. Compare with ../insecure/Dockerfile.
+# HARDENED build of the same app. Compare with the repo's default (insecure) Dockerfile at the root.
 FROM node:20-alpine
 
 WORKDIR /app

@@ -1,14 +1,13 @@
 # Docker - hardened container
 
-The same app as [`../insecure`](../insecure), run with container hardening applied.
-Compare the two side by side.
+The same app as the repo's default (insecure) build at the root, run with container hardening
+applied. Compare the two side by side.
 
 ## Run it
 
 ```
 # provide the secret out-of-band (never commit the real value)
-cp deployment-security/docker/hardened/db_password.txt.example \
-   deployment-security/docker/hardened/db_password.txt
+cp deployment-security/docker/hardened/db_password.txt.example deployment-security/docker/hardened/db_password.txt
 
 docker compose -f deployment-security/docker/hardened/docker-compose.yml up -d --build
 # app on http://localhost:3000

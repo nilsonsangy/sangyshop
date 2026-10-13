@@ -1,4 +1,4 @@
-# HARDENED run of the same app. Compare with ../insecure/docker-compose.yml.
+# HARDENED run of the same app. Compare with the repo's default (insecure) compose at the root.
 services:
   sangyshop:
     build:

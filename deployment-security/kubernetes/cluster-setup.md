@@ -29,7 +29,8 @@ available to the cluster first:
 
 ```
 # build both images (from the repo root)
-docker build -t sangyshop:insecure -f deployment-security/docker/insecure/Dockerfile .
+# the insecure (vulnerable) image is the repo's default build (root Dockerfile):
+docker build -t sangyshop:insecure .
 docker build -t sangyshop:hardened -f deployment-security/docker/hardened/Dockerfile .
 
 # import them into the local cluster

@@ -7,7 +7,8 @@ container and orchestration hardening actually changes.
 The idea mirrors the app's Defenses panel — **run it insecure, then run it hardened,
 and compare** — but applied to how the app is packaged and run:
 
-- **`docker/`** — the same image run as an **insecure** container vs a **hardened** one.
+- **`docker/`** — the same image run **insecure** (the repo's default build, `sangyshop:insecure`)
+  vs a **hardened** one (`docker/hardened/`).
 - **`kubernetes/`** — the same app deployed with an **insecure** manifest set vs a
   **hardened** one (RBAC, Network Policies, Pod Security Standards, managed secrets, limits).
 
@@ -37,9 +38,9 @@ With free, open tools you can measure the difference between the two sides:
 ## Layout
 
 ```
+(repo root)      Dockerfile + docker-compose.yml   -> sangyshop:insecure  (default, vulnerable)
 deployment-security/
   docker/
-    insecure/    Dockerfile + docker-compose.yml   -> sangyshop:insecure
     hardened/    Dockerfile + docker-compose.yml + seccomp.json -> sangyshop:hardened
   kubernetes/
     insecure/    sangyshop-insecure.yaml
@@ -47,8 +48,10 @@ deployment-security/
     cluster-setup.md
 ```
 
-Each subfolder has its own README explaining the specific risks and the matching
-countermeasures. Start with `docker/` and then move to `kubernetes/`.
+The **insecure** variant is the repo's default build at the root (`docker compose up -d --build`
+produces `sangyshop:insecure`). The **hardened** counterpart lives in `docker/hardened/`. Each
+subfolder has its own README explaining the specific risks and the matching countermeasures.
+Build the insecure baseline from the root, then move to `docker/hardened/` and `kubernetes/`.
 
 ## A note on the app and a read-only filesystem
 

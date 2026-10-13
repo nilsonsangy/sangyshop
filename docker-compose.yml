@@ -1,7 +1,10 @@
+# Default run of SangyShop = the INSECURE (vulnerable) baseline.
+# `docker compose up -d --build` builds the vulnerable variant on purpose: root, no
+# limits, outdated deps. The hardened variant lives in deployment-security/docker/hardened/.
 services:
   sangyshop:
     build: .
-    image: sangyshop:1.0
+    image: sangyshop:insecure
     container_name: sangyshop
     ports:
       - "3000:3000"

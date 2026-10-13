@@ -57,7 +57,7 @@ spec:
       hostPID: true              # sees the node processes
       containers:
         - name: sangyshop
-          image: sangyshop:insecure   # build via deployment-security/docker/insecure
+          image: sangyshop:insecure   # the repo's default build (root Dockerfile / docker compose)
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
