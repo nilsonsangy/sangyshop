@@ -45,6 +45,7 @@ deployment-security/
   kubernetes/
     insecure/    sangyshop-insecure.yaml
     hardened/    sangyshop-hardened.yaml
+    kube-bench/  job-master.yaml + job-node-worker{1,2}.yaml -> CIS audit of the cluster/nodes
     cluster-setup.md
 ```
 

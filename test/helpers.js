@@ -136,6 +136,10 @@ async function createTestApp() {
     /* orders.js not present yet */
   }
 
+  // Diagnostics route (GET /_diag). Mount it so supertest-based tests can
+  // exercise the posture endpoint on the test app.
+  app.use("/", require(path.join(SRC, "routes", "diag.js")));
+
   app.get("/debug/boom", (req, res) => {
     throw new Error("Simulated internal failure in /debug/boom (null object)");
   });

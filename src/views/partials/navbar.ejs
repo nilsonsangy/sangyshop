@@ -4,6 +4,8 @@
 %>
 <header>
   <a href="/products" class="brand">SangyShop</a>
+  <% var navPod = (typeof podName !== 'undefined' && podName) ? podName : null; %>
+  <% if (navPod) { %><span class="pod" title="Kubernetes Pod serving this request">Pod: <%= navPod %></span><% } %>
   <nav>
     <a href="/products">Store</a>
     <a href="/defenses">Defenses</a>

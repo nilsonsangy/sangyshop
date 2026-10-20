@@ -54,7 +54,7 @@ metadata:
   namespace: sangyshop-hardened
   labels: { app: sangyshop }
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels: { app: sangyshop }
   template:
@@ -81,6 +81,11 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef: { name: sangyshop-db, key: DB_PASSWORD }
+            # Downward API: inject the Pod name so the homepage can show which
+            # Pod served the request (badge appears only when running in k8s).
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false

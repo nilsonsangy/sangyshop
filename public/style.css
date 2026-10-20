@@ -6,6 +6,7 @@ nav { display: flex; gap: 18px; align-items: center; margin-left: auto; }
 nav a { color: #cfe8d8; text-decoration: none; font-weight: 600; }
 nav a:hover { color: #fff; }
 .who { color: #9af0c3; font-weight: 700; }
+.pod { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; font-weight: 700; color: #9af0c3; background: rgba(154,240,195,.12); border: 1px solid rgba(154,240,195,.35); padding: 3px 10px; border-radius: 999px; }
 main { max-width: 980px; margin: 32px auto; padding: 0 24px; }
 main.narrow { max-width: 420px; }
 h1 { color: #0b3d27; }
@@ -25,3 +26,8 @@ th { background: #e9f3ec; color: #0b3d27; }
 .state { font-weight: 800; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
 .state.on { background: #d6f5e2; color: #0b6644; }
 .state.off { background: #fde4e1; color: #c0392b; }
+
+/* Diagnóstico de postura (/_diag) — regras aditivas, paleta verde/navy existente. */
+.diag-group { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2eae4; }
+.diag-group:first-of-type { margin-top: 20px; padding-top: 0; border-top: 0; }
+.diag-group h2 { color: #0b3d27; margin: 0 0 8px; font-size: 18px; }

@@ -12,6 +12,12 @@ const PORT = process.env.PORT || 3000;
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+// When running under Kubernetes, the Deployment injects the Pod name via the
+// Downward API (env POD_NAME). Expose it to every view so the navbar can show
+// which Pod served the request. Outside Kubernetes (Docker, `npm start`) the
+// variable is absent and the badge is simply hidden.
+app.locals.podName = process.env.POD_NAME || null;
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
@@ -45,6 +51,7 @@ app.use("/", require("./routes/products"));
 app.use("/api", require("./routes/api"));
 app.use("/", require("./routes/admin"));
 app.use("/", require("./routes/orders"));
+app.use("/", require("./routes/diag"));
 
 // Route that throws an error on purpose, to demonstrate A02 (exposed stack trace).
 app.get("/debug/boom", (req, res) => {

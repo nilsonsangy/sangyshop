@@ -45,7 +45,12 @@ metadata:
   namespace: sangyshop-insecure
   labels: { app: sangyshop }
 spec:
-  replicas: 1
+  replicas: 2
+  # hostNetwork: true faz cada Pod ocupar a porta do no; com 2 replicas em
+  # poucos nos, RollingUpdate nao acha porta livre e trava. Recreate derruba
+  # os Pods antigos primeiro, liberando a porta, e so entao recria.
+  strategy:
+    type: Recreate
   selector:
     matchLabels: { app: sangyshop }
   template:
@@ -67,6 +72,11 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef: { name: sangyshop-db, key: DB_PASSWORD }
+            # Downward API: inject the Pod name so the homepage can show which
+            # Pod served the request (badge appears only when running in k8s).
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
           securityContext:
             privileged: true            # near-total power over the node
             runAsUser: 0                # root
