@@ -10,3 +10,5 @@ src/db/*.db-shm
 deployment-security/docker/hardened/db_password.txt
 # multi-cloud-deploy: real per-user config (secret-free, but account-specific); template cloud.config.example.ps1 stays committed
 deployment-security/cloud/cloud.config.ps1
+# Kiro IDE workspace artifacts (specs, settings) - not versioned
+.kiro/
