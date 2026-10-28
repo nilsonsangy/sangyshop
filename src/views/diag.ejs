@@ -21,6 +21,12 @@
   Sinais coletados de dentro do container/Pod. Verde = robustecido/seguro, vermelho = inseguro.
   Sinais indisponíveis aparecem rotulados com o motivo.
 </p>
+<p class="hint">
+  A02 (Security Misconfiguration) abrange os cabeçalhos de segurança e a página de erro
+  <code>/debug/boom</code> (que vaza o stack trace quando a defesa está desligada). Como
+  essa página de erro é texto puro, o ponto de entrada EJS do "Ver código" de A02 é aqui.
+</p>
+<%- include('partials/view-code', { vuln: 'A02' }) %>
 <% if (rpt.meta) { %>
 <p class="hint">
   Gerado em <%= rpt.meta.geradoEm %> · versão do relatório <%= rpt.meta.versaoRelatorio %>

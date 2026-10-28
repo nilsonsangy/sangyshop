@@ -21,9 +21,13 @@ function write(line) {
 }
 
 function recordLogin({ username, ip, success }) {
+  // vuln:start
   // If the logging defense is OFF, record nothing: the attack stays invisible.
   if (!isOn("A09_logging")) return { logged: false, alert: false };
+  // vuln:end
 
+  // secure:start
+  // DEFENSE ON: record every attempt and raise an alert on brute force.
   const ts = new Date().toISOString();
   const status = success ? "SUCCESS" : "FAILURE";
   write(`${ts} auth ${status} user=${username} ip=${ip}`);
@@ -43,6 +47,7 @@ function recordLogin({ username, ip, success }) {
     failures.delete(`${username}|${ip}`);
   }
   return { logged: true, alert };
+  // secure:end
 }
 
 function tail(n = 50) {

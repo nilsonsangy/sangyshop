@@ -20,6 +20,22 @@
 // swaps where isOn() reads its value FROM (an in-memory map that falls back to
 // the real defenses.json), so A01/A02/A05/A09 behaviour is unchanged.
 
+// ---------------------------------------------------------------------------
+// Test backend selection (R8.1, R8.2).
+//
+// The suite must run without a PostgreSQL in Docker. The Data_Access_Module
+// (src/db/database.js) selects its implementation from DB_BACKEND: "pg"
+// (default, real PostgreSQL) or "memory" (an in-memory backend exposing the
+// SAME contract: init/get/all/run/exec). Tests default to the memory backend.
+//
+// This MUST be set before any module that reads DB_BACKEND is require()d, so we
+// set it at helper load time (before database.js is loaded inside
+// createTestApp). An explicit DB_BACKEND from the environment is respected, so
+// integration runs can opt into DB_BACKEND=pg.
+if (!process.env.DB_BACKEND) {
+  process.env.DB_BACKEND = "memory";
+}
+
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
@@ -89,7 +105,9 @@ async function createTestApp() {
   const { isOn } = require(DEFENSES_PATH);
   const db = require(path.join(SRC, "db", "database.js"));
 
-  // sql.js initialization is async; wait for the seeded in-memory DB.
+  // The Data_Access_Module exposes an async init() contract. With
+  // DB_BACKEND=memory (set at helper load), this boots the in-memory backend
+  // and seeds it; await ensures the schema/seed are ready before requests.
   await db.init();
 
   const app = express();
@@ -139,6 +157,10 @@ async function createTestApp() {
   // Diagnostics route (GET /_diag). Mount it so supertest-based tests can
   // exercise the posture endpoint on the test app.
   app.use("/", require(path.join(SRC, "routes", "diag.js")));
+
+  // "Ver código" route (GET /code/:vuln). Mount it so supertest-based tests can
+  // exercise the View_Code_Control endpoint on the test app.
+  app.use("/", require(path.join(SRC, "routes", "code.js")));
 
   app.get("/debug/boom", (req, res) => {
     throw new Error("Simulated internal failure in /debug/boom (null object)");

@@ -12,27 +12,31 @@ function requireLogin(req, res, next) {
 }
 
 // Order by id: /api/orders/:id
-router.get("/orders/:id", requireLogin, (req, res) => {
+router.get("/orders/:id", requireLogin, async (req, res) => {
   const id = Number(req.params.id);
-  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
+  const order = await db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
   if (!order) return res.status(404).json({ error: "Order not found." });
 
   if (isOn("A01_access_control")) {
+    // secure:start
     // DEFENSE ON: checks resource ownership.
     // Only the owner (or admin) sees the order. The client-provided id is not trustworthy on its own.
     const u = req.session.user;
     if (order.user_id !== u.id && u.role !== "admin") {
       return res.status(403).json({ error: "Access denied: this order is not yours." });
     }
+    // secure:end
   }
+  // vuln:start
   // VULNERABLE (defense off): returns the order for any id (IDOR).
   res.json(order);
+  // vuln:end
 });
 
 // Profile by id: /api/users/:id (exposes sensitive data in vulnerable mode)
-router.get("/users/:id", requireLogin, (req, res) => {
+router.get("/users/:id", requireLogin, async (req, res) => {
   const id = Number(req.params.id);
-  const row = db.prepare("SELECT id, username, role, email, credit_card FROM users WHERE id = ?").get(id);
+  const row = await db.prepare("SELECT id, username, role, email, credit_card FROM users WHERE id = ?").get(id);
   if (!row) return res.status(404).json({ error: "User not found." });
 
   if (isOn("A01_access_control")) {
@@ -46,8 +50,8 @@ router.get("/users/:id", requireLogin, (req, res) => {
 });
 
 // Lists the user's own orders (legitimate reference route)
-router.get("/my/orders", requireLogin, (req, res) => {
-  const rows = db.prepare("SELECT * FROM orders WHERE user_id = ?").all(req.session.user.id);
+router.get("/my/orders", requireLogin, async (req, res) => {
+  const rows = await db.prepare("SELECT * FROM orders WHERE user_id = ?").all(req.session.user.id);
   res.json(rows);
 });
 

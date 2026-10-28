@@ -30,7 +30,19 @@ cd sangyshop
 docker compose up -d --build
 ```
 
-Open **http://localhost:3000**.
+Open **http://localhost:7000** (the vulnerable baseline).
+
+To run the **hardened** variant alongside it (each variant is its own isolated Compose
+project — `sangyshop-insecure` and `sangyshop-hardened` — with separate networks and volumes):
+
+```
+cp deployment-security/docker/hardened/db_password.txt.example deployment-security/docker/hardened/db_password.txt
+# set a strong password in db_password.txt, then:
+docker compose -f deployment-security/docker/hardened/docker-compose.yml up -d --build
+```
+
+Open **http://localhost:7010** (hardened). The two Postgres services are published on `7001`
+(vulnerable) and `7011` (hardened) for optional inspection.
 
 ### Option 2 - Local Node
 
@@ -58,7 +70,7 @@ out it shows **Store**, **Defenses**, **Logs** and **Login**; when signed in it 
 You can also toggle the defenses from the command line:
 
 ```
-curl -X POST http://localhost:3000/api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"
+curl -X POST http://localhost:7000/api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
 ## For the instructor

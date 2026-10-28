@@ -16,4 +16,7 @@
 <button type="submit">Save defenses</button>
 </form>
 <pre class="sql">Via terminal: curl -X POST .../api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"</pre>
+<p class="hint">A03 (Software Supply Chain) não tem página de ataque própria nem toggle: a falha mora no
+<code>package.json</code> (dependências desatualizadas). O ponto de entrada do "Ver código" de A03 fica aqui.</p>
+<%- include('partials/view-code', { vuln: 'A03' }) %>
 </main></body></html>

@@ -1,0 +1,87 @@
+<%
+  // Reusable "Ver código" (View_Code_Control) partial — R7.1.
+  //
+  // Expects a single local `vuln` (e.g. "A05", "A01", "A02", "A09", "A03").
+  // Renders an accessible "Ver código" button that, when activated, fetches the
+  // live source snippet from GET /code/<vuln> and shows the returned HTML
+  // fragment inside a native <dialog>. Everything is namespaced by `vuln` so the
+  // same partial can appear on different pages without id collisions.
+  //
+  // The <dialog> is progressively enhanced: without JavaScript the button is a
+  // plain control and the page stays fully navigable (R7.7 keeps the backend
+  // side graceful too).
+  var vcVuln = (typeof vuln !== 'undefined' && vuln) ? String(vuln) : '';
+  var vcId = 'view-code-' + vcVuln;
+%>
+<div class="view-code" data-vuln="<%= vcVuln %>">
+  <button
+    type="button"
+    class="view-code-open"
+    data-vuln="<%= vcVuln %>"
+    aria-haspopup="dialog"
+    aria-controls="<%= vcId %>"
+  >Ver código (<%= vcVuln %>)</button>
+
+  <dialog id="<%= vcId %>" class="view-code-dialog" aria-label="Código-fonte da vulnerabilidade <%= vcVuln %>">
+    <div class="view-code-dialog-head">
+      <strong>Ver código — <%= vcVuln %></strong>
+      <button type="button" class="view-code-close" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="view-code-body" data-vuln="<%= vcVuln %>" aria-live="polite">
+      <p class="hint">Carregando o trecho de código…</p>
+    </div>
+  </dialog>
+</div>
+
+<script>
+(function () {
+  var root = document.currentScript.previousElementSibling;
+  if (!root || !root.classList || !root.classList.contains('view-code')) { return; }
+
+  var vuln = root.getAttribute('data-vuln');
+  var openBtn = root.querySelector('.view-code-open');
+  var dialog = root.querySelector('.view-code-dialog');
+  var closeBtn = root.querySelector('.view-code-close');
+  var body = root.querySelector('.view-code-body');
+  var loaded = false;
+
+  function show() {
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+    load();
+    closeBtn.focus();
+  }
+
+  function hide() {
+    if (typeof dialog.close === 'function') {
+      try { dialog.close(); } catch (e) { dialog.removeAttribute('open'); }
+    } else {
+      dialog.removeAttribute('open');
+    }
+    openBtn.focus();
+  }
+
+  function load() {
+    if (loaded) { return; }
+    loaded = true;
+    fetch('/code/' + encodeURIComponent(vuln), { headers: { 'Accept': 'text/html' } })
+      .then(function (resp) { return resp.text(); })
+      .then(function (html) { body.innerHTML = html; })
+      .catch(function () {
+        loaded = false;
+        body.innerHTML =
+          '<p class="code-unavailable" role="alert">Não foi possível carregar o código agora. A página segue navegável; tente novamente.</p>';
+      });
+  }
+
+  openBtn.addEventListener('click', show);
+  closeBtn.addEventListener('click', hide);
+  // Close when clicking the backdrop (outside the dialog content).
+  dialog.addEventListener('click', function (ev) {
+    if (ev.target === dialog) { hide(); }
+  });
+})();
+</script>

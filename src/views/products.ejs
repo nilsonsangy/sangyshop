@@ -15,4 +15,5 @@
 <tr><td><%= p.id %></td><td><%= p.name %></td><td><%= p.description %></td><td>$ <%= Number(p.price).toFixed(2) %></td></tr>
 <% }); %>
 </tbody></table>
+<%- include('partials/view-code', { vuln: 'A05' }) %>
 </main></body></html>

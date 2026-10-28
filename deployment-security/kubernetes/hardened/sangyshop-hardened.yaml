@@ -41,11 +41,28 @@ subjects:
     name: sangyshop
     namespace: sangyshop-hardened
 ---
-# The secret is still a Secret object, but it is created out-of-band (see cluster-setup.md),
-# NOT committed in plaintext. Enable encryption-at-rest for etcd in a real cluster.
+# The DB password is a Secret object. In a real cluster create it out-of-band
+# (see cluster-setup.md) and enable encryption-at-rest for etcd; NEVER commit a
+# real value. The example below carries only a PLACEHOLDER so the manifest is
+# self-contained for the lab. REPLACE IT before any real use.
+#
 # Example (run once, do not commit the value):
 #   kubectl -n sangyshop-hardened create secret generic sangyshop-db \
-#     --from-literal=DB_PASSWORD="$DB_PASSWORD"
+#     --from-literal=db_password="$DB_PASSWORD"
+#
+# The app (hardened mode, src/db/credentials.js) reads the password ONLY from the
+# file mounted at /run/secrets/db_password - never from an env var. PostgreSQL
+# reads it from POSTGRES_PASSWORD_FILE pointing at the same mounted secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
+type: Opaque
+data:
+  # PLACEHOLDER ONLY - base64 of "REPLACE_ME_hardened_db_password".
+  # This is not a real credential; replace it with an out-of-band secret.
+  db_password: UkVQTEFDRV9NRV9oYXJkZW5lZF9kYl9wYXNzd29yZA==
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -78,9 +95,22 @@ spec:
           env:
             - name: PORT
               value: "3000"
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef: { name: sangyshop-db, key: DB_PASSWORD }
+            # Hardened mode: the password is read EXCLUSIVELY from the secret file
+            # mounted at /run/secrets/db_password (see volumeMounts below). There is
+            # deliberately NO DB_PASSWORD env here - the secure sourcing code in
+            # src/db/credentials.js refuses to read the password from the environment.
+            - name: APP_MODE
+              value: "hardened"
+            - name: DB_BACKEND
+              value: "pg"
+            - name: DB_HOST
+              value: "sangyshop-db"      # the PostgreSQL Service below
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "sangyshop"
+            - name: DB_USER
+              value: "sangyshop"
             # Downward API: inject the Pod name so the homepage can show which
             # Pod served the request (badge appears only when running in k8s).
             - name: POD_NAME
@@ -104,6 +134,11 @@ spec:
               mountPath: /app/logs
             - name: tmp
               mountPath: /tmp
+            # Secret mounted as a FILE: the item db_password lands at
+            # /run/secrets/db_password, exactly where the hardened code reads it.
+            - name: db-secret
+              mountPath: /run/secrets
+              readOnly: true
       volumes:
         - name: app-config
           emptyDir: {}
@@ -111,6 +146,12 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        - name: db-secret
+          secret:
+            secretName: sangyshop-db
+            items:
+              - key: db_password
+                path: db_password   # -> /run/secrets/db_password
 ---
 apiVersion: v1
 kind: Service
@@ -122,6 +163,100 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
+---
+# PostgreSQL (hardened): non-root, read-only root FS, dropped capabilities,
+# resource limits, and the password sourced from a mounted secret FILE via
+# POSTGRES_PASSWORD_FILE - never a plaintext env var.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sangyshop-db-data
+  namespace: sangyshop-hardened
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
+  labels: { app: sangyshop-db }
+spec:
+  serviceName: sangyshop-db
+  replicas: 1
+  selector:
+    matchLabels: { app: sangyshop-db }
+  template:
+    metadata:
+      labels: { app: sangyshop-db }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70            # the postgres user in the official alpine image
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "sangyshop"
+            - name: POSTGRES_USER
+              value: "sangyshop"
+            # Secure sourcing: PostgreSQL reads the password from the mounted
+            # secret file, not from a plaintext env var.
+            - name: POSTGRES_PASSWORD_FILE
+              value: "/run/secrets/db_password"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "256Mi" }
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+            - name: db-secret
+              mountPath: /run/secrets
+              readOnly: true
+            # Postgres needs a writable /tmp and /run under a read-only root FS.
+            - name: db-run
+              mountPath: /var/run/postgresql
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: sangyshop-db-data
+        - name: db-secret
+          secret:
+            secretName: sangyshop-db
+            items:
+              - key: db_password
+                path: db_password   # -> /run/secrets/db_password
+        - name: db-run
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
+spec:
+  selector: { app: sangyshop-db }
+  ports:
+    - port: 5432
+      targetPort: 5432
 ---
 # Default-deny all ingress in the namespace...
 apiVersion: networking.k8s.io/v1
@@ -150,3 +285,21 @@ spec:
       ports:
         - protocol: TCP
           port: 3000
+---
+# Allow the app Pods to reach PostgreSQL on 5432 within the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db
+  namespace: sangyshop-hardened
+spec:
+  podSelector:
+    matchLabels: { app: sangyshop-db }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: sangyshop }
+      ports:
+        - protocol: TCP
+          port: 5432

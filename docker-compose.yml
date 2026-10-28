@@ -1,11 +1,56 @@
 # Default run of SangyShop = the INSECURE (vulnerable) baseline.
 # `docker compose up -d --build` builds the vulnerable variant on purpose: root, no
 # limits, outdated deps. The hardened variant lives in deployment-security/docker/hardened/.
+#
+# Each variant is its OWN isolated Compose project: this file is `sangyshop-insecure`
+# and the hardened file is `sangyshop-hardened`. They get separate Docker networks and
+# volumes, so the two versions are fully isolated (a lab-faithful separation) and neither
+# `docker compose` command can ever touch the other variant's containers. In Docker Desktop
+# they show up as two groups: `sangyshop-insecure` and `sangyshop-hardened`.
+#
+# INTENTIONAL ANTIPATTERN (teaching): the PostgreSQL credentials (DB_Secret) are kept
+# in PLAINTEXT right here in the compose file and passed as plaintext env vars to the
+# app. This demonstrates "vulnerable apps store secrets insecurely" (R4.1). The hardened
+# deployment reads the same password from a Docker secret instead.
+name: sangyshop-insecure
+
 services:
-  sangyshop:
+  db:
+    image: postgres:16
+    container_name: sangyshop-db-insecure
+    environment:
+      # Plaintext secret, on purpose (antipattern). Matches the hardcoded fallback in
+      # src/db/credentials.js so both paths connect with the same credentials.
+      POSTGRES_USER: sangyshop
+      POSTGRES_PASSWORD: SangyDbPass!2025
+      POSTGRES_DB: sangyshop
+    volumes:
+      # Named volume keeps the data across container restarts (Data_Volume, R1.2/R9.2).
+      - db-data:/var/lib/postgresql/data
+    ports:
+      # Published for optional external inspection of the vulnerable database.
+      - "7001:5432"
+    restart: unless-stopped
+
+  app:
     build: .
     image: sangyshop:insecure
-    container_name: sangyshop
+    container_name: sangyshop-app-insecure
+    depends_on:
+      - db
+    environment:
+      # Vulnerable mode: credentials provided in plaintext via the environment (R4.1/R4.4).
+      APP_MODE: vulnerable
+      DB_BACKEND: pg
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: sangyshop
+      DB_USER: sangyshop
+      DB_PASSWORD: SangyDbPass!2025
     ports:
-      - "3000:3000"
+      - "7000:3000"
     restart: unless-stopped
+
+volumes:
+  # Named volume for PostgreSQL persistence (R1.2/R9.2).
+  db-data:

@@ -33,13 +33,17 @@ app.use(
 // A02: security headers applied only when the defense is ON.
 app.use((req, res, next) => {
   if (isOn("A02_misconfiguration")) {
+    // secure:start
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Content-Security-Policy", "default-src 'self'");
     res.setHeader("Referrer-Policy", "no-referrer");
     res.removeHeader("X-Powered-By");
+    // secure:end
   } else {
+    // vuln:start
     res.setHeader("X-Powered-By", "Express 4.18 / SangyShop 1.0");
+    // vuln:end
   }
   next();
 });
@@ -52,6 +56,7 @@ app.use("/api", require("./routes/api"));
 app.use("/", require("./routes/admin"));
 app.use("/", require("./routes/orders"));
 app.use("/", require("./routes/diag"));
+app.use("/", require("./routes/code"));
 
 // Route that throws an error on purpose, to demonstrate A02 (exposed stack trace).
 app.get("/debug/boom", (req, res) => {

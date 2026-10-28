@@ -12,9 +12,9 @@ function requireLogin(req, res, next) {
   next();
 }
 
-router.get("/orders", requireLogin, (req, res) => {
+router.get("/orders", requireLogin, async (req, res) => {
   // Same ownership logic as /api/my/orders: only the session user's orders.
-  const orders = db
+  const orders = await db
     .prepare(
       `SELECT o.id AS id, o.quantity AS quantity, o.total AS total,
               p.name AS product_name

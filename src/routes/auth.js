@@ -10,18 +10,21 @@ router.get("/login", (req, res) => {
   res.render("login", { error: null, user: req.session.user || null });
 });
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const ip = req.ip || req.connection.remoteAddress || "unknown";
   let user = null;
 
   if (isOn("A05_injection")) {
+    // secure:start
     // DEFENSE ON: parameterized query (prepared statement).
     // User input is never interpreted as SQL code.
-    user = db
+    user = await db
       .prepare("SELECT * FROM users WHERE username = ? AND password = ?")
       .get(username, password);
+    // secure:end
   } else {
+    // vuln:start
     // VULNERABLE: direct concatenation. Classic payload: admin' -- or ' OR '1'='1
     const sql =
       "SELECT * FROM users WHERE username = '" +
@@ -30,7 +33,7 @@ router.post("/login", (req, res) => {
       password +
       "'";
     try {
-      user = db.prepare(sql).get();
+      user = await db.prepare(sql).get();
     } catch (e) {
       // In vulnerable mode, the SQL error may leak (tied to A02 as well).
       return res.status(500).render("login", {
@@ -40,6 +43,7 @@ router.post("/login", (req, res) => {
         user: null,
       });
     }
+    // vuln:end
   }
 
   const success = !!user;

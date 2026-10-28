@@ -8,4 +8,3 @@ src/db/*.db-shm
 
 # deployment-security: never commit real secrets
 deployment-security/docker/hardened/db_password.txt
-

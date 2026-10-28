@@ -9,11 +9,15 @@ WORKDIR /app
 COPY . .
 
 # The hardened manifest is the last word: it overwrites the root package.json
-# and lockfile copied above, so `npm ci` resolves the corrected versions.
+# and lockfile copied above, so `npm ci` resolves the corrected versions. It
+# also pins the PostgreSQL driver `pg` at the same exact version as the root
+# manifest (8.23.1), so the Postgres client is present in the image and the app
+# can open the connection using the DB_Secret described below.
 COPY deployment-security/docker/hardened/package.json ./package.json
 COPY deployment-security/docker/hardened/package-lock.json ./package-lock.json
 
 # Deterministic install from the hardened lockfile, production deps only.
+# Installs `pg` (the PostgreSQL driver) among the corrected dependencies.
 # Fail-closed: no fallback to `npm install` — if the lockfile is inconsistent,
 # the build must fail instead of silently resolving different versions.
 RUN rm -rf node_modules && npm ci --omit=dev
@@ -29,4 +33,9 @@ USER 10001
 EXPOSE 3000
 ENV PORT=3000
 
+# Runtime wiring (see docker-compose.yml): the app runs in hardened mode
+# (APP_MODE=hardened, DB_BACKEND=pg) and reads the PostgreSQL password from the
+# Docker secret mounted at /run/secrets/db_password — never from a plaintext
+# env var or hardcoded value (R5.1/R5.2/R9.4). The secret is provided
+# out-of-band at run time and is not baked into this image.
 CMD ["node", "src/server.js"]
