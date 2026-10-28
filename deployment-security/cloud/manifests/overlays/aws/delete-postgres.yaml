@@ -1,0 +1,30 @@
+# Managed Amazon RDS replaces the in-cluster PostgreSQL, so remove the base's
+# self-hosted database objects entirely. The special annotation
+# `$patch: delete` tells Kustomize to drop these resources from the build
+# output. The app now talks to RDS via DB_HOST=__RDS_HOST__ (see app-rds.yaml).
+#
+# Dropped: the Postgres StatefulSet, its PersistentVolumeClaim, and the
+# in-cluster `sangyshop-db` Service. The `allow-db` NetworkPolicy is left in
+# place (harmless with no in-cluster DB Pod); egress to RDS is governed by the
+# RDS security group that deploy.ps1 locks down to the cluster.
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
+$patch: delete
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sangyshop-db-data
+  namespace: sangyshop-hardened
+$patch: delete
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
+$patch: delete

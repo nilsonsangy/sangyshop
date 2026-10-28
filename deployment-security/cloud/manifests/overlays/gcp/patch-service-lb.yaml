@@ -1,0 +1,10 @@
+# Expose the web Service through a GCP L4 LoadBalancer (external IP).
+# The base `sangyshop` Service is the default type (ClusterIP) on port 3000;
+# this changes only the type and leaves the selector/ports intact.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+spec:
+  type: LoadBalancer

@@ -1,0 +1,29 @@
+# App Deployment deltas for AWS/EKS:
+#   - repoint DB_HOST from the in-cluster `sangyshop-db` Service at the managed
+#     RDS endpoint (__RDS_HOST__, substituted by deploy.ps1)
+#   - swap the `db-secret` volume from a direct Secret mount to the SecretsStore
+#     CSI volume, which pulls the password from AWS Secrets Manager and (via the
+#     SecretProviderClass `secretObjects`) keeps the `sangyshop-db` K8s Secret
+#     in sync. The mount path and item path are UNCHANGED: the file still lands
+#     at /run/secrets/db_password, so src/db/credentials.js reads it exactly as
+#     before. DB_PASSWORD is never introduced as an env var.
+#
+# Everything else on the Deployment (securityContext, resources, readOnly root
+# FS, the app-config/app-logs/tmp volumes, replicas) is inherited unchanged.
+
+# Repoint DB_HOST at managed RDS.
+- op: replace
+  path: /spec/template/spec/containers/0/env/3/value
+  value: __RDS_HOST__
+
+# Swap the db-secret volume (last volume in the base) to the CSI driver.
+# Base order: [app-config, app-logs, tmp, db-secret] -> index 3.
+- op: replace
+  path: /spec/template/spec/volumes/3
+  value:
+    name: db-secret
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: sangyshop-db

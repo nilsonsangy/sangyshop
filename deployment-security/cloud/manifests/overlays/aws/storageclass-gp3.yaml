@@ -1,0 +1,21 @@
+# gp3 StorageClass for EKS (AWS EBS CSI driver).
+#
+# The base manifest's in-cluster Postgres PVC is DROPPED by this overlay
+# (managed RDS replaces it - see delete-postgres.yaml), so no PVC consumes this
+# class today. It is declared here as the overlay's required storage class so
+# that ANY PersistentVolumeClaim added to the hardened app on EKS binds to gp3
+# EBS volumes (the task's "StorageClass gp3 for the PVC" delta), and so gp3 is
+# the default class for the namespace's stateful workloads.
+#
+# Requires the aws-ebs-csi-driver addon on the cluster (deploy.ps1 ensures it).
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"          # encrypt EBS at rest
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true

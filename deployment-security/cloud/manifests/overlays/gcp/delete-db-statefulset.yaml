@@ -1,0 +1,8 @@
+# Remove the in-cluster Postgres StatefulSet: Cloud SQL (managed PostgreSQL)
+# replaces the self-hosted database on GCP.
+$patch: delete
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened

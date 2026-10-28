@@ -1,0 +1,8 @@
+# Remove the in-cluster Postgres PVC: no self-hosted database means no local
+# persistent volume. Flexible Server manages its own storage.
+$patch: delete
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sangyshop-db-data
+  namespace: sangyshop-hardened

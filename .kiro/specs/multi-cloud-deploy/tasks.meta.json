@@ -1,0 +1,816 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Scaffold the cloud folder tree and shared library skeleton": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188154557
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188165567
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188314458
+      }
+    ],
+    "2.1 Implement `Invoke-Echoed` echoed-command helper": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188154686
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188321161
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188443064
+      },
+      {
+        "executionId": "451c13f8-4ff9-418d-b586-87ae8101a9ee",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793197971562
+      },
+      {
+        "executionId": "451c13f8-4ff9-418d-b586-87ae8101a9ee",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793198112638
+      }
+    ],
+    "2.2 Write Pester unit tests for `Invoke-Echoed`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188154785
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188917490
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189426317
+      }
+    ],
+    "2.3 Implement `Write-Step` structured logging": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188154870
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188322606
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188529845
+      }
+    ],
+    "2.4 Implement `Get-CloudConfig` config loader and validator": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188154980
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188323507
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188685844
+      }
+    ],
+    "2.5 Write Pester unit tests for `Get-CloudConfig`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155077
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188918898
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189513609
+      }
+    ],
+    "2.6 Implement `New-DbPassword` generator": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155166
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188324582
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188913253
+      }
+    ],
+    "2.7 Write Pester unit tests for `New-DbPassword`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155251
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188919841
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189427532
+      }
+    ],
+    "3. Enforce the echo-only rule with a static/Pester guard": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155336
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188920902
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189428547
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191763597
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192254564
+      }
+    ],
+    "4. Checkpoint - foundation verified on Windows": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155413
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189533408
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189536650
+      }
+    ],
+    "5.1 Author `cloud.config.example.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155495
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188167001
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188315699
+      }
+    ],
+    "5.2 Add `cloud.config.ps1` to `.gitignore`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155582
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188167837
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188316527
+      }
+    ],
+    "6.1 Author `gcp/docker/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155666
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189541423
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190273882
+      }
+    ],
+    "6.2 Author `gcp/docker/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155746
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190587103
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191130149
+      }
+    ],
+    "6.3 Add `-WhatIf` dry-run Pester assertions for the GCP Docker-only scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155829
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192268202
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192709066
+      }
+    ],
+    "6.4 Manual integration validation (GCP Docker-only, live account)": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188155915
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793194043570
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793195714796
+      }
+    ],
+    "7.1 Author `manifests/overlays/gcp`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156004
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189542792
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190271537
+      }
+    ],
+    "7.2 Author `gcp/kubernetes/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156081
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190590853
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191128150
+      }
+    ],
+    "7.3 Author `gcp/kubernetes/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156168
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192273093
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192710439
+      }
+    ],
+    "7.4 Add `-WhatIf` dry-run Pester assertions for the GCP Kubernetes scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156249
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793195720083
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196481215
+      }
+    ],
+    "8. Checkpoint - GCP reference complete": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156336
+      }
+    ],
+    "9.1 Author the ECS Fargate entrypoint wrapper": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156418
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189543744
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190270298
+      }
+    ],
+    "9.2 Author `aws/docker/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190589900
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191129095
+      },
+      {
+        "executionId": "25640d52-606f-42ac-a97f-b7204ed18da6",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793202986739
+      },
+      {
+        "executionId": "25640d52-606f-42ac-a97f-b7204ed18da6",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793203597172
+      },
+      {
+        "executionId": "25640d52-606f-42ac-a97f-b7204ed18da6",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793204016428
+      },
+      {
+        "executionId": "25640d52-606f-42ac-a97f-b7204ed18da6",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793204363907
+      },
+      {
+        "executionId": "64a385bf-3b00-45f6-85d8-738e68e4657b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793205990245
+      },
+      {
+        "executionId": "64a385bf-3b00-45f6-85d8-738e68e4657b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793206456729
+      },
+      {
+        "executionId": "64a385bf-3b00-45f6-85d8-738e68e4657b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793207987732
+      },
+      {
+        "executionId": "64a385bf-3b00-45f6-85d8-738e68e4657b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793208257156
+      }
+    ],
+    "9.3 Author `aws/docker/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156582
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192270976
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192711372
+      }
+    ],
+    "9.4 Add `-WhatIf` dry-run Pester assertions for the AWS Docker-only scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156670
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793195722432
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196054924
+      }
+    ],
+    "10.1 Author `manifests/overlays/aws`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156749
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189545178
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190272455
+      }
+    ],
+    "10.2 Author `aws/kubernetes/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156830
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190591880
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191126750
+      }
+    ],
+    "10.3 Author `aws/kubernetes/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188156957
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192271918
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192713712
+      }
+    ],
+    "10.4 Add `-WhatIf` dry-run Pester assertions for the AWS Kubernetes scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157053
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793195721504
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196306209
+      }
+    ],
+    "11.1 Author `azure/docker/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157145
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189546026
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190274791
+      },
+      {
+        "executionId": "3da19c6f-ad50-4d14-b36d-af279498a67b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793199465284
+      },
+      {
+        "executionId": "3da19c6f-ad50-4d14-b36d-af279498a67b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793199729835
+      },
+      {
+        "executionId": "3da19c6f-ad50-4d14-b36d-af279498a67b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793200081698
+      },
+      {
+        "executionId": "3da19c6f-ad50-4d14-b36d-af279498a67b",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793200226957
+      }
+    ],
+    "11.2 Author `azure/docker/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157220
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190588507
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191125874
+      }
+    ],
+    "11.3 Add `-WhatIf` dry-run Pester assertions for the Azure Docker-only scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157312
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192269573
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192712766
+      }
+    ],
+    "12.1 Author `manifests/overlays/azure`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157395
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190278747
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793190582614
+      }
+    ],
+    "12.2 Author `azure/kubernetes/deploy.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157478
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191134405
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793191742739
+      }
+    ],
+    "12.3 Author `azure/kubernetes/teardown.ps1`": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157564
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192726414
+      },
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192980250
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196712134
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196722819
+      }
+    ],
+    "12.4 Add `-WhatIf` dry-run Pester assertions for the Azure Kubernetes scripts": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157648
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793195723717
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196693363
+      }
+    ],
+    "13. Checkpoint - all six targets authored and dry-run verified": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157733
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793197018849
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793197022828
+      }
+    ],
+    "14.1 Write `deployment-security/cloud/README.md` setup and config sections": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157819
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196730280
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196892401
+      }
+    ],
+    "14.2 Write the README cost and teaching-lab safety sections": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157900
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196729239
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196979506
+      }
+    ],
+    "15. Final checkpoint - full suite green": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188157984
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793197026573
+      },
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793197030758
+      }
+    ],
+    "5. Create the parameterized, secret-free configuration": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793188316613
+      }
+    ],
+    "2. Implement the shared `lib/Common.ps1` library (central, reused component)": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793189513744
+      }
+    ],
+    "11. Implement Azure Docker-only (ACI) with the native secret volume": [
+      {
+        "executionId": "c638baf0-575a-4504-9786-6622e9fa7422",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793192712890
+      }
+    ],
+    "9. Implement AWS Docker-only (ECS Fargate) with the secret-file entrypoint wrapper": [
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196055054
+      }
+    ],
+    "10. Implement AWS Kubernetes (EKS) and the AWS overlay": [
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196306340
+      }
+    ],
+    "7. Implement GCP Kubernetes (GKE) and the GCP overlay": [
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196481340
+      }
+    ],
+    "12. Implement Azure Kubernetes (AKS) and the Azure overlay": [
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196722932
+      }
+    ],
+    "14. Author the cloud README and safety documentation": [
+      {
+        "executionId": "eee98d94-8a46-4cbf-9b1b-637cc7d8386d",
+        "chatSessionId": "sess_8023e4c2-b634-441e-baf0-9a0c99330e31",
+        "timestamp": 1793196979642
+      }
+    ]
+  }
+}

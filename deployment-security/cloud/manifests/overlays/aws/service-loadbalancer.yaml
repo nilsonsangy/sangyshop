@@ -1,0 +1,10 @@
+# Promote the web Service to a LoadBalancer so EKS provisions an AWS load
+# balancer as the public entrypoint. Only the `sangyshop` web Service changes;
+# everything else about it (selector, port 3000) is inherited from the base.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+spec:
+  type: LoadBalancer

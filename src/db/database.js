@@ -312,6 +312,13 @@ function createPgBackend() {
       // it falls back to the hardcoded plaintext credentials (R4.2).
       const creds = credentials.resolve(APP_MODE);
 
+      // SSL is opt-in via DB_SSL so local docker-compose and the other clouds
+      // are unaffected by default. AWS RDS enforces TLS (rds.force_ssl) and
+      // rejects a non-SSL connection, so the Fargate task sets DB_SSL=require.
+      // When unset/empty, ssl stays undefined => current (no-SSL) behavior.
+      const sslMode = (process.env.DB_SSL || "").trim().toLowerCase();
+      const useSsl = sslMode === "require" || sslMode === "true" || sslMode === "1";
+
       pool = new Pool({
         host: creds.host,
         port: creds.port,
@@ -319,6 +326,11 @@ function createPgBackend() {
         user: creds.user,
         password: creds.password,
         connectionTimeoutMillis: 30000, // R1.5: 30s connection timeout
+        // rejectUnauthorized:false is appropriate for this teaching lab: it
+        // establishes the encrypted channel RDS requires without bundling the
+        // RDS CA. A production-grade setup would pin the RDS CA bundle, but
+        // encryption-in-transit is what RDS enforces here.
+        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
       });
 
       try {

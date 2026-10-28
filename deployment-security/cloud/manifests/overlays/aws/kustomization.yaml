@@ -1,0 +1,85 @@
+# Kustomize overlay: AWS / EKS
+# ---------------------------------------------------------------------------
+# This overlay adapts the SHARED hardened manifest for Amazon EKS. It NEVER
+# edits the base - it references it and layers only the AWS-specific deltas on
+# top, so the base stays the single source of truth for every cloud.
+#
+# Base (source of truth, do NOT modify):
+#   deployment-security/kubernetes/hardened/sangyshop-hardened.yaml
+#   (namespace sangyshop-hardened; Deployment `sangyshop` image sangyshop:hardened;
+#    `sangyshop` Service ClusterIP :3000; in-cluster Postgres StatefulSet + PVC +
+#    `sangyshop-db` Service; `sangyshop-db` Secret mounted at /run/secrets/db_password;
+#    default-deny + allow NetworkPolicies.)
+#
+# What this overlay changes (and ONLY this):
+#   1. image ref  -> Amazon ECR               (images: transform below)
+#   2. `sangyshop` web Service  type: LoadBalancer   (patch: service-loadbalancer.yaml)
+#   3. StorageClass `gp3` for persistent storage     (resource: storageclass-gp3.yaml)
+#   4. secret source: SecretsStore CSI / External Secrets -> K8s Secret
+#      `sangyshop-db` -> file /run/secrets/db_password  (resources + patch below)
+#
+# Because managed Amazon RDS replaces the in-cluster PostgreSQL, this overlay
+# DROPS the in-cluster Postgres StatefulSet, its PVC, and the `sangyshop-db`
+# Service, and repoints the app's DB_HOST at the managed RDS endpoint
+# (patch: app-rds.yaml). The /run/secrets/db_password FILE contract is kept
+# exactly as the base - only the Secret's *source* changes (CSI/External
+# Secrets instead of a hand-created Opaque Secret).
+#
+# The hardened securityContext, RBAC (ServiceAccount/Role/RoleBinding), and
+# NetworkPolicies are left 100% intact - they are inherited from the base
+# unchanged.
+#
+# ---------------------------------------------------------------------------
+# SUBSTITUTION (performed by aws/kubernetes/deploy.ps1, task 10.2)
+# ---------------------------------------------------------------------------
+# This overlay carries PLACEHOLDERS so it is committable with no account data.
+# Before `kubectl apply -k`, deploy.ps1 replaces them from cloud.config.ps1:
+#
+#   __ECR_IMAGE_NAME__  e.g. 1234567890.dkr.ecr.us-east-1.amazonaws.com/sangyshop
+#                   (registry/repo WITHOUT tag; the `images` transformer below
+#                    pins the tag to `hardened`. Built from Aws.AccountId +
+#                    Aws.Region + Aws.EcrRepo.)
+#   __RDS_HOST__    e.g. sangyshop-lab.abc123.us-east-1.rds.amazonaws.com
+#                   (the managed RDS instance endpoint address)
+#   __AWS_REGION__  e.g. us-east-1  (used by the SecretProviderClass)
+#   __SECRET_ARN__  e.g. arn:aws:secretsmanager:us-east-1:1234567890:secret:sangyshop/db_password
+#                   (the Secrets Manager secret holding the DB password)
+#
+# deploy.ps1 does this against a throwaway rendered copy (it never rewrites the
+# committed files), e.g. render -> apply -k, so the repo stays placeholder-only.
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the shared hardened manifest by a RELATIVE path (never a copy).
+resources:
+  - ../../../../kubernetes/hardened/sangyshop-hardened.yaml
+  # AWS-specific additions:
+  - storageclass-gp3.yaml      # gp3 EBS StorageClass for any PersistentVolumeClaim
+  - secretproviderclass.yaml   # SecretsStore CSI: pull db_password from Secrets Manager
+
+# 1. Image ref -> Amazon ECR. The base container uses image `sangyshop:hardened`;
+#    this transformer rewrites the registry/repo to the ECR URI while keeping
+#    the `hardened` tag. deploy.ps1 substitutes __ECR_IMAGE_NAME__.
+images:
+  - name: sangyshop
+    newName: __ECR_IMAGE_NAME__   # <account>.dkr.ecr.<region>.amazonaws.com/sangyshop
+    newTag: hardened
+
+# 2-4. Strategic-merge + JSON patches for the AWS deltas.
+patches:
+  # 2. Web Service -> LoadBalancer (public entrypoint on EKS).
+  - path: service-loadbalancer.yaml
+    target:
+      kind: Service
+      name: sangyshop
+
+  # 4a. App Deployment: point DB_HOST at managed RDS and source the
+  #     db_password Secret from the CSI-synced volume (contract unchanged).
+  - path: app-rds.yaml
+    target:
+      kind: Deployment
+      name: sangyshop
+
+  # Drop the in-cluster PostgreSQL - managed RDS replaces it.
+  - path: delete-postgres.yaml

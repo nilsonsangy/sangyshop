@@ -1,0 +1,9 @@
+# Remove the in-cluster `sangyshop-db` Service: the app now reaches managed
+# Flexible Server via DB_HOST=__PG_HOST__ (see patch-deployment.yaml), not this
+# cluster-internal Service.
+$patch: delete
+apiVersion: v1
+kind: Service
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened

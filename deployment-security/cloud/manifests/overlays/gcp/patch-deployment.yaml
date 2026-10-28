@@ -1,0 +1,48 @@
+# App Deployment adaptations for GKE + Cloud SQL + Secret Manager.
+#
+# Strategic-merge patch. Lists keyed by `name` merge by element, so:
+#   - DB_HOST is overridden to the managed Cloud SQL host (list merge key `name`).
+#   - a Secrets Store CSI inline volume + mount is ADDED; it triggers the GCP
+#     provider to sync the `db_password` secret into the `sangyshop-db` K8s
+#     Secret declared by secret-provider-class.yaml.
+#
+# The existing `db-secret` volume (a `secret` volume -> sangyshop-db, key
+# db_password -> path db_password) is UNCHANGED, so the app keeps reading
+# /run/secrets/db_password exactly as before — only its backing source moved
+# from the in-cluster placeholder Secret to the CSI-synced one.
+#
+# securityContext (pod and container) is intentionally not touched here so the
+# hardened settings from the base manifest are preserved.
+#
+# PLACEHOLDER substituted by gcp/kubernetes/deploy.ps1 (task 7.2):
+#   __CLOUDSQL_HOST__  Cloud SQL PostgreSQL host reachable on 5432
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sangyshop
+  namespace: sangyshop-hardened
+spec:
+  template:
+    spec:
+      containers:
+        - name: sangyshop
+          env:
+            # Repoint the app at managed Cloud SQL instead of the (now removed)
+            # in-cluster `sangyshop-db` Service. No DB_PASSWORD env is added:
+            # the password stays a mounted file at /run/secrets/db_password.
+            - name: DB_HOST
+              value: "__CLOUDSQL_HOST__"
+          volumeMounts:
+            # Mounting the CSI volume is what makes the Secrets Store CSI driver
+            # fetch the Secret Manager secret and perform the secretObjects sync.
+            - name: db-secret-csi
+              mountPath: /mnt/secrets-store
+              readOnly: true
+      volumes:
+        # Secrets Store CSI inline volume -> GCP Secret Manager.
+        - name: db-secret-csi
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "sangyshop-db-gsm"

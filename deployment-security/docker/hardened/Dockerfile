@@ -28,6 +28,14 @@ RUN rm -rf node_modules && npm ci --omit=dev
 RUN addgroup -S app && adduser -S -u 10001 -G app app \
     && chown -R app:app /app
 
+# App-owned secret directory. On most targets the hardened app reads the DB
+# password from /run/secrets/db_password, but on AWS ECS Fargate the ephemeral
+# /run/secrets volume is mounted as root while the container runs as UID 10001,
+# so the non-root user cannot write there. This directory is owned by the app
+# user, so when DB_PASSWORD_FILE points at it (Fargate) the entrypoint wrapper
+# can write/read the secret file without root. It is unused otherwise.
+RUN mkdir -p /app/secrets && chown -R app:app /app/secrets
+
 USER 10001
 
 EXPOSE 3000

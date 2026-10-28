@@ -1,0 +1,20 @@
+# StorageClass delta: standard-rwo (the GKE balanced persistent-disk class).
+#
+# This patch is the canonical "StorageClass for the PVC" adaptation from the
+# design (Component 4). It is intentionally NOT wired into kustomization.yaml:
+# under the Cloud SQL design this overlay DROPS the in-cluster Postgres PVC
+# (see delete-db-pvc.yaml), so there is no PVC left to carry a StorageClass, and
+# patching a deleted resource would make the build fail.
+#
+# It is kept here, ready to use, for two reasons:
+#   1. it records the fourth canonical per-cloud delta for review; and
+#   2. if a future variant keeps an in-cluster PVC (e.g. a non-Cloud-SQL GKE
+#      run), add `- path: patch-pvc-storageclass.yaml` to the `patches:` list in
+#      kustomization.yaml and remove delete-db-pvc.yaml.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sangyshop-db-data
+  namespace: sangyshop-hardened
+spec:
+  storageClassName: standard-rwo

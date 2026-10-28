@@ -1,0 +1,9 @@
+# Remove the in-cluster Postgres StatefulSet: Azure Database for PostgreSQL
+# Flexible Server (managed PostgreSQL) replaces the self-hosted database on
+# Azure.
+$patch: delete
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sangyshop-db
+  namespace: sangyshop-hardened
