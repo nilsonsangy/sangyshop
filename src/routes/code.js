@@ -1,5 +1,5 @@
 // src/routes/code.js
-// "Ver código" (View Code) route — R7.
+// "View Code" route, R7.
 //
 // GET /code/:vuln returns an HTML fragment (for the modal/panel opened by the
 // view-code partial) showing the REAL source snippet for a vulnerability, with
@@ -46,7 +46,7 @@ function buildBlocks(snippet, highlight) {
     return [
       {
         state: "vulnerable",
-        label: "Dependências (trecho fixo, sem toggle)",
+        label: "Dependencies (fixed snippet, no toggle)",
         code: vulnRange.code,
         active: true,
       },
@@ -71,14 +71,14 @@ function buildBlocks(snippet, highlight) {
   pushContext(0, first.start);
   sections.push({
     state: firstIsVuln ? "vulnerable" : "secure",
-    label: firstIsVuln ? "trecho vulnerável" : "trecho seguro",
+    label: firstIsVuln ? "vulnerable snippet" : "secure snippet",
     code: first.code,
     active: firstIsVuln ? highlight === "vulnerable" : highlight === "secure",
   });
   pushContext(first.end, second.start);
   sections.push({
     state: firstIsVuln ? "secure" : "vulnerable",
-    label: firstIsVuln ? "trecho seguro" : "trecho vulnerável",
+    label: firstIsVuln ? "secure snippet" : "vulnerable snippet",
     code: second.code,
     active: firstIsVuln ? highlight === "secure" : highlight === "vulnerable",
   });
@@ -147,7 +147,7 @@ router.get("/code/:vuln", async (req, res) => {
       highlight,
       defenseKey: entry.defenseKey,
       blocks: [],
-      unavailable: "falha ao renderizar o trecho",
+      unavailable: "failed to render the snippet",
     });
   }
 });

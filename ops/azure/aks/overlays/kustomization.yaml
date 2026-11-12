@@ -1,0 +1,134 @@
+# Azure (AKS) overlay for the hardened SangyShop Kubernetes manifest.
+#
+# This overlay layers ONLY the four per-cloud adaptations called for by the
+# design (Component 4: ops/<cloud>/<svc>/overlays/) on top of the existing
+# hardened manifest, which stays the single source of truth:
+#
+#   1. image ref      -> Azure Container Registry (ACR) for the `sangyshop`
+#                        container
+#   2. web Service    -> type: LoadBalancer (Azure Standard LB -> external IP)
+#   3. PVC StorageClass -> managed-csi (see patch-pvc-storageclass.yaml; it is
+#                        documented but NOT wired in, because this overlay drops
+#                        the only PVC — see the StorageClass note below)
+#   4. secret source  -> Azure Key Vault via the Secrets Store CSI driver,
+#                        delivering /run/secrets/db_password (same file contract)
+#
+# Because Azure Database for PostgreSQL Flexible Server (a managed PostgreSQL
+# service) replaces the in-cluster Postgres, this overlay also DROPS the
+# self-hosted Postgres StatefulSet, its PVC, and the `sangyshop-db` Service, and
+# repoints the app's DB_HOST at the managed Flexible Server. The
+# /run/secrets/db_password file contract is preserved for the app; the
+# db-secret volume now comes from the CSI driver.
+#
+# securityContext, RBAC (ServiceAccount/Role/RoleBinding), and the three
+# NetworkPolicies are left untouched by this overlay.
+#
+# StorageClass note: `managed-csi` is the canonical StorageClass delta for AKS,
+# but the only PVC in the base is the in-cluster Postgres PVC, which Flexible
+# Server makes redundant and this overlay deletes. The ready-to-use StorageClass
+# patch lives in patch-pvc-storageclass.yaml and is intentionally not wired in
+# (adding it would patch a deleted resource and fail the build). Re-enable it
+# only in a variant that keeps an in-cluster PVC.
+#
+# ---------------------------------------------------------------------------
+# PLACEHOLDERS (substituted by azure/aks/deploy.ps1, task 12.2)
+#
+# The deploy script performs an in-place text substitution on the rendered
+# overlay (or edits a working copy) before `kubectl apply -k`, replacing:
+#
+#   __ACR_IMAGE_NAME__        the ACR image path WITHOUT the tag, e.g.
+#                             <acrName>.azurecr.io/sangyshop (built from
+#                             cloud.config.ps1 Azure.AcrName). The tag stays
+#                             `hardened` (set in the `images` block below), so
+#                             the full ref resolves to <__ACR_IMAGE_NAME__>:hardened.
+#
+#   __PG_HOST__               the Flexible Server PostgreSQL host the app connects
+#                             to on 5432 (e.g. <server>.postgres.database.azure.com).
+#                             Taken from `az postgres flexible-server show`.
+#
+#   __KEYVAULT_NAME__         the Key Vault name holding the DB-password secret,
+#                             referenced by the SecretProviderClass.
+#
+#   __KV_SECRET__             the Key Vault secret name (default: db-password).
+#
+#   __KV_TENANT_ID__          the Azure AD tenant id of the Key Vault.
+#
+#   __KV_IDENTITY_CLIENTID__  client id of the user-assigned managed identity the
+#                             Key Vault provider uses to read the secret.
+#
+# The placeholders live in the patch/provider files in this directory. Keeping
+# them as literal tokens (rather than kustomize vars) keeps the overlay
+# kustomize-buildable for review while letting the PowerShell deploy script
+# substitute real values at apply time.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# BUILD / APPLY (for azure/aks/deploy.ps1, task 12.2)
+#
+# The base manifest lives OUTSIDE this overlay directory and is referenced by a
+# relative path. Kustomize's default load restrictor refuses to read files
+# outside the kustomization root, and `kubectl apply -k` does not accept the
+# override flag, so build and apply in two steps:
+#
+#   kubectl kustomize --load-restrictor LoadRestrictionsNone `
+#     ops/azure/aks/overlays |
+#     kubectl apply -f -
+#
+# (The deploy script substitutes the __...__ placeholders on the rendered YAML
+#  between those two steps.)
+# ---------------------------------------------------------------------------
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The hardened manifest is the base. Relative path out of
+# ops/azure/aks/overlays back to ops/kubernetes/hardened.
+resources:
+  - ../../../kubernetes/hardened/sangyshop-hardened.yaml
+  - secret-provider-class.yaml
+
+# 1. Image ref -> Azure Container Registry. Kustomize rewrites the container
+#    image whose name is `sangyshop:hardened` in the base to the ACR reference.
+images:
+  - name: sangyshop
+    newName: __ACR_IMAGE_NAME__   # e.g. <acrName>.azurecr.io/sangyshop
+    newTag: hardened
+
+patches:
+  # 2. Web Service -> LoadBalancer.
+  - path: patch-service-lb.yaml
+    target:
+      kind: Service
+      name: sangyshop
+      namespace: sangyshop-hardened
+
+  # 3 + 4. App Deployment: swap the db-secret volume to the Key Vault CSI source
+  #        and repoint DB_HOST at the managed Flexible Server.
+  - path: patch-deployment.yaml
+    target:
+      kind: Deployment
+      name: sangyshop
+      namespace: sangyshop-hardened
+
+  # Drop the in-cluster Postgres now that Flexible Server is the managed database.
+  - path: delete-db-statefulset.yaml
+    target:
+      kind: StatefulSet
+      name: sangyshop-db
+      namespace: sangyshop-hardened
+  - path: delete-db-pvc.yaml
+    target:
+      kind: PersistentVolumeClaim
+      name: sangyshop-db-data
+      namespace: sangyshop-hardened
+  - path: delete-db-service.yaml
+    target:
+      kind: Service
+      name: sangyshop-db
+      namespace: sangyshop-hardened
+  # Drop the placeholder in-cluster Secret; the password now comes from Key
+  # Vault through the CSI driver (see secret-provider-class.yaml).
+  - path: delete-db-secret.yaml
+    target:
+      kind: Secret
+      name: sangyshop-db
+      namespace: sangyshop-hardened

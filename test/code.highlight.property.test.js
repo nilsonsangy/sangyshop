@@ -1,9 +1,9 @@
 // test/code.highlight.property.test.js
-// Property-based test for the SangyShop "Ver código" (View Code) route
+// Property-based test for the SangyShop "View Code" route
 // (src/routes/code.js), rendering src/views/code-fragment.ejs.
 //
 // Feature: sangyshop-postgres-secret-ver-codigo, Property 14:
-//   Seleção do destaque pelo estado da defesa.
+//   Highlight selection by defense state.
 // Validates: Requirements 7.3, 7.4, 7.6
 //
 // The route resolves which code block to emphasize from the Defenses_Panel
@@ -20,8 +20,8 @@
 //     resolved highlight;
 //   - no block of the opposite state is marked active.
 //
-// A03 (package.json) has NO defense toggle — this property is specifically
-// "WHERE a defense exists" (R7.6) — so A03 is excluded from this generator; its
+// A03 (package.json) has NO defense toggle, this property is specifically
+// "WHERE a defense exists" (R7.6), so A03 is excluded from this generator; its
 // fixed convention is out of scope here.
 //
 // Backend: DB_BACKEND=memory (set by test/helpers.js at load). resetToggles()
@@ -108,7 +108,7 @@ test("Property 14: highlight tracks the defense toggle (secure iff ON, else vuln
         );
 
         // Exactly one block is emphasized, and it is the expected-state block
-        // (secure when ON, vulnerable when OFF) — never the opposite one.
+        // (secure when ON, vulnerable when OFF), never the opposite one.
         const activeStates = readActiveStates(html);
         assert.deepEqual(
           activeStates,

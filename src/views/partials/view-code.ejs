@@ -1,8 +1,8 @@
 <%
-  // Reusable "Ver código" (View_Code_Control) partial — R7.1.
+  // Reusable "View Code" (View_Code_Control) partial, R7.1.
   //
   // Expects a single local `vuln` (e.g. "A05", "A01", "A02", "A09", "A03").
-  // Renders an accessible "Ver código" button that, when activated, fetches the
+  // Renders an accessible "View Code" button that, when activated, fetches the
   // live source snippet from GET /code/<vuln> and shows the returned HTML
   // fragment inside a native <dialog>. Everything is namespaced by `vuln` so the
   // same partial can appear on different pages without id collisions.
@@ -20,15 +20,15 @@
     data-vuln="<%= vcVuln %>"
     aria-haspopup="dialog"
     aria-controls="<%= vcId %>"
-  >Ver código (<%= vcVuln %>)</button>
+  >View Code (<%= vcVuln %>)</button>
 
-  <dialog id="<%= vcId %>" class="view-code-dialog" aria-label="Código-fonte da vulnerabilidade <%= vcVuln %>">
+  <dialog id="<%= vcId %>" class="view-code-dialog" aria-label="Source code of vulnerability <%= vcVuln %>">
     <div class="view-code-dialog-head">
-      <strong>Ver código — <%= vcVuln %></strong>
-      <button type="button" class="view-code-close" aria-label="Fechar">&times;</button>
+      <strong>View Code: <%= vcVuln %></strong>
+      <button type="button" class="view-code-close" aria-label="Close">&times;</button>
     </div>
     <div class="view-code-body" data-vuln="<%= vcVuln %>" aria-live="polite">
-      <p class="hint">Carregando o trecho de código…</p>
+      <p class="hint">Loading the code snippet...</p>
     </div>
   </dialog>
 </div>
@@ -73,7 +73,7 @@
       .catch(function () {
         loaded = false;
         body.innerHTML =
-          '<p class="code-unavailable" role="alert">Não foi possível carregar o código agora. A página segue navegável; tente novamente.</p>';
+          '<p class="code-unavailable" role="alert">Could not load the code right now. The page remains navigable; please try again.</p>';
       });
   }
 

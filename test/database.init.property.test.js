@@ -17,7 +17,7 @@
 // test, not an artifact to work around).
 //
 // Credentials/env/filesystem are not touched and no temp files are created
-// (R8.4 — nothing to clean up).
+// (R8.4, nothing to clean up).
 
 // Select the in-memory backend before loading the module under test.
 if (!process.env.DB_BACKEND) {
@@ -62,7 +62,7 @@ before(async () => {
   );
 });
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 1: Idempotência da inicialização e do seed
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 1: Idempotence of initialization and seed
 // Validates: Requirements 1.3, 1.4
 test("Property 1: repeated init() never changes users/products/orders counts (idempotent init + seed)", async () => {
   await fc.assert(

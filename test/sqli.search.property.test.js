@@ -14,7 +14,7 @@
 // echoed back into the page (the <input value="<%= q %>"> of the search form),
 // so the raw UNION SELECT string naturally appears in the HTML. We do NOT
 // assert on the absence of the echoed query; instead we assert on the absence
-// of actual leaked users ROWS/values — the seed passwords, credit-card numbers
+// of actual leaked users ROWS/values, the seed passwords, credit-card numbers
 // and emails, none of which are ever rendered by the products view and none of
 // which appear in any product's name/description.
 //
@@ -36,7 +36,7 @@ const RUNS = 100;
 // Values that live ONLY in the `users` table seed (src/db/database.js). None of
 // these strings is rendered by the products view, nor is any of them present in
 // a product's name/description, so if any appeared in the body it could only be
-// a leaked `users` row. We check passwords, credit cards and emails — the raw
+// a leaked `users` row. We check passwords, credit cards and emails, the raw
 // echoed search term never contains these literals.
 const USERS_SECRETS = [
   "SangyAdmin!2025",
@@ -58,7 +58,7 @@ afterEach(resetToggles);
 // Generator: UNION SELECT exfiltration payloads referencing the `users` table.
 // We vary the leading break-out, the set/order of columns selected from users,
 // and the trailing comment, to cover a broad space of classic exfiltration
-// attempts — all of which must be neutralised when A05 is ON.
+// attempts, all of which must be neutralised when A05 is ON.
 const unionSelectPayload = fc
   .record({
     breakout: fc.constantFrom("'", "%'", "' ", "x'", "' OR 1=1"),
@@ -73,7 +73,7 @@ const unionSelectPayload = fc
       `${breakout} UNION SELECT ${columns.join(",")} FROM users ${comment}`
   );
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 8: Busca parametrizada não vaza dados com defesa ligada
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 8: Parameterized search does not leak data with the defense on
 // Validates: Requirements 3.4, 3.6, 3.7
 test("Property 8: with A05 ON, a UNION SELECT search returns 200 and leaks no users data", async () => {
   const app = await createTestApp();

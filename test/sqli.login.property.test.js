@@ -36,7 +36,7 @@ const BYPASS_USERNAME = "admin'--";
 
 afterEach(resetToggles);
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 5: SQLi autêntica no login com defesa desligada (bypass)
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 5: Authentic SQLi on login with the defense off (bypass)
 // Validates: Requirements 3.1, 3.2
 test("Property 5: with A05 OFF, admin'-- + any password authenticates as admin (200)", async () => {
   const app = await createTestApp();
@@ -62,7 +62,7 @@ test("Property 5: with A05 OFF, admin'-- + any password authenticates as admin (
       );
 
       // Follow the redirect: the authenticated page returns HTTP 200 and its
-      // navbar reflects the established session user — admin.
+      // navbar reflects the established session user, admin.
       const page = await a.get("/products");
       assert.equal(page.status, 200, "authenticated page should return 200");
       assert.match(

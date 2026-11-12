@@ -6,7 +6,7 @@
 // the sangyshop-sessao-navegacao-ingles feature). They render the shared
 // partial src/views/partials/navbar.ejs in isolation (Properties 1 and 2) and
 // the five full views that include it (Property 3), using the ejs API directly
-// — no HTTP server needed.
+//, no HTTP server needed.
 //
 // Runner: node:test (native). PBT library: fast-check (>= 100 iterations each).
 
@@ -64,13 +64,13 @@ function navLinkTexts(html) {
 }
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 1: Seleção de variante
-// da navbar pelo estado de sessão
+// Feature: sangyshop-sessao-navegacao-ingles, Property 1: Navbar variant
+// selection by session state
 //
 // Validates: Requirements 1.3, 1.4, 2.2, 2.4
 //
-// For any session input — an authenticated user object {username, role}, null,
-// or undefined/absent — rendering navbar.ejs NEVER throws and produces exactly
+// For any session input, an authenticated user object {username, role}, null,
+// or undefined/absent, rendering navbar.ejs NEVER throws and produces exactly
 // one variant: authenticated (has /logout and /orders) when the user object is
 // non-null, anonymous (has /login, no /orders, no /logout) when the value is
 // null, undefined or absent.
@@ -119,8 +119,8 @@ test("Property 1 (addendum): navbar with no user local renders anonymous variant
 });
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 2: Conteúdo da navbar
-// autenticada
+// Feature: sangyshop-sessao-navegacao-ingles, Property 2: Authenticated
+// navbar content
 //
 // Validates: Requirements 2.1, 2.3
 //
@@ -153,8 +153,8 @@ test("Property 2: authenticated navbar shows username, role, logout and My Order
 });
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 3: Consistência da
-// navbar entre páginas
+// Feature: sangyshop-sessao-navegacao-ingles, Property 3: Navbar
+// consistency across pages
 //
 // Validates: Requirements 1.1, 1.2, 2.5
 //

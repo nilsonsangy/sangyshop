@@ -42,8 +42,8 @@ function renderedOrderIds(html) {
 }
 
 // ---------------------------------------------------------------------------
-// Property 4 — filtering orders by user.
-// Feature: sangyshop-sessao-navegacao-ingles, Property 4: Filtragem de pedidos por usuário
+// Property 4, filtering orders by user.
+// Feature: sangyshop-sessao-navegacao-ingles, Property 4: Filtering of orders by user
 // Validates: Requirements 3.1
 // ---------------------------------------------------------------------------
 test("Property 4: GET /orders lists exactly the session user's orders", async () => {
@@ -124,8 +124,8 @@ function ejsEscape(s) {
 }
 
 // ---------------------------------------------------------------------------
-// Property 5 — required fields per order row.
-// Feature: sangyshop-sessao-navegacao-ingles, Property 5: Campos obrigatórios por pedido na página
+// Property 5, required fields per order row.
+// Feature: sangyshop-sessao-navegacao-ingles, Property 5: Required fields per order on the page
 // Validates: Requirements 3.2
 // ---------------------------------------------------------------------------
 test("Property 5: each order row renders id, product, quantity and total", async () => {
@@ -158,7 +158,7 @@ test("Property 5: each order row renders id, product, quantity and total", async
 });
 
 // ---------------------------------------------------------------------------
-// Property 6 — IDOR link per order.
+// Property 6, IDOR link per order.
 // Feature: sangyshop-sessao-navegacao-ingles, Property 6: Link de IDOR por pedido
 // Validates: Requirements 3.5
 // ---------------------------------------------------------------------------

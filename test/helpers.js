@@ -158,7 +158,7 @@ async function createTestApp() {
   // exercise the posture endpoint on the test app.
   app.use("/", require(path.join(SRC, "routes", "diag.js")));
 
-  // "Ver código" route (GET /code/:vuln). Mount it so supertest-based tests can
+  // "View Code" route (GET /code/:vuln). Mount it so supertest-based tests can
   // exercise the View_Code_Control endpoint on the test app.
   app.use("/", require(path.join(SRC, "routes", "code.js")));
 

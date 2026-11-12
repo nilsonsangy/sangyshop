@@ -4,144 +4,144 @@
 <%- include('partials/navbar', { user: user }) %>
 <main>
 <%
-  // Helpers de renderização — valores de dados sempre escapados no template.
-  // Selo de estado reutilizando .state.on (seguro/robustecido) e .state.off (inseguro).
-  function selo(classe, texto) {
+  // Rendering helpers: data values are always escaped in the template.
+  // State badge reusing .state.on (safe/hardened) and .state.off (insecure).
+  function badge(classe, texto) {
     return '<span class="state ' + classe + '">' + texto + '</span>';
   }
-  // Sinal indisponível: rótulo neutro + motivo (R9.3, R11.2).
-  function indisponivel(motivo) {
-    var m = (typeof motivo !== 'undefined' && motivo) ? motivo : 'motivo não informado';
-    return { off: false, label: 'indisponível', motivo: String(m) };
+  // Unavailable signal: neutral label + reason (R9.3, R11.2).
+  function unavailable(motivo) {
+    var m = (typeof motivo !== 'undefined' && motivo) ? motivo : 'no reason provided';
+    return { off: false, label: 'unavailable', motivo: String(m) };
   }
   var rpt = (typeof report !== 'undefined' && report) ? report : {};
 %>
-<h1>Diagnóstico de Postura</h1>
+<h1>Posture Diagnostic</h1>
 <p class="hint">
-  Sinais coletados de dentro do container/Pod. Verde = robustecido/seguro, vermelho = inseguro.
-  Sinais indisponíveis aparecem rotulados com o motivo.
+  Signals collected from inside the container/Pod. Green = hardened/safe, red = insecure.
+  Unavailable signals are labeled with the reason.
 </p>
 <p class="hint">
-  A02 (Security Misconfiguration) abrange os cabeçalhos de segurança e a página de erro
-  <code>/debug/boom</code> (que vaza o stack trace quando a defesa está desligada). Como
-  essa página de erro é texto puro, o ponto de entrada EJS do "Ver código" de A02 é aqui.
+  A02 (Security Misconfiguration) covers the security headers and the error page
+  <code>/debug/boom</code> (which leaks the stack trace when the defense is off). Since
+  that error page is plain text, the EJS entry point of the A02 "View code" is here.
 </p>
 <%- include('partials/view-code', { vuln: 'A02' }) %>
 <% if (rpt.meta) { %>
 <p class="hint">
-  Gerado em <%= rpt.meta.geradoEm %> · versão do relatório <%= rpt.meta.versaoRelatorio %>
+  Generated at <%= rpt.meta.geradoEm %> | report version <%= rpt.meta.versaoRelatorio %>
 </p>
 <% } %>
 
-<!-- Identidade de execução (R2) -->
+<!-- Execution identity (R2) -->
 <section class="diag-group">
-  <h2>Identidade de execução</h2>
+  <h2>Execution identity</h2>
   <% var s = rpt.identidadeExecucao || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr>
-        <th>Papel</th>
+        <th>Role</th>
         <td>
           <%= s.papel %>
-          <% if (s.isRoot) { %><%- selo('off', 'root (inseguro)') %><% } else { %><%- selo('on', 'não-root (robustecido)') %><% } %>
+          <% if (s.isRoot) { %><%- badge('off', 'root (insecure)') %><% } else { %><%- badge('on', 'non-root (hardened)') %><% } %>
         </td>
       </tr>
       <tr><th>uid</th><td><%= s.uid %></td></tr>
       <tr><th>gid</th><td><%= s.gid %></td></tr>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 
-<!-- Privilégio (R3) -->
+<!-- Privilege (R3) -->
 <section class="diag-group">
-  <h2>Indícios de privilégio</h2>
+  <h2>Privilege indicators</h2>
   <% var s = rpt.privilegio || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
-      <tr><th>Capabilities efetivas (CapEff)</th><td><code><%= (typeof s.capEff !== 'undefined' && s.capEff !== null) ? s.capEff : 'indisponível' %></code></td></tr>
-      <tr><th>Capabilities permitidas (CapPrm)</th><td><code><%= (typeof s.capPrm !== 'undefined' && s.capPrm !== null) ? s.capPrm : 'indisponível' %></code></td></tr>
+      <tr><th>Effective capabilities (CapEff)</th><td><code><%= (typeof s.capEff !== 'undefined' && s.capEff !== null) ? s.capEff : 'unavailable' %></code></td></tr>
+      <tr><th>Permitted capabilities (CapPrm)</th><td><code><%= (typeof s.capPrm !== 'undefined' && s.capPrm !== null) ? s.capPrm : 'unavailable' %></code></td></tr>
       <tr>
-        <th>Montagem do nó (/host)</th>
-        <td><% if (s.montagemNoPresente) { %><%- selo('off', 'presente (inseguro)') %><% } else { %><%- selo('on', 'ausente (robustecido)') %><% } %></td>
+        <th>Node mount (/host)</th>
+        <td><% if (s.montagemNoPresente) { %><%- badge('off', 'present (insecure)') %><% } else { %><%- badge('on', 'absent (hardened)') %><% } %></td>
       </tr>
       <tr>
-        <th>Visibilidade de processos do nó (hostPID)</th>
-        <td><% if (s.hostPidProvavel) { %><%- selo('off', 'provável (inseguro)') %><% } else { %><%- selo('on', 'improvável (robustecido)') %><% } %></td>
+        <th>Node process visibility (hostPID)</th>
+        <td><% if (s.hostPidProvavel) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
       </tr>
-      <% if (s.metodo) { %><tr><th>Método</th><td class="hint"><%= s.metodo %></td></tr><% } %>
+      <% if (s.metodo) { %><tr><th>Method</th><td class="hint"><%= s.metodo %></td></tr><% } %>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 
-<!-- Sistema de arquivos (R4) -->
+<!-- Filesystem (R4) -->
 <section class="diag-group">
-  <h2>Sistema de arquivos</h2>
+  <h2>Filesystem</h2>
   <% var s = rpt.sistemaArquivos || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr>
-        <th>Rootfs somente leitura</th>
-        <td><% if (s.rootfsSomenteLeitura) { %><%- selo('on', 'somente leitura (robustecido)') %><% } else { %><%- selo('off', 'gravável (inseguro)') %><% } %></td>
+        <th>Read-only rootfs</th>
+        <td><% if (s.rootfsSomenteLeitura) { %><%- badge('on', 'read-only (hardened)') %><% } else { %><%- badge('off', 'writable (insecure)') %><% } %></td>
       </tr>
-      <% if (s.caminhoTestado) { %><tr><th>Caminho testado</th><td><code><%= s.caminhoTestado %></code></td></tr><% } %>
+      <% if (s.caminhoTestado) { %><tr><th>Tested path</th><td><code><%= s.caminhoTestado %></code></td></tr><% } %>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 
-<!-- Token de ServiceAccount (R5) -->
+<!-- ServiceAccount token (R5) -->
 <section class="diag-group">
-  <h2>Token de ServiceAccount</h2>
+  <h2>ServiceAccount token</h2>
   <% var s = rpt.tokenServiceAccount || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr>
-        <th>Token montado</th>
-        <td><% if (s.tokenMontado) { %><%- selo('off', 'montado (inseguro)') %><% } else { %><%- selo('on', 'não montado (robustecido)') %><% } %></td>
+        <th>Token mounted</th>
+        <td><% if (s.tokenMontado) { %><%- badge('off', 'mounted (insecure)') %><% } else { %><%- badge('on', 'not mounted (hardened)') %><% } %></td>
       </tr>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 
-<!-- Rede e host (R6) -->
+<!-- Network and host (R6) -->
 <section class="diag-group">
-  <h2>Rede e host</h2>
+  <h2>Network and host</h2>
   <% var s = rpt.redeHost || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr><th>Hostname</th><td><code><%= s.hostname %></code></td></tr>
       <tr>
-        <th>Rede do host (hostNetwork)</th>
-        <td><% if (s.hostNetworkProvavel) { %><%- selo('off', 'provável (inseguro)') %><% } else { %><%- selo('on', 'improvável (robustecido)') %><% } %></td>
+        <th>Host network (hostNetwork)</th>
+        <td><% if (s.hostNetworkProvavel) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
       </tr>
       <tr>
-        <th>Montagem do nó (/host)</th>
-        <td><% if (s.montagemNoPresente) { %><%- selo('off', 'presente (inseguro)') %><% } else { %><%- selo('on', 'ausente (robustecido)') %><% } %></td>
+        <th>Node mount (/host)</th>
+        <td><% if (s.montagemNoPresente) { %><%- badge('off', 'present (insecure)') %><% } else { %><%- badge('on', 'absent (hardened)') %><% } %></td>
       </tr>
-      <% if (s.metodo) { %><tr><th>Método</th><td class="hint"><%= s.metodo %></td></tr><% } %>
+      <% if (s.metodo) { %><tr><th>Method</th><td class="hint"><%= s.metodo %></td></tr><% } %>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 
-<!-- Identidade do Pod (R7) — estrutura aninhada -->
+<!-- Pod identity (R7): nested structure -->
 <section class="diag-group">
-  <h2>Identidade do Pod</h2>
+  <h2>Pod identity</h2>
   <% var s = rpt.identidadePod || {}; %>
   <table><tbody>
     <%
       var campos = [
-        { rotulo: 'Nome', campo: s.nome },
+        { rotulo: 'Name', campo: s.nome },
         { rotulo: 'Namespace', campo: s.namespace },
-        { rotulo: 'Nó', campo: s.no }
+        { rotulo: 'Node', campo: s.no }
       ];
     %>
     <% campos.forEach(function(c){ var f = c.campo || {}; %>
@@ -150,8 +150,8 @@
         <td>
           <% if (f.disponivel) { %>
             <code><%= f.valor %></code>
-          <% } else { var d = indisponivel(f.motivo); %>
-            <span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span>
+          <% } else { var d = unavailable(f.motivo); %>
+            <span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span>
           <% } %>
         </td>
       </tr>
@@ -159,21 +159,21 @@
   </tbody></table>
 </section>
 
-<!-- Variáveis sensíveis (R8) — apenas presença, nunca valor -->
+<!-- Sensitive variables (R8): presence only, never the value -->
 <section class="diag-group">
-  <h2>Variáveis sensíveis</h2>
+  <h2>Sensitive variables</h2>
   <% var s = rpt.variaveisSensiveis || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr>
-        <th>DB_PASSWORD presente</th>
+        <th>DB_PASSWORD present</th>
         <td>
-          <% if (s.dbPasswordPresente) { %><%- selo('off', 'presente (só nome, valor não exposto)') %><% } else { %><%- selo('on', 'ausente') %><% } %>
+          <% if (s.dbPasswordPresente) { %><%- badge('off', 'present (name only, value not exposed)') %><% } else { %><%- badge('on', 'absent') %><% } %>
         </td>
       </tr>
     </tbody></table>
-  <% } else { var d = indisponivel(s.motivo); %>
-    <p><span class="state off">indisponível</span> <span class="hint"><%= d.motivo %></span></p>
+  <% } else { var d = unavailable(s.motivo); %>
+    <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
   <% } %>
 </section>
 

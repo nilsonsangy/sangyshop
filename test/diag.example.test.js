@@ -2,14 +2,14 @@
 // Example tests for the posture diagnostic page (GET /_diag) of the
 // sangyshop-diagnostico-postura feature.
 //
-// Task 7.3 — human-readable HTML view (Requirements 11.1, 11.2):
+// Task 7.3, human-readable HTML view (Requirements 11.1, 11.2):
 //   With a FIXED environment, GET /_diag negotiated to HTML must return an
 //   HTML page (status 200) that contains the label of EVERY signal section
-//   and marks the unavailable signals with an "indisponível" marker.
+//   and marks the unavailable signals with an "unavailable" marker.
 //
 //   The fixed environment deliberately leaves POD_NAMESPACE and NODE_NAME
-//   unset so that the "Identidade do Pod" namespace/node fields are
-//   unavailable and the page renders at least one "indisponível" marker.
+//   unset so that the "Pod identity" namespace/node fields are
+//   unavailable and the page renders at least one "unavailable" marker.
 //
 // Any env mutated here is snapshotted and restored so the real process env is
 // never polluted across tests.
@@ -19,13 +19,13 @@ const { createTestApp, request } = require("./helpers");
 
 // Section labels rendered by src/views/diag.ejs (one <h2> per signal group).
 const SIGNAL_LABELS = [
-  "Identidade de execução",
-  "Indícios de privilégio",
-  "Sistema de arquivos",
-  "Token de ServiceAccount",
-  "Rede e host",
-  "Identidade do Pod",
-  "Variáveis sensíveis",
+  "Execution identity",
+  "Privilege indicators",
+  "Filesystem",
+  "ServiceAccount token",
+  "Network and host",
+  "Pod identity",
+  "Sensitive variables",
 ];
 
 // Snapshot/restore helper for the env keys this test cares about, so the real
@@ -59,7 +59,7 @@ function withFixedEnv(overrides, fn) {
 
 // EXAMPLE -------------------------------------------------------------------
 // With POD_NAMESPACE and NODE_NAME unset (POD_NAME set), the HTML page lists
-// every signal section label and marks the missing Pod fields "indisponível".
+// every signal section label and marks the missing Pod fields "unavailable".
 test("EXAMPLE: GET /_diag (HTML) lists all signal labels and marks unavailable signals (Req 11.1, 11.2)", async () => {
   // FIXED environment: ensure the Pod namespace and node are NOT injected so
   // those fields render as unavailable; POD_NAME is present.
@@ -87,23 +87,23 @@ test("EXAMPLE: GET /_diag (HTML) lists all signal labels and marks unavailable s
         );
       }
 
-      // Req 11.2: unavailable signals are marked with an "indisponível" marker.
+      // Req 11.2: unavailable signals are marked with an "unavailable" marker.
       // POD_NAMESPACE and NODE_NAME are unset, so at least the Pod
       // namespace/node fields render this marker.
-      assert.match(res.text, /indispon[ií]vel/i);
+      assert.match(res.text, /unavailable/i);
     }
   );
 });
 
 // EXAMPLE -------------------------------------------------------------------
-// Task 8.2 — coexistence with the POD_NAME feature (Requirements 13.1, 13.2):
+// Task 8.2, coexistence with the POD_NAME feature (Requirements 13.1, 13.2):
 //   With POD_NAME set, hitting GET /_diag (which reads POD_NAME via the posture
 //   collector and passes req.app.locals.podName to its own view) must NOT
 //   mutate the shared app.locals.podName. A subsequent GET /products must still
 //   render the shared header Pod badge with the pod name intact.
 //
-//   The test harness (createTestApp) does not wire app.locals.podName — only
-//   the production src/server.js does — so we mirror that wiring explicitly
+//   The test harness (createTestApp) does not wire app.locals.podName, only
+//   the production src/server.js does, so we mirror that wiring explicitly
 //   (app.locals.podName = process.env.POD_NAME) before exercising the routes.
 test("EXAMPLE: GET /_diag does not mutate app.locals.podName and /products keeps the Pod badge (Req 13.1, 13.2)", async () => {
   await withFixedEnv({ POD_NAME: "sangyshop-pod-xyz" }, async () => {
@@ -147,7 +147,7 @@ test("EXAMPLE: GET /_diag does not mutate app.locals.podName and /products keeps
 });
 
 // SMOKE / STATIC -----------------------------------------------------------
-// Task 8.3 — no external database (Requirements 14.1, 14.2):
+// Task 8.3, no external database (Requirements 14.1, 14.2):
 //   This is a STATIC/SMOKE test (no HTTP, no server). It guards the invariant
 //   that the posture module stays database-free and that the DB_PASSWORD
 //   collector only probes presence.
@@ -162,7 +162,7 @@ test("EXAMPLE: GET /_diag does not mutate app.locals.podName and /products keeps
 //   coletarVariaveisSensiveis with an injected env holding a secret
 //   DB_PASSWORD. Assert the result reports presence only
 //   ({disponivel:true, dbPasswordPresente:true}) and that the serialized
-//   result NEVER contains the secret value — and with DB_PASSWORD absent the
+//   result NEVER contains the secret value, and with DB_PASSWORD absent the
 //   flag is false (Req 14.2). No DB connection is ever opened.
 const fs = require("node:fs");
 const path = require("node:path");

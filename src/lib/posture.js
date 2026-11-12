@@ -6,8 +6,8 @@
 // (execution identity, privilege, filesystem, ServiceAccount token, network/host,
 // Pod identity, sensitive env vars) and returns a UNIFORM contract:
 //
-//   { disponivel: true, ...campos de valor }        // signal collected
-//   { disponivel: false, motivo: "<texto>" }        // signal unavailable (no value fields)
+//   { disponivel: true, ...value fields }          // signal collected
+//   { disponivel: false, motivo: "<text>" }          // signal unavailable (no value fields)
 //
 // buildPostureReport() aggregates every collector with a try/catch per signal so
 // that a single failing collector never throws and never omits a signal (R9).
@@ -79,16 +79,16 @@ function indisponivel(motivo) {
 function coletarIdentidadeExecucao(deps) {
   const { process: proc } = resolveDeps(deps);
 
-  // getuid/getgid só existem em plataformas POSIX. Em Windows (ex.: npm start do
-  // instrutor) elas não estão presentes e o sinal fica indisponível. (R2.4)
+  // getuid/getgid only exist on POSIX platforms. On Windows (e.g. the instructor's
+  // npm start) they are absent and the signal is unavailable. (R2.4)
   if (typeof proc.getuid !== "function" || typeof proc.getgid !== "function") {
-    return indisponivel("getuid indisponivel na plataforma");
+    return indisponivel("getuid unavailable on this platform");
   }
 
   const uid = proc.getuid();
   const gid = proc.getgid();
   const isRoot = uid === 0; // (R2.2)
-  const papel = isRoot ? "root" : "nao-root"; // (R2.3)
+  const papel = isRoot ? "root" : "non-root"; // (R2.3)
 
   return { disponivel: true, uid, gid, isRoot, papel };
 }
@@ -96,14 +96,14 @@ function coletarIdentidadeExecucao(deps) {
 /**
  * Privilege signal: capabilities (CapEff/CapPrm), node mount, hostPID heuristic. (R3)
  *
- * - Lê `/proc/self/status` e extrai `CapEff`/`CapPrm` com regex por linha, de forma
- *   resiliente: arquivo ausente ou linhas malformadas deixam os campos de cap
- *   indisponíveis (string vazia) sem lançar. (R3.1, R3.4)
- * - `montagemNoPresente = fs.existsSync("/host")` — só presença, sem listar conteúdo.
+ * - Reads `/proc/self/status` and extracts `CapEff`/`CapPrm` with a per-line regex,
+ *   resiliently: a missing file or malformed lines leave the cap fields
+ *   unavailable (empty string) without throwing. (R3.1, R3.4)
+ * - `montagemNoPresente = fs.existsSync("/host")`: presence only, no content listing.
  *   (R3.2, R12.3)
- * - `hostPidProvavel` é HEURÍSTICO: conta entradas numéricas em `/proc` (PIDs visíveis)
- *   e marca `true` acima de um limiar (> 50). O campo `metodo` declara que é inferência,
- *   não prova. (R3.3)
+ * - `hostPidProvavel` is a HEURISTIC: it counts numeric entries in `/proc` (visible PIDs)
+ *   and sets `true` above a threshold (> 50). The `metodo` field states that this is an
+ *   inference, not proof. (R3.3)
  *
  * @param {object} [deps]
  */
@@ -116,8 +116,8 @@ function coletarPrivilegio(deps) {
   const LIMIAR_HOST_PID = 50;
 
   // --- Capabilities (CapEff / CapPrm) ---------------------------------------
-  // Extração resiliente: regex por linha. Ausência do arquivo ou linhas
-  // malformadas => campo indisponível (string vazia), sem lançar. (R3.1, R3.4)
+  // Resilient extraction: per-line regex. A missing file or malformed lines
+  // => unavailable field (empty string), without throwing. (R3.1, R3.4)
   let capEff = "";
   let capPrm = "";
   try {
@@ -135,24 +135,24 @@ function coletarPrivilegio(deps) {
         }
       }
     }
-  } catch (_erro) {
-    // /proc/self/status ausente (ex.: fora do Linux) => caps indisponíveis. (R3.4)
+  } catch (_err) {
+    // /proc/self/status missing (e.g. outside Linux) => caps unavailable. (R3.4)
     capEff = "";
     capPrm = "";
   }
 
-  // --- Montagem do nó (hostPath /host) --------------------------------------
-  // Só presença, nunca lista conteúdo. (R3.2, R12.3)
+  // --- Node mount (hostPath /host) ------------------------------------------
+  // Presence only, never lists content. (R3.2, R12.3)
   let montagemNoPresente = false;
   try {
     montagemNoPresente = Boolean(fs.existsSync(CAMINHO_HOST));
-  } catch (_erro) {
+  } catch (_err) {
     montagemNoPresente = false;
   }
 
-  // --- Heurística de hostPID ------------------------------------------------
-  // Conta entradas numéricas (PIDs) em /proc. Com hostPID:true o container vê
-  // muitos processos do nó; sem ele, poucos. Inferência, não prova. (R3.3)
+  // --- hostPID heuristic ----------------------------------------------------
+  // Counts numeric entries (PIDs) in /proc. With hostPID:true the container sees
+  // many node processes; without it, few. Inference, not proof. (R3.3)
   let hostPidProvavel = false;
   try {
     const entradas = fs.readdirSync(CAMINHO_PROC);
@@ -160,8 +160,8 @@ function coletarPrivilegio(deps) {
       /^\d+$/.test(String(nome))
     );
     hostPidProvavel = pids.length > LIMIAR_HOST_PID;
-  } catch (_erro) {
-    // /proc ilegível/ausente => não dá para inferir; mantém false.
+  } catch (_err) {
+    // /proc unreadable/missing => cannot infer; keep false.
     hostPidProvavel = false;
   }
 
@@ -172,8 +172,8 @@ function coletarPrivilegio(deps) {
     montagemNoPresente,
     hostPidProvavel,
     metodo:
-      "heuristica: CapEff/CapPrm de /proc/self/status; hostPidProvavel por " +
-      "contagem de PIDs em /proc (limiar > 50); inferencia, nao prova",
+      "heuristic: CapEff/CapPrm from /proc/self/status; hostPidProvavel by " +
+      "counting PIDs in /proc (threshold > 50); inference, not proof",
   };
 }
 
@@ -184,9 +184,9 @@ function coletarPrivilegio(deps) {
 function coletarSistemaArquivos(deps) {
   const { fs, process: proc } = resolveDeps(deps);
 
-  // Nome fixo derivado do PID, evitando colisão e sem envolver dado de usuário.
-  // (R12.3) Tentamos no rootfs do app (process.cwd()); se `cwd` não estiver
-  // disponível, caímos para `/etc`, também parte do rootfs. (R4.1)
+  // Fixed name derived from the PID, avoiding collisions and involving no user
+  // data. (R12.3) We try the app rootfs (process.cwd()); if `cwd` is not
+  // available, we fall back to `/etc`, also part of the rootfs. (R4.1)
   const pid =
     typeof proc.pid === "number" || typeof proc.pid === "string"
       ? proc.pid
@@ -197,7 +197,7 @@ function coletarSistemaArquivos(deps) {
   try {
     diretorioBase =
       typeof proc.cwd === "function" ? proc.cwd() : undefined;
-  } catch (_erro) {
+  } catch (_err) {
     diretorioBase = undefined;
   }
   const caminhoTestado =
@@ -205,40 +205,41 @@ function coletarSistemaArquivos(deps) {
       ? path.join(diretorioBase, nomeArquivo)
       : path.join("/etc", nomeArquivo);
 
-  // Sinaliza se o arquivo chegou a ser criado, para a limpeza no `finally`
-  // só remover quando houver algo a remover (sucesso ou erro após criação).
+  // Flags whether the file was actually created, so the cleanup in `finally`
+  // only removes something when there is something to remove (success or error
+  // after creation).
   let arquivoCriado = false;
 
   try {
-    // Tentativa de escrita no rootfs. `wx` falha se já existir e,
-    // crucialmente, lança `EROFS` quando o sistema de arquivos é somente
-    // leitura (readOnlyRootFilesystem:true no hardened). (R4.1, R4.3)
+    // Attempt to write to the rootfs. `wx` fails if the file already exists and,
+    // crucially, throws `EROFS` when the filesystem is read-only
+    // (readOnlyRootFilesystem:true in hardened). (R4.1, R4.3)
     fs.writeFileSync(caminhoTestado, "", { flag: "wx" });
     arquivoCriado = true;
 
-    // Escrita bem-sucedida => rootfs gravável. (R4.2)
+    // Successful write => writable rootfs. (R4.2)
     return { disponivel: true, rootfsSomenteLeitura: false, caminhoTestado };
-  } catch (erro) {
-    // EROFS => rootfs somente leitura: este é o sinal "robustecido". (R4.3)
-    if (erro && erro.code === "EROFS") {
+  } catch (err) {
+    // EROFS => read-only rootfs: this is the "hardened" signal. (R4.3)
+    if (err && err.code === "EROFS") {
       return { disponivel: true, rootfsSomenteLeitura: true, caminhoTestado };
     }
 
-    // Qualquer outro erro (ex.: EACCES, ENOENT) => não dá para classificar;
-    // reporta o sinal como indisponível com o motivo. (R4.5)
+    // Any other error (e.g. EACCES, ENOENT) => cannot classify; report the
+    // signal as unavailable with the reason. (R4.5)
     return indisponivel(
-      erro && erro.message ? erro.message : "falha ao sondar rootfs"
+      err && err.message ? err.message : "failed to probe rootfs"
     );
   } finally {
-    // Limpeza garantida: se o arquivo foi criado, remove-o — sempre, tanto no
-    // caminho de sucesso quanto em erro após a criação. A remoção nunca pode
-    // derrubar o coletor, então é protegida por try/catch próprio. (R4.4)
+    // Guaranteed cleanup: if the file was created, remove it, always, on both the
+    // success path and on an error after creation. Removal must never bring
+    // the collector down, so it is protected by its own try/catch. (R4.4)
     if (arquivoCriado) {
       try {
         fs.unlinkSync(caminhoTestado);
-      } catch (_erroLimpeza) {
-        // Falha ao remover não altera a classificação já decidida; ignoramos
-        // para não mascarar o resultado nem lançar a partir do `finally`.
+      } catch (_cleanupErr) {
+        // A removal failure does not change the classification already decided; we
+        // ignore it so as not to mask the result or throw from `finally`.
       }
     }
   }
@@ -251,19 +252,19 @@ function coletarSistemaArquivos(deps) {
 function coletarTokenServiceAccount(deps) {
   const { fs } = resolveDeps(deps);
 
-  // Caminho padrão onde o kubelet monta o token da ServiceAccount quando
-  // automountServiceAccountToken não está desabilitado. (R5.1)
+  // Default path where the kubelet mounts the ServiceAccount token when
+  // automountServiceAccountToken is not disabled. (R5.1)
   const CAMINHO_TOKEN =
     "/var/run/secrets/kubernetes.io/serviceaccount/token";
 
-  // Somente presença: nunca lemos o conteúdo do token. (R5.2, R12.1)
+  // Presence only: we never read the token content. (R5.2, R12.1)
   let tokenMontado;
   try {
     tokenMontado = fs.existsSync(CAMINHO_TOKEN);
-  } catch (erro) {
-    // Falha ao verificar a existência vira sinal indisponível. (R5.3)
+  } catch (err) {
+    // A failure to check existence becomes an unavailable signal. (R5.3)
     return indisponivel(
-      erro && erro.message ? erro.message : "falha ao verificar token"
+      err && err.message ? err.message : "failed to check token"
     );
   }
 
@@ -274,11 +275,11 @@ function coletarTokenServiceAccount(deps) {
  * Network/host signal: hostname, node mount presence, hostNetwork heuristic. (R6)
  *
  * - `hostname` via `os.hostname()`. (R6.1)
- * - `hostNetworkProvavel` é HEURÍSTICO: com `hostNetwork:true` o hostname do Pod tende a
- *   ser o nome do NÓ (ex.: `desktop-worker`) em vez do nome do Pod. O coletor marca
- *   `true` quando o `hostname` diverge de `POD_NAME` e parece nome de nó (não corresponde
- *   ao padrão de sufixo aleatório de Pod). O campo `metodo` declara a inferência. (R6.2)
- * - `montagemNoPresente` reusa `/host` por existência, sem listar conteúdo. (R6.3, R12.3)
+ * - `hostNetworkProvavel` is a HEURISTIC: with `hostNetwork:true` the Pod hostname tends
+ *   to be the NODE name (e.g. `desktop-worker`) instead of the Pod name. The collector sets
+ *   `true` when `hostname` differs from `POD_NAME` and looks like a node name (does not match
+ *   the random Pod suffix pattern). The `metodo` field states the inference. (R6.2)
+ * - `montagemNoPresente` reuses `/host` by existence, without listing content. (R6.3, R12.3)
  *
  * @param {object} [deps]
  */
@@ -291,34 +292,34 @@ function coletarRedeHost(deps) {
   let hostname;
   try {
     hostname = os.hostname();
-  } catch (erro) {
+  } catch (err) {
     return indisponivel(
-      erro && erro.message ? erro.message : "falha ao obter hostname"
+      err && err.message ? err.message : "failed to get hostname"
     );
   }
 
-  // --- Montagem do nó (reusa /host, só presença) ----------------------------
+  // --- Node mount (reuses /host, presence only) -----------------------------
   let montagemNoPresente = false;
   try {
     montagemNoPresente = Boolean(fs.existsSync(CAMINHO_HOST));
-  } catch (_erro) {
+  } catch (_err) {
     montagemNoPresente = false;
   }
 
-  // --- Heurística de hostNetwork --------------------------------------------
-  // Sem hostNetwork, o hostname do Pod é o próprio nome do Pod (== POD_NAME).
-  // Com hostNetwork:true, o hostname passa a ser o nome do NÓ, divergindo de
-  // POD_NAME. Marcamos `true` quando divergem e o hostname parece nome de nó
-  // (ausência do sufixo hash típico de Pods). Inferência, não prova. (R6.2, R6.4)
+  // --- hostNetwork heuristic ------------------------------------------------
+  // Without hostNetwork, the Pod hostname is the Pod name itself (== POD_NAME).
+  // With hostNetwork:true, the hostname becomes the NODE name, differing from
+  // POD_NAME. We set `true` when they differ and the hostname looks like a node
+  // name (no typical Pod hash suffix). Inference, not proof. (R6.2, R6.4)
   let podName;
   try {
     podName = proc.env.POD_NAME;
-  } catch (_erro) {
+  } catch (_err) {
     podName = undefined;
   }
 
-  // Padrão de nome de Pod gerado: termina em segmento(s) de hash minúsculo/dígito
-  // (ex.: "sangyshop-7d9c-abcde"). Um nome de nó (ex.: "desktop-worker") não.
+  // Generated Pod name pattern: ends in lowercase hash/digit segment(s)
+  // (e.g. "sangyshop-7d9c-abcde"). A node name (e.g. "desktop-worker") does not.
   const pareceNomeDePod = /-[0-9a-f]{5,}$/i.test(String(hostname));
   const divergeDoPodName =
     typeof podName === "string" && podName.length > 0 && podName !== hostname;
@@ -331,31 +332,30 @@ function coletarRedeHost(deps) {
     montagemNoPresente,
     hostNetworkProvavel,
     metodo:
-      "heuristica: hostname diverge de POD_NAME e parece nome de no; " +
-      "inferencia, nao prova",
+      "heuristic: hostname differs from POD_NAME and looks like a node name; " +
+      "inference, not proof",
   };
 }
 
 /**
  * Pod identity signal: POD_NAME / POD_NAMESPACE / NODE_NAME, read-only. (R7, R13)
  *
- * Projeta três campos da Downward API — `nome` (POD_NAME), `namespace`
- * (POD_NAMESPACE) e `no` (NODE_NAME) — a partir de `process.env`. Cada campo segue
- * o contrato uniforme: presente (string) => `{disponivel:true, valor}`; ausente =>
- * `{disponivel:false, motivo:"nao injetado via Downward API"}`. (R7.1, R7.2, R7.3)
+ * Projects three Downward API fields: `nome` (POD_NAME), `namespace`
+ * (POD_NAMESPACE) and `no` (NODE_NAME), from `process.env`. Each field follows
+ * the uniform contract: present (string) => `{disponivel:true, valor}`; absent =>
+ * `{disponivel:false, motivo:"not injected via Downward API"}`. (R7.1, R7.2, R7.3)
  *
- * A leitura é SOMENTE-LEITURA: apenas consulta `process.env`, sem mutar o ambiente
- * nem `app.locals`. (R13.1, R13.2)
- *
+ * Reading is READ-ONLY: it only queries `process.env`, without mutating the
+ * environment or `app.locals`. (R13.1, R13.2)
  * @param {object} [deps]
  */
 function coletarIdentidadePod(deps) {
   const { process: proc } = resolveDeps(deps);
 
-  const MOTIVO_AUSENTE = "nao injetado via Downward API";
+  const MOTIVO_AUSENTE = "not injected via Downward API";
 
-  // Lê um campo de env de forma defensiva: presente (string) => disponível com
-  // valor; ausente ou tipo inesperado => indisponível com o motivo padrão.
+  // Reads an env field defensively: present (string) => available with a
+  // value; absent or unexpected type => unavailable with the default reason.
   const lerCampo = (nomeVar) => {
     const valor = proc.env[nomeVar];
     if (typeof valor === "string") {
@@ -378,15 +378,15 @@ function coletarIdentidadePod(deps) {
 function coletarVariaveisSensiveis(deps) {
   const { process: proc } = resolveDeps(deps);
 
-  // Reporta apenas a PRESENÇA do nome DB_PASSWORD; o valor nunca entra no
-  // relatório e nenhuma conexão de banco é aberta. (R8.1, R8.2, R12.1, R14.2)
+  // Reports only the PRESENCE of the DB_PASSWORD name; the value never enters
+  // the report and no database connection is opened. (R8.1, R8.2, R12.1, R14.2)
   let dbPasswordPresente;
   try {
     dbPasswordPresente = typeof proc.env.DB_PASSWORD === "string";
-  } catch (erro) {
-    // Falha ao inspecionar o ambiente vira sinal indisponível.
+  } catch (err) {
+    // A failure to inspect the environment becomes an unavailable signal.
     return indisponivel(
-      erro && erro.message ? erro.message : "falha ao verificar DB_PASSWORD"
+      err && err.message ? err.message : "failed to check DB_PASSWORD"
     );
   }
 
@@ -429,8 +429,8 @@ function buildPostureReport(deps) {
     const coletor = COLETORES[chave];
     try {
       report[chave] = coletor(resolvidas);
-    } catch (erro) {
-      report[chave] = indisponivel(erro && erro.message ? erro.message : erro);
+    } catch (err) {
+      report[chave] = indisponivel(err && err.message ? err.message : err);
     }
   }
 

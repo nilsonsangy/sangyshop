@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "lab": "sangyshop-lab-aws",
+  "run_id": "20261114T120000Z-a1b2",
+  "region": "us-east-1",
+  "created_utc": "2026-11-14T12:00:00Z",
+  "resources": [
+    {
+      "type": "iam:access-key",
+      "id": "AKIAIOSFODNN7EXAMPLE",
+      "region": "global",
+      "run_id": "20261114T120000Z-a1b2",
+      "component": "credential",
+      "created_utc": "2026-11-14T12:20:00Z",
+      "delete": { "service": "iam", "action": "delete-access-key", "args": { "UserName": "sangyshop-lab-leaked" } }
+    },
+    {
+      "type": "sns:subscription",
+      "id": "arn:aws:sns:us-east-1:123456789012:sangyshop-lab-alerts:00000000-0000-0000-0000-000000000000",
+      "region": "us-east-1",
+      "run_id": "20261114T120000Z-a1b2",
+      "component": "detection",
+      "created_utc": "2026-11-14T12:25:00Z",
+      "delete": { "service": "sns", "action": "unsubscribe", "args": { "SubscriptionArn": "arn:aws:sns:us-east-1:123456789012:sangyshop-lab-alerts:00000000-0000-0000-0000-000000000000" } }
+    }
+  ]
+}

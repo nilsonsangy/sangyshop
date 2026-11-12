@@ -8,7 +8,7 @@ the block**, comparing the behavior and inspecting the code on both sides.
 
 > **Warning.** This application contains real vulnerabilities on purpose. Use it **only in an
 > isolated environment** (your laptop / VM / WSL), **never** exposed to the internet. It is
-> teaching material from the Blue Team course by Strong Security Brasil.
+> security training material, not a production example.
 
 ## Vulnerabilities covered (5 of the 10 categories)
 
@@ -36,9 +36,9 @@ To run the **hardened** variant alongside it (each variant is its own isolated C
 project — `sangyshop-insecure` and `sangyshop-hardened` — with separate networks and volumes):
 
 ```
-cp deployment-security/docker/hardened/db_password.txt.example deployment-security/docker/hardened/db_password.txt
+cp ops/docker/hardened/db_password.txt.example ops/docker/hardened/db_password.txt
 # set a strong password in db_password.txt, then:
-docker compose -f deployment-security/docker/hardened/docker-compose.yml up -d --build
+docker compose -f ops/docker/hardened/docker-compose.yml up -d --build
 ```
 
 Open **http://localhost:7010** (hardened). The two Postgres services are published on `7001`
@@ -73,6 +73,23 @@ You can also toggle the defenses from the command line:
 curl -X POST http://localhost:7000/api/defenses/A05_injection -H "Content-Type: application/json" -d "{\"value\":true}"
 ```
 
+## Optional environment variables (cloud incident-response labs)
+
+All of these are optional. With none of them set, SangyShop behaves exactly as before and
+needs no cloud credentials.
+
+| Variable | Default | Description |
+|---|---|---|
+| `STRUCTURED_LOGS` | `on` | One JSON log line per HTTP request and login attempt on stdout. Set to `off` to disable. |
+| `OBJECT_STORE` | `none` | Object store provider: `none`, `s3` or `azure-blob`. With `none`, the `/media` routes are not registered. |
+| `S3_BUCKET` | - | Bucket name used when `OBJECT_STORE=s3`. |
+| `AWS_REGION` | - | AWS region used when `OBJECT_STORE=s3`. |
+| `AZURE_STORAGE_ACCOUNT` | - | Storage account name used when `OBJECT_STORE=azure-blob`. |
+| `AZURE_STORAGE_CONTAINER` | - | Blob container name used when `OBJECT_STORE=azure-blob`. |
+| `LAB_MODE` | unset | Set to `1` to enable the lab routes (`/.well-known/sangyshop-lab`, `/debug/config`). Only honored when `APP_MODE` is vulnerable (the default). |
+| `LAB_CLOUD` | unset | Cloud label (for example `aws` or `azure`) reported by the lab marker route. |
+| `LAB_LEAKED_FILE` | `/lab/leaked.json` | File served by `/debug/config` (the "forgotten" configuration leak used in the lab). |
+
 ## For the instructor
 
 The full step-by-step attack and defense walkthrough for each vulnerability is in
@@ -80,4 +97,4 @@ The full step-by-step attack and defense walkthrough for each vulnerability is i
 
 ## License
 
-MIT. Author: Prof. Nilson Sangy. Blue Team course material.
+MIT. Author: Prof. Nilson Sangy.

@@ -5,6 +5,7 @@ const router = express.Router();
 const db = require("../db/database");
 const { isOn } = require("../lib/defenses");
 const { recordLogin } = require("../lib/logger");
+const { logAuth } = require("../lib/accesslog");
 
 router.get("/login", (req, res) => {
   res.render("login", { error: null, user: req.session.user || null });
@@ -48,6 +49,13 @@ router.post("/login", async (req, res) => {
 
   const success = !!user;
   recordLogin({ username, ip, success });
+  logAuth({
+    ip,
+    username,
+    result: success ? "success" : "failure",
+    status: success ? 302 : 401,
+    request_id: req.requestId,
+  });
 
   if (success) {
     req.session.user = { id: user.id, username: user.username, role: user.role };

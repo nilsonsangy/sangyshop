@@ -1,5 +1,5 @@
 // src/routes/diag.js
-// GET /_diag — posture diagnostic endpoint with content negotiation.
+// GET /_diag, posture diagnostic endpoint with content negotiation.
 // Always responds HTTP 200 and never throws: buildPostureReport() is total,
 // and the HTML render is wrapped so a view failure falls back to minimal JSON.
 const express = require("express");

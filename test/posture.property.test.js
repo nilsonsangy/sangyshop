@@ -29,12 +29,12 @@ function mockProcess({ uid, gid }) {
   };
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 5: Identidade de execução coerente com o uid
+// Feature: sangyshop-diagnostico-postura, Property 5: Execution identity is coherent with the uid
 // Validates: Requirements 2.1, 2.2, 2.3, 2.4
 //
-// Para todo uid inteiro reportado por process.getuid(), o sinal tem
-// isRoot === (uid === 0) e papel "root"/"nao-root" conforme isRoot; quando
-// getuid/getgid não existem na plataforma, o sinal fica disponivel:false com motivo.
+// For every integer uid reported by process.getuid(), the signal has
+// isRoot === (uid === 0) and papel "root"/"non-root" according to isRoot; when
+// getuid/getgid do not exist on the platform, the signal is disponivel:false with a motivo.
 test("Property 5: execution identity is coherent with the reported uid", async () => {
   await fc.assert(
     fc.property(
@@ -51,7 +51,7 @@ test("Property 5: execution identity is coherent with the reported uid", async (
         assert.equal(sinal.uid, uid);
         assert.equal(sinal.gid, gid);
         assert.equal(sinal.isRoot, uid === 0);
-        assert.equal(sinal.papel, uid === 0 ? "root" : "nao-root");
+        assert.equal(sinal.papel, uid === 0 ? "root" : "non-root");
         // An available signal carries no "motivo".
         assert.equal(sinal.motivo, undefined);
       }
@@ -60,11 +60,11 @@ test("Property 5: execution identity is coherent with the reported uid", async (
   );
 });
 
-// Feature: sangyshop-diagnostico-postura, Property 5: Identidade de execução coerente com o uid
+// Feature: sangyshop-diagnostico-postura, Property 5: Execution identity is coherent with the uid
 // Validates: Requirements 2.4
 //
-// Quando getuid e/ou getgid não existem na plataforma (ex.: Windows), o coletor
-// não lança e reporta o sinal como indisponível com um motivo, sem campos de valor.
+// When getuid and/or getgid do not exist on the platform (e.g. Windows), the collector
+// does not throw and reports the signal as unavailable with a motivo, with no value fields.
 test("Property 5: missing getuid/getgid yields an unavailable signal with motivo", async () => {
   // Arbitrary subset of {getuid, getgid} present; at least one absent.
   const absenceArb = fc
@@ -121,37 +121,37 @@ function mockFsExists({ exists, throwErr }) {
   };
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 9: Token e variáveis sensíveis reportados só por presença
+// Feature: sangyshop-diagnostico-postura, Property 9: Token and sensitive variables are reported by presence only
 // Validates: Requirements 5.1, 8.1
 //
-// Para toda presença simulada do token (via fs.existsSync) e de DB_PASSWORD (via
-// process.env com valor secreto aleatório), o sinal de token reflete fs.existsSync
-// em `tokenMontado`, o sinal de variáveis sensíveis reflete a presença em
-// `dbPasswordPresente`, e o VALOR do segredo NUNCA aparece em JSON.stringify do sinal.
+// For every simulated token presence (via fs.existsSync) and DB_PASSWORD (via
+// process.env with a random secret value), the token signal reflects fs.existsSync
+// in `tokenMontado`, the sensitive variables signal reflects presence in
+// `dbPasswordPresente`, and the secret VALUE NEVER appears in JSON.stringify of the signal.
 test("Property 9: token and sensitive vars are reported by presence only, never by value", async () => {
   await fc.assert(
     fc.property(
-      // token presente/ausente via fs.existsSync
+      // token present/absent via fs.existsSync
       fc.boolean(),
-      // DB_PASSWORD presente ou ausente; quando presente, um valor secreto
-      // aleatório prefixado com um sentinela distintivo ("SENHA-"). O sentinela
-      // garante que o segredo não colida por acaso com substrings das chaves
-      // fixas do schema (ex.: "tokenMontado" contém "M"); assim a asserção de
-      // não-exfiltração mede o vazamento do VALOR, não coincidência de esquema.
+      // DB_PASSWORD present or absent; when present, a random secret value
+      // prefixed with a distinctive sentinel ("PASSWORD-"). The sentinel
+      // guarantees the secret does not collide by chance with substrings of the
+      // fixed schema keys (e.g. "tokenMontado" contains "M"); this way the
+      // non-exfiltration assertion measures leakage of the VALUE, not schema coincidence.
       fc.option(
-        fc.string({ minLength: 1 }).map((s) => "SENHA-" + s),
+        fc.string({ minLength: 1 }).map((s) => "PASSWORD-" + s),
         { nil: undefined }
       ),
       (tokenExiste, segredo) => {
-        // --- Token da ServiceAccount: só presença (R5.1) ---
+        // --- ServiceAccount token: presence only (R5.1) ---
         const depsToken = { fs: mockFsExists({ exists: tokenExiste }) };
         const sinalToken = coletarTokenServiceAccount(depsToken);
 
         assert.equal(sinalToken.disponivel, true);
-        // tokenMontado reflete exatamente fs.existsSync.
+        // tokenMontado reflects fs.existsSync exactly.
         assert.equal(sinalToken.tokenMontado, tokenExiste);
 
-        // --- Variáveis sensíveis: DB_PASSWORD só por presença (R8.1) ---
+        // --- Sensitive variables: DB_PASSWORD by presence only (R8.1) ---
         const env = {};
         const temSegredo = typeof segredo === "string";
         if (temSegredo) env.DB_PASSWORD = segredo;
@@ -159,18 +159,18 @@ test("Property 9: token and sensitive vars are reported by presence only, never 
         const sinalVars = coletarVariaveisSensiveis(depsVars);
 
         assert.equal(sinalVars.disponivel, true);
-        // dbPasswordPresente reflete a presença do nome, não o valor.
+        // dbPasswordPresente reflects the presence of the name, not the value.
         assert.equal(sinalVars.dbPasswordPresente, temSegredo);
 
-        // --- Não-exfiltração: o valor do segredo nunca entra no relatório ---
-        // (R8.2 / R12.1) Serializamos ambos os sinais e garantimos que o segredo
-        // gerado (quando existe e não-trivial) não aparece em lugar nenhum.
+        // --- Non-exfiltration: the secret value never enters the report ---
+        // (R8.2 / R12.1) We serialize both signals and ensure the generated
+        // secret (when it exists and is non-trivial) appears nowhere.
         if (temSegredo && segredo.length > 0) {
           const serializado =
             JSON.stringify(sinalToken) + JSON.stringify(sinalVars);
           assert.ok(
             !serializado.includes(segredo),
-            "o valor do DB_PASSWORD nunca pode aparecer no sinal serializado"
+            "the DB_PASSWORD value must never appear in the serialized signal"
           );
         }
       }
@@ -179,19 +179,19 @@ test("Property 9: token and sensitive vars are reported by presence only, never 
   );
 });
 
-// Feature: sangyshop-diagnostico-postura, Property 9: Token e variáveis sensíveis reportados só por presença
+// Feature: sangyshop-diagnostico-postura, Property 9: Token and sensitive variables are reported by presence only
 // Validates: Requirements 5.3
 //
-// Quando a verificação de existência do token lança (fs.existsSync falha), o
-// coletor não relança: reporta o sinal como indisponível com motivo, sem
-// `tokenMontado`.
+// When the token existence check throws (fs.existsSync fails), the
+// collector does not rethrow: it reports the signal as unavailable with a motivo,
+// without `tokenMontado`.
 test("Property 9: a failing token existence check yields an unavailable signal", async () => {
   await fc.assert(
-    fc.property(fc.boolean(), (_qualquer) => {
+    fc.property(fc.boolean(), (_any) => {
       const deps = { fs: mockFsExists({ throwErr: true }) };
       const sinal = coletarTokenServiceAccount(deps);
 
-      // Contrato de indisponibilidade: disponivel:false + motivo, sem valor. (R5.3)
+      // Unavailability contract: disponivel:false + motivo, no value. (R5.3)
       assert.equal(sinal.disponivel, false);
       assert.equal(typeof sinal.motivo, "string");
       assert.ok(sinal.motivo.length > 0);
@@ -218,7 +218,7 @@ const { coletarPrivilegio } = require("../src/lib/posture");
  */
 function mockFsPrivilegio({ statusContent, statusThrows }) {
   return {
-    readFileSync: (caminho) => {
+    readFileSync: (filePath) => {
       if (statusThrows) {
         const e = new Error("mock readFileSync ENOENT");
         e.code = "ENOENT";
@@ -233,15 +233,15 @@ function mockFsPrivilegio({ statusContent, statusThrows }) {
   };
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 6: Extração de capabilities resiliente
+// Feature: sangyshop-diagnostico-postura, Property 6: Resilient capability extraction
 // Validates: Requirements 3.1, 3.4
 //
-// Para todo conteúdo simulado de /proc/self/status, a extração de CapEff/CapPrm é
-// resiliente: quando as linhas CapEff/CapPrm com hex válido estão presentes, o
-// coletor extrai exatamente aqueles valores (em minúsculas, como o coletor
-// normaliza); quando o arquivo está ausente (readFileSync lança) ou as linhas
-// estão malformadas/ausentes, os campos de cap ficam indisponíveis (string vazia)
-// SEM lançar. (R3.1, R3.4)
+// For every simulated /proc/self/status content, the CapEff/CapPrm extraction is
+// resilient: when CapEff/CapPrm lines with valid hex are present, the
+// collector extracts exactly those values (lowercased, as the collector
+// normalizes); when the file is absent (readFileSync throws) or the lines
+// are malformed/missing, the cap fields are unavailable (empty string)
+// WITHOUT throwing. (R3.1, R3.4)
 test("Property 6: capability extraction from /proc/self/status is resilient", async () => {
   // A valid cap line value: 1..16 hex digits (kernels use up to 16). We keep the
   // raw (possibly mixed-case) form to feed the file and compare against the
@@ -274,28 +274,28 @@ test("Property 6: capability extraction from /proc/self/status is resilient", as
       fc.nat({ max: 8 }),
       fc.nat({ max: 8 }),
       (
-        temEff,
-        temPrm,
+        hasEff,
+        hasPrm,
         hexEff,
         hexPrm,
-        outrasLinhas,
+        otherLines,
         posEff,
         posPrm
       ) => {
         // Build the status content by interleaving the valid cap lines (when
         // present) among arbitrary other lines at bounded positions.
-        const linhas = outrasLinhas.slice();
-        if (temEff) {
-          const i = Math.min(posEff, linhas.length);
-          linhas.splice(i, 0, "CapEff:\t" + hexEff);
+        const lines = otherLines.slice();
+        if (hasEff) {
+          const i = Math.min(posEff, lines.length);
+          lines.splice(i, 0, "CapEff:\t" + hexEff);
         }
-        if (temPrm) {
-          const j = Math.min(posPrm, linhas.length);
-          linhas.splice(j, 0, "CapPrm:\t" + hexPrm);
+        if (hasPrm) {
+          const j = Math.min(posPrm, lines.length);
+          lines.splice(j, 0, "CapPrm:\t" + hexPrm);
         }
-        const conteudo = linhas.join("\n");
+        const content = lines.join("\n");
 
-        const deps = { fs: mockFsPrivilegio({ statusContent: conteudo }) };
+        const deps = { fs: mockFsPrivilegio({ statusContent: content }) };
 
         // Must never throw. (R3.4)
         const sinal = coletarPrivilegio(deps);
@@ -307,20 +307,20 @@ test("Property 6: capability extraction from /proc/self/status is resilient", as
 
         // When a valid hex cap line is present, the collector extracts exactly
         // that value, lowercased. When absent, the field is empty. (R3.1)
-        assert.equal(sinal.capEff, temEff ? hexEff.toLowerCase() : "");
-        assert.equal(sinal.capPrm, temPrm ? hexPrm.toLowerCase() : "");
+        assert.equal(sinal.capEff, hasEff ? hexEff.toLowerCase() : "");
+        assert.equal(sinal.capPrm, hasPrm ? hexPrm.toLowerCase() : "");
       }
     ),
     { numRuns: RUNS }
   );
 });
 
-// Feature: sangyshop-diagnostico-postura, Property 6: Extração de capabilities resiliente
+// Feature: sangyshop-diagnostico-postura, Property 6: Resilient capability extraction
 // Validates: Requirements 3.4
 //
-// Quando /proc/self/status está ausente (readFileSync lança) OU todas as linhas
-// são malformadas (hex inválido, sem valor, prefixo diferente), os campos de cap
-// ficam vazios e o coletor não lança. (R3.4)
+// When /proc/self/status is absent (readFileSync throws) OR all lines
+// are malformed (invalid hex, no value, different prefix), the cap fields
+// stay empty and the collector does not throw. (R3.4)
 test("Property 6: an absent or malformed status file yields empty cap fields without throwing", async () => {
   // Malformed CapEff/CapPrm lines: right prefix but a value that the strict hex
   // regex must reject (non-hex chars, or trailing garbage after the hex).
@@ -343,13 +343,13 @@ test("Property 6: an absent or malformed status file yields empty cap fields wit
       fc.array(fc.string({ maxLength: 30 }).map((s) => s.replace(/[\r\n]/g, " ")), {
         maxLength: 6,
       }),
-      (ausente, capsMalformadas, ruido) => {
-        const corpo = capsMalformadas.concat(ruido).join("\n");
+      (absent, malformedCaps, noise) => {
+        const body = malformedCaps.concat(noise).join("\n");
         const deps = {
           fs: mockFsPrivilegio(
-            ausente
+            absent
               ? { statusThrows: true }
-              : { statusContent: corpo }
+              : { statusContent: body }
           ),
         };
 
@@ -381,7 +381,7 @@ const LIMIAR_HOST_PID = 50; // mirror of the collector's internal threshold (> 5
  * readFileSync returns an empty status body so the capability branch is inert and
  * never interferes with the heuristic assertions.
  */
-function mockFsHeuristicaPrivilegio({ hostExists, procEntries }) {
+function mockFsPrivilegeHeuristic({ hostExists, procEntries }) {
   return {
     readFileSync: () => "",
     readdirSync: () => procEntries,
@@ -394,25 +394,25 @@ function mockFsHeuristicaPrivilegio({ hostExists, procEntries }) {
  * entries, plus a handful of non-numeric names that the collector must ignore
  * (it only counts entries matching /^\d+$/).
  */
-function montarEntradasProc(numPids) {
-  const entradas = [];
+function buildProcEntries(numPids) {
+  const entries = [];
   for (let i = 0; i < numPids; i++) {
     // Offset by 1 so we never emit "0" alone, but every entry is purely numeric.
-    entradas.push(String(i + 1));
+    entries.push(String(i + 1));
   }
   // Non-numeric names that must be ignored by the counter.
-  entradas.push("self", "net", "cpuinfo", "1abc", "abc", "12x3");
-  return entradas;
+  entries.push("self", "net", "cpuinfo", "1abc", "abc", "12x3");
+  return entries;
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 7: Heurísticas de privilégio e rede refletem o ambiente simulado
+// Feature: sangyshop-diagnostico-postura, Property 7: Privilege and network heuristics reflect the simulated environment
 // Validates: Requirements 3.2, 3.3
 //
-// Para toda presença simulada de /host (via fs.existsSync) e contagem de entradas
-// numéricas em /proc (PIDs visíveis), o coletor de privilégio reflete em
-// `montagemNoPresente` exatamente existsSync("/host") e marca `hostPidProvavel`
-// pela regra de limiar (> 50), ignorando entradas não-numéricas. O campo `metodo`
-// (string) está sempre presente, declarando a inferência.
+// For every simulated /host presence (via fs.existsSync) and count of numeric
+// entries in /proc (visible PIDs), the privilege collector reflects exactly
+// existsSync("/host") in `montagemNoPresente` and sets `hostPidProvavel`
+// by the threshold rule (> 50), ignoring non-numeric entries. The `metodo` field
+// (string) is always present, declaring the inference.
 test("Property 7: privilege heuristics reflect /host presence and the /proc PID threshold", async () => {
   await fc.assert(
     fc.property(
@@ -422,9 +422,9 @@ test("Property 7: privilege heuristics reflect /host presence and the /proc PID 
       // > 50 threshold (0..120 covers below, at, just above, and well above).
       fc.nat({ max: 120 }),
       (hostExists, numPids) => {
-        const procEntries = montarEntradasProc(numPids);
+        const procEntries = buildProcEntries(numPids);
         const deps = {
-          fs: mockFsHeuristicaPrivilegio({ hostExists, procEntries }),
+          fs: mockFsPrivilegeHeuristic({ hostExists, procEntries }),
         };
 
         const sinal = coletarPrivilegio(deps);
@@ -452,7 +452,7 @@ test("Property 7: privilege heuristics reflect /host presence and the /proc PID 
  * os.hostname() returns; `hostExists` drives existsSync("/host"); `podName` is
  * injected via process.env.POD_NAME (omitted when undefined).
  */
-function mockDepsRedeHost({ hostname, hostExists, podName }) {
+function mockDepsNetworkHost({ hostname, hostExists, podName }) {
   const env = {};
   if (typeof podName === "string") env.POD_NAME = podName;
   return {
@@ -463,19 +463,19 @@ function mockDepsRedeHost({ hostname, hostExists, podName }) {
 }
 
 // Mirror of the collector's pod-name suffix heuristic so assertions are precise.
-function pareceNomeDePod(hostname) {
+function looksLikePodName(hostname) {
   return /-[0-9a-f]{5,}$/i.test(String(hostname));
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 7: Heurísticas de privilégio e rede refletem o ambiente simulado
+// Feature: sangyshop-diagnostico-postura, Property 7: Privilege and network heuristics reflect the simulated environment
 // Validates: Requirements 6.1, 6.2, 6.3, 6.4
 //
-// Para todo hostname simulado (via os.hostname()), presença de /host e valor de
-// POD_NAME, o coletor de rede/host ecoa `hostname`, reflete `montagemNoPresente`
-// por existsSync("/host") e marca `hostNetworkProvavel` pela regra de divergência:
-// hostname difere de POD_NAME (presente e não-vazio) E não parece nome de Pod
-// gerado (sem sufixo hash /-[0-9a-f]{5,}$/i). O campo `metodo` (string) sempre
-// está presente.
+// For every simulated hostname (via os.hostname()), /host presence and POD_NAME
+// value, the network/host collector echoes `hostname`, reflects `montagemNoPresente`
+// via existsSync("/host") and sets `hostNetworkProvavel` by the divergence rule:
+// hostname differs from POD_NAME (present and non-empty) AND does not look like a
+// generated Pod name (no hash suffix /-[0-9a-f]{5,}$/i). The `metodo` field (string)
+// is always present.
 test("Property 7: network heuristics reflect hostname, /host presence and the POD_NAME divergence rule", async () => {
   // A base name segment made of safe hostname characters.
   const nomeBaseArb = fc
@@ -487,7 +487,7 @@ test("Property 7: network heuristics reflect hostname, /host presence and the PO
     .filter((s) => s.length > 0);
 
   // A pod-style hash suffix (5+ hex chars) to append, exercising the
-  // pareceNomeDePod branch on purpose.
+  // looksLikePodName branch on purpose.
   const hashArb = fc.string({
     unit: fc.constantFrom(..."0123456789abcdef".split("")),
     minLength: 5,
@@ -516,7 +516,7 @@ test("Property 7: network heuristics reflect hostname, /host presence and the PO
         const podName =
           podNameRaw === "__EQUAL__" ? hostname : podNameRaw;
 
-        const deps = mockDepsRedeHost({ hostname, hostExists, podName });
+        const deps = mockDepsNetworkHost({ hostname, hostExists, podName });
         const sinal = coletarRedeHost(deps);
 
         assert.equal(sinal.disponivel, true);
@@ -529,12 +529,12 @@ test("Property 7: network heuristics reflect hostname, /host presence and the PO
 
         // hostNetworkProvavel = diverges from a present/non-empty POD_NAME AND
         // does not look like a generated pod name. (R6.2, R6.4)
-        const divergeDoPodName =
+        const divergesFromPodName =
           typeof podName === "string" &&
           podName.length > 0 &&
           podName !== hostname;
-        const esperado = divergeDoPodName && !pareceNomeDePod(hostname);
-        assert.equal(sinal.hostNetworkProvavel, esperado);
+        const expected = divergesFromPodName && !looksLikePodName(hostname);
+        assert.equal(sinal.hostNetworkProvavel, expected);
 
         // The heuristic always declares its method as a string (inference). (R6.2)
         assert.equal(typeof sinal.metodo, "string");
@@ -551,7 +551,7 @@ test("Property 7: network heuristics reflect hostname, /host presence and the PO
 // `wx` write there, classifies the result (writable / read-only / unavailable) and
 // ALWAYS removes the file it created. We mock process (cwd + pid) to fully pin the
 // probe path, and mock fs.writeFileSync/unlinkSync so the three outcomes are
-// simulated and every creation/removal is recorded in closures — proving no residue.
+// simulated and every creation/removal is recorded in closures, proving no residue.
 const path = require("node:path");
 const { coletarSistemaArquivos } = require("../src/lib/posture");
 
@@ -603,7 +603,7 @@ function mockDepsSistemaArquivos({
         e.code = codigoOutro;
         throw e;
       }
-      // "ok": the file was actually created — record it so cleanup can be checked.
+      // "ok": the file was actually created, record it so cleanup can be checked.
       criados.push(caminho);
     },
     unlinkSync: (caminho) => {
@@ -620,19 +620,19 @@ function mockDepsSistemaArquivos({
   return { fs, process: proc };
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 8: Sonda de rootfs classifica e sempre limpa
+// Feature: sangyshop-diagnostico-postura, Property 8: The rootfs probe classifies and always cleans up
 // Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5
 //
-// Para todo resultado simulado da escrita no rootfs (sucesso, EROFS, outro erro) e
-// para todo caminho de sonda derivado de process.cwd()/process.pid (com fallback
-// /etc quando cwd ausente), o coletor:
-//   - classifica corretamente: sucesso -> {disponivel:true, rootfsSomenteLeitura:false,
+// For every simulated rootfs write result (success, EROFS, other error) and
+// for every probe path derived from process.cwd()/process.pid (with /etc fallback
+// when cwd is absent), the collector:
+//   - classifies correctly: success -> {disponivel:true, rootfsSomenteLeitura:false,
 //     caminhoTestado}; EROFS -> {disponivel:true, rootfsSomenteLeitura:true,
-//     caminhoTestado}; outro erro -> {disponivel:false, motivo}; (R4.1, R4.2, R4.3, R4.5)
-//   - e SEMPRE limpa: quando a escrita criou o arquivo (sucesso), unlinkSync é
-//     chamado exatamente para aquele caminho e nenhum resíduo permanece; quando a
-//     escrita lançou (EROFS/outro), nenhum arquivo foi criado, logo nada sobra para
-//     remover. (R4.4)
+//     caminhoTestado}; other error -> {disponivel:false, motivo}; (R4.1, R4.2, R4.3, R4.5)
+//   - and ALWAYS cleans up: when the write created the file (success), unlinkSync is
+//     called exactly for that path and no residue remains; when the write
+//     threw (EROFS/other), no file was created, so there is nothing left to
+//     remove. (R4.4)
 test("Property 8: the rootfs probe classifies correctly and always cleans up", async () => {
   // Arbitrary cwd segment made of safe path characters; may also be absent/empty to
   // exercise the /etc fallback. pid is an arbitrary non-negative integer.
@@ -730,14 +730,14 @@ const MAPA_IDENTIDADE_POD = {
   no: "NODE_NAME",
 };
 
-// Feature: sangyshop-diagnostico-postura, Property 10: Identidade do Pod por disponibilidade de env
+// Feature: sangyshop-diagnostico-postura, Property 10: Pod identity by env availability
 // Validates: Requirements 7.1, 7.2, 7.3
 //
-// Para todo subconjunto simulado de {POD_NAME, POD_NAMESPACE, NODE_NAME} presente
-// (com valores arbitrários) ou ausente em process.env, o coletor de identidade do
-// Pod projeta cada campo pela disponibilidade da sua env var: presente (string) ->
-// {disponivel:true, valor:<o valor da env>}; ausente -> {disponivel:false} com um
-// `motivo` string. O coletor nunca lança e é somente-leitura (não muta process.env).
+// For every simulated subset of {POD_NAME, POD_NAMESPACE, NODE_NAME} present
+// (with arbitrary values) or absent in process.env, the Pod identity collector
+// projects each field by the availability of its env var: present (string) ->
+// {disponivel:true, valor:<the env value>}; absent -> {disponivel:false} with a
+// string `motivo`. The collector never throws and is read-only (does not mutate process.env).
 test("Property 10: Pod identity is projected per env var availability, read-only", async () => {
   // For each of the three vars: absent (undefined) or present with an arbitrary
   // string value. fast-check covers every present/absent subset across runs.
@@ -836,7 +836,7 @@ const SINAIS_FALHAVEIS = [
 ];
 
 // Sentinel errors so the aggregator's `motivo` is a real, non-empty string.
-function erroSimulado(msg) {
+function simulatedError(msg) {
   return new Error(msg);
 }
 
@@ -846,7 +846,7 @@ function erroSimulado(msg) {
  * harmless, non-throwing stubs.
  *
  * The failure levers are chosen per collector so that each targeted signal reliably
- * becomes disponivel:false — some by throwing out to the aggregator's try/catch,
+ * becomes disponivel:false, some by throwing out to the aggregator's try/catch,
  * others by throwing a guarded dependency the collector itself turns into a motivo.
  */
 function mockDepsFalhas(falhar) {
@@ -855,7 +855,7 @@ function mockDepsFalhas(falhar) {
   // benign uid/gid so the collector succeeds.
   const proc = {
     getuid: () => {
-      if (falhar.has("identidadeExecucao")) throw erroSimulado("getuid boom");
+      if (falhar.has("identidadeExecucao")) throw simulatedError("getuid boom");
       return 1000;
     },
     getgid: () => 1000,
@@ -867,7 +867,7 @@ function mockDepsFalhas(falhar) {
   // collector to throw out to the aggregator's catch.
   Object.defineProperty(proc, "pid", {
     get() {
-      if (falhar.has("sistemaArquivos")) throw erroSimulado("pid boom");
+      if (falhar.has("sistemaArquivos")) throw simulatedError("pid boom");
       return 4242;
     },
   });
@@ -881,7 +881,7 @@ function mockDepsFalhas(falhar) {
   if (envAlvo) {
     Object.defineProperty(proc, "env", {
       get() {
-        throw erroSimulado("env boom");
+        throw simulatedError("env boom");
       },
     });
   } else {
@@ -898,7 +898,7 @@ function mockDepsFalhas(falhar) {
   const fs = {
     existsSync: (caminho) => {
       if (caminho === CAMINHO_TOKEN && falhar.has("tokenServiceAccount")) {
-        throw erroSimulado("existsSync token boom");
+        throw simulatedError("existsSync token boom");
       }
       return false;
     },
@@ -908,7 +908,7 @@ function mockDepsFalhas(falhar) {
     // sistemaArquivos: writeFileSync throws EROFS so, when NOT failing, it still
     // classifies cleanly as read-only (disponivel:true) without leaving residue.
     writeFileSync: () => {
-      const e = erroSimulado("read-only file system");
+      const e = simulatedError("read-only file system");
       e.code = "EROFS";
       throw e;
     },
@@ -920,7 +920,7 @@ function mockDepsFalhas(falhar) {
   // disponivel:false. Otherwise return a benign hostname.
   const os = {
     hostname: () => {
-      if (falhar.has("redeHost")) throw erroSimulado("hostname boom");
+      if (falhar.has("redeHost")) throw simulatedError("hostname boom");
       return "sangyshop";
     },
   };
@@ -928,17 +928,17 @@ function mockDepsFalhas(falhar) {
   return { fs, os, process: proc };
 }
 
-// Feature: sangyshop-diagnostico-postura, Property 1: Relatório completo e robusto
+// Feature: sangyshop-diagnostico-postura, Property 1: Complete and robust report
 // Validates: Requirements 1.2, 9.1, 9.2, 9.3
 //
-// Para TODO subconjunto de coletores forçado a falhar (por lançar para o catch do
-// agregador ou por cair na própria guarda), buildPostureReport:
-//   - NUNCA lança; (R9.1, R9.2)
-//   - retorna um objeto com EXATAMENTE as chaves de topo fixas: `meta` + os 7
-//     sinais de CHAVES_SINAIS — nenhum sinal é omitido e nenhum extra aparece; (R1.2, R9.3)
-//   - `meta` traz `geradoEm` e `versaoRelatorio`;
-//   - todo sinal cujo coletor falhou tem `disponivel:false` e um `motivo` string; (R9.3)
-//   - todo sinal cujo coletor NÃO falhou está presente e bem-formado.
+// For EVERY subset of collectors forced to fail (by throwing to the aggregator's
+// catch or by falling into the collector's own guard), buildPostureReport:
+//   - NEVER throws; (R9.1, R9.2)
+//   - returns an object with EXACTLY the fixed top-level keys: `meta` + the 7
+//     signals of CHAVES_SINAIS; no signal is omitted and no extra appears; (R1.2, R9.3)
+//   - `meta` carries `geradoEm` and `versaoRelatorio`;
+//   - every signal whose collector failed has `disponivel:false` and a string `motivo`; (R9.3)
+//   - every signal whose collector did NOT fail is present and well-formed.
 test("Property 1: the report is always complete and robust under arbitrary collector failures", async () => {
   // Arbitrary subset of the failable signals (0..all of them). Represented as a
   // record of booleans so fast-check explores every combination across runs.
@@ -962,8 +962,8 @@ test("Property 1: the report is always complete and robust under arbitrary colle
 
       // Exactly the fixed top-level keys: meta + the 7 signals, nothing more,
       // nothing missing. (R1.2, R9.3)
-      const chavesEsperadas = ["meta", ...CHAVES_SINAIS].sort();
-      assert.deepEqual(Object.keys(report).sort(), chavesEsperadas);
+      const expectedKeys = ["meta", ...CHAVES_SINAIS].sort();
+      assert.deepEqual(Object.keys(report).sort(), expectedKeys);
 
       // meta carries the timestamp and the schema version.
       assert.equal(typeof report.meta.geradoEm, "string");
@@ -974,7 +974,7 @@ test("Property 1: the report is always complete and robust under arbitrary colle
       for (const chave of CHAVES_SINAIS) {
         assert.ok(
           Object.prototype.hasOwnProperty.call(report, chave),
-          "sinal ausente: " + chave
+          "missing signal: " + chave
         );
         assert.equal(typeof report[chave], "object");
         assert.notEqual(report[chave], null);
@@ -987,13 +987,13 @@ test("Property 1: the report is always complete and robust under arbitrary colle
         assert.equal(
           sinal.disponivel,
           false,
-          "esperava disponivel:false em " + chave
+          "expected disponivel:false in " + chave
         );
         assert.equal(typeof sinal.motivo, "string");
         assert.ok(sinal.motivo.length > 0);
       }
 
-      // privilegio is never asked to fail and stays available. (robustez de campo)
+      // privilegio is never asked to fail and stays available. (field-level robustness)
       assert.equal(report.privilegio.disponivel, true);
     }),
     { numRuns: RUNS }

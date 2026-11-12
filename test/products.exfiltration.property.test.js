@@ -79,7 +79,7 @@ function unionPayloadArb() {
     });
 }
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 6: SQLi autêntica na busca com defesa desligada (exfiltração)
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 6: Authentic SQLi in search with the defense off (exfiltration)
 // Validates: Requirements 3.1, 3.3
 test("Property 6: with A05 OFF, a UNION SELECT payload exfiltrates users rows (200 + users data in body)", async () => {
   const app = await createTestApp();

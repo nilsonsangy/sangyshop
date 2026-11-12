@@ -1,9 +1,9 @@
 // src/lib/snippets.js
-// Catalog for the "Ver código" (View Code) feature.
+// Catalog for the "View Code" feature.
 //
 // Each vulnerability maps to a real source file. The snippet shown to the
 // instructor is read LIVE from that file (via fs.promises.readFile) and sliced
-// by textual anchors, so the "Ver código" panel always reflects the code that
+// by textual anchors, so the "View Code" panel always reflects the code that
 // is actually running (R7.2, design Property 13: the returned code is a literal
 // substring of the live file).
 //
@@ -21,7 +21,7 @@
 // returns { file, code, vulnRange, secureRange }. `deps.fs` is injectable
 // (defaults to fs.promises) so tests can force a read failure (Property 15).
 // If the source file cannot be loaded, getSnippet throws; the caller (the
-// /code/:vuln route) converts that into an "indisponível" message (R7.7).
+// /code/:vuln route) converts that into an "unavailable" message (R7.7).
 
 "use strict";
 

@@ -1,5 +1,5 @@
 // test/snippets.livesource.property.test.js
-// Property-based test for the "Ver código" (View Code) catalog — the invariant
+// Property-based test for the "View Code" catalog, the invariant
 // that the snippet returned by getSnippet(vuln) is a LITERAL subset of the real
 // source file read live from disk (src/lib/snippets.js).
 //
@@ -7,7 +7,7 @@
 // it by textual anchors. This test independently reads the SAME source file(s)
 // with fs and asserts that every piece of code the catalog returns
 // (vulnRange.code, secureRange.code, and the A05 secondary ranges) is a literal
-// substring of the live file content — i.e. the panel never shows text that
+// substring of the live file content, i.e. the panel never shows text that
 // diverges from the code that is actually running (R7.2).
 //
 // The test only reads existing source files; it creates no temp files and needs
@@ -34,7 +34,7 @@ function readLive(relFile) {
   return fs.readFileSync(path.join(APP_ROOT, relFile), "utf8");
 }
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 13: Snippet corresponde ao código-fonte real
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 13: Snippet matches the real source code
 // Validates: Requirements 7.2
 test("Property 13: every snippet range returned by getSnippet is a literal substring of the live source file", async () => {
   await fc.assert(

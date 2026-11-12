@@ -1,12 +1,12 @@
 // test/code.unavailable.property.test.js
-// Property-based test for the SangyShop "Ver código" (View Code) feature — the
+// Property-based test for the SangyShop "View Code" feature, the
 // resilience of GET /code/:vuln when the backing source file cannot be loaded.
 //
 // Feature: sangyshop-postgres-secret-ver-codigo, Property 15
-// Property 15: Indisponibilidade do snippet não derruba a aplicação
+// Property 15: Snippet unavailability does not bring the application down
 // Validates: Requirements 7.7
 //
-// R7.7 (design "fail-open navegável"): IF the source file that backs a
+// R7.7 (design "navigable fail-open"): IF the source file that backs a
 // Code_Snippet cannot be loaded when the View_Code_Control is triggered, THEN
 // the app shows an unavailability message, keeps the page navigable, and does
 // NOT terminate the process. The seam is src/lib/snippets.js getSnippet(vuln,
@@ -17,7 +17,7 @@
 // Two complementary angles prove the property across all catalog vulns:
 //
 //   (a) UNIT: for every catalog vuln, calling getSnippet(vuln, { fs: a readFile
-//       that always throws }) REJECTS (throws) — no partial snippet is returned.
+//       that always throws }) REJECTS (throws), no partial snippet is returned.
 //       This is the exact seam R7.7 depends on: getSnippet must fail loudly so
 //       the route can degrade gracefully.
 //
@@ -28,7 +28,7 @@
 //       src/lib/snippets.js share the SAME CATALOG object instance, the live
 //       GET /code/:vuln then genuinely hits readFile's ENOENT failure. We assert
 //       it answers 200 (never 500), renders the unavailability alert, and that a
-//       follow-up navigation still succeeds — i.e. the process stayed up and the
+//       follow-up navigation still succeeds, i.e. the process stayed up and the
 //       app is still navigable. The catalog mutation is always restored in a
 //       finally block so no test state leaks between runs.
 "use strict";
@@ -48,7 +48,7 @@ const CATALOG_VULNS = Object.keys(CATALOG);
 
 // An arbitrary readFile failure: both the classic ENOENT (file missing) and a
 // permission-style EACCES, as either may occur at trigger time (design table:
-// "Fonte do snippet não carregável"). The stub ignores its args and always
+// "Snippet source cannot be loaded"). The stub ignores its args and always
 // throws, so the forced failure is deterministic regardless of path.
 const failureKind = fc.constantFrom(
   { code: "ENOENT", msg: "ENOENT: no such file or directory" },
@@ -101,7 +101,7 @@ test("Property 15 (unit): getSnippet throws for every catalog vuln when fs read 
 
 // ---------------------------------------------------------------------------
 // (b) ROUTE angle: GET /code/:vuln degrades to 200 + unavailability, app stays
-//     navigable, process does not crash — for every catalog vuln.
+//     navigable, process does not crash, for every catalog vuln.
 // ---------------------------------------------------------------------------
 //
 // The route uses the default fs, so we force the failure by temporarily
@@ -145,7 +145,7 @@ test("Property 15 (route): GET /code/:vuln answers 200 with unavailability and s
           );
           assert.match(
             body,
-            /indispon/i,
+            /unavailable/i,
             `unavailability message not present for /code/${vuln}`
           );
           // Fail-open means NO source snippet leaked despite the read failure.

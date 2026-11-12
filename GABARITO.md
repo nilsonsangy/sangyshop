@@ -37,9 +37,9 @@ to contrast the antipattern with the secure pattern:
 Talking point: "vulnerable apps store secrets insecurely" — compare the two compose files and
 the two credential paths side by side.
 
-## "Ver código" (View Code) button
+## "View Code" button
 
-Every page that hosts a vulnerability shows a **"Ver código"** button (present in both the
+Every page that hosts a vulnerability shows a **"View Code"** button (present in both the
 insecure and hardened builds). Clicking it opens a panel with the **real source snippet** for
 that vulnerability, read live from the running code, via `GET /code/:vuln`. The highlight
 follows the vulnerability's defense toggle (the Defenses Panel is the source of truth):
@@ -48,7 +48,7 @@ follows the vulnerability's defense toggle (the Defenses Panel is the source of 
 - Defense **ON** -> the **secure** block is highlighted (the fixed code).
 
 A03 (supply chain) has no toggle, so its snippet always highlights the dependencies block in
-`package.json`. Use "Ver código" during each exercise to show students exactly which lines
+`package.json`. Use "View Code" during each exercise to show students exactly which lines
 change between the attack and the defense.
 
 ## Resetting defenses (initial attack state)
@@ -86,7 +86,7 @@ curl -X POST http://localhost:7000/api/defenses/A09_logging -H "Content-Type: ap
 Turn on `A05_injection`. The code switches to a **prepared statement**
 (`db.prepare("... WHERE username = ? AND password = ?").get(username, password)`). The data
 layer translates the `?` placeholders to PostgreSQL's `$1, $2` and binds the input as
-parameters, so it is never interpreted as SQL. Use **"Ver código"** on the login/search page
+parameters, so it is never interpreted as SQL. Use **"View Code"** on the login/search page
 to show the vulnerable concatenation (OFF) versus the parameterized query (ON).
 
 ```
@@ -115,7 +115,7 @@ curl -X POST http://localhost:7000/api/defenses/A05_injection -H "Content-Type: 
 ### Defense
 Turn on `A01_access_control`. The backend now **checks ownership**: it compares
 `order.user_id` with the authenticated session user's id; only the owner (or admin) gets access.
-"Ver código" on the orders page highlights the missing check (OFF) versus the ownership check (ON).
+"View Code" on the orders page highlights the missing check (OFF) versus the ownership check (ON).
 
 ```
 curl -X POST http://localhost:7000/api/defenses/A01_access_control -H "Content-Type: application/json" -d "{\"value\":true}"
@@ -141,7 +141,7 @@ npm install          # already prints the vulnerability warning
 npm audit            # detailed report: severity, CWE, dependency path
 ```
 Identify the vulnerabilities (e.g., prototype pollution in lodash/minimist, ReDoS in marked)
-and understand the risk of outdated and transitive dependencies. "Ver código" on the A03 entry
+and understand the risk of outdated and transitive dependencies. "View Code" on the A03 entry
 shows the `package.json` dependencies block (no toggle here).
 
 ### Defense
@@ -174,7 +174,7 @@ curl -I http://localhost:7000/products
 ### Defense
 Turn on `A02_misconfiguration`: it applies the security headers (CSP, X-Content-Type-Options,
 X-Frame-Options, Referrer-Policy), removes `X-Powered-By`, and replaces the detailed error with
-a generic message. "Ver código" on the diag / error page contrasts the leaky setup (OFF) with
+a generic message. "View Code" on the diag / error page contrasts the leaky setup (OFF) with
 the hardened headers and generic error (ON).
 
 ```
@@ -204,7 +204,7 @@ detection time).
 
 ### Defense
 Turn on `A09_logging`: each attempt is recorded in `logs/auth.log` and, when it exceeds 5
-failures in 60s for the same user/IP, it fires `ALERT brute_force_suspected`. "Ver código" on
+failures in 60s for the same user/IP, it fires `ALERT brute_force_suspected`. "View Code" on
 the `/logs` page shows the no-op path (OFF) versus the recording + alerting path (ON).
 
 ```

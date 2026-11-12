@@ -1,19 +1,19 @@
-<% var highlightLabel = (highlight === 'secure') ? 'trecho seguro (defesa ligada)' : 'trecho vulneravel (defesa desligada)'; %>
+<% var highlightLabel = (highlight === 'secure') ? 'secure snippet (defense on)' : 'vulnerable snippet (defense off)'; %>
 <section class="code-snippet" data-vuln="<%= vuln %>" data-highlight="<%= highlight %>">
 <% if (unavailable) { %>
   <p class="code-unavailable" role="alert">
-    Código-fonte indisponível no momento: <%= unavailable %>.
-    A página segue navegável; tente novamente.
+    Source code is currently unavailable: <%= unavailable %>.
+    The page remains navigable; please try again.
   </p>
 <% } else { %>
   <header class="code-snippet-head">
     <span class="code-file"><%= file %></span>
     <% if (defenseKey) { %>
-      <span class="code-defense">Defesa: <%= defenseKey %></span>
+      <span class="code-defense">Defense: <%= defenseKey %></span>
     <% } else { %>
-      <span class="code-defense">Sem toggle de defesa</span>
+      <span class="code-defense">No defense toggle</span>
     <% } %>
-    <span class="code-highlight-note">Destaque: <%= highlightLabel %></span>
+    <span class="code-highlight-note">Highlight: <%= highlightLabel %></span>
   </header>
   <pre class="code-block"><% blocks.forEach(function (b) { %><span class="code-section<%= b.active ? ' code-active' : '' %>" data-state="<%= b.state %>" title="<%= b.label %>"><%= b.code %></span><% }) %></pre>
 <% } %>

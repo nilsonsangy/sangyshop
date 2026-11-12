@@ -27,12 +27,12 @@ th { background: #e9f3ec; color: #0b3d27; }
 .state.on { background: #d6f5e2; color: #0b6644; }
 .state.off { background: #fde4e1; color: #c0392b; }
 
-/* Diagnóstico de postura (/_diag) — regras aditivas, paleta verde/navy existente. */
+/* Posture diagnostic (/_diag): additive rules, existing green/navy palette. */
 .diag-group { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2eae4; }
 .diag-group:first-of-type { margin-top: 20px; padding-top: 0; border-top: 0; }
 .diag-group h2 { color: #0b3d27; margin: 0 0 8px; font-size: 18px; }
 
-/* "Ver código" (View_Code_Control) — botão + modal, paleta verde/navy existente. */
+/* "View Code" (View_Code_Control): button + modal, existing green/navy palette. */
 .view-code { margin: 18px 0; }
 .view-code-open { background: #0b3d27; }
 .view-code-open:hover { background: #0b6644; }

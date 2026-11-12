@@ -1,8 +1,8 @@
 // test/database.contract.property.test.js
 // Property-based test for the Data_Access_Module contract (src/db/database.js).
 //
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalência do
-// contrato de acesso a dados entre backends.
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the
+// data access contract between backends.
 //
 // Property 2 states that, for any valid sequence of get/all/run/exec
 // operations, the backends produce equivalent results (same rows for all, same
@@ -42,7 +42,7 @@ async function ready() {
 const SEED_USERNAMES = ["admin", "alice", "bob", "carol"];
 const SEED_USER_IDS = [1, 2, 3, 4];
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalência do contrato de acesso a dados entre backends
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the data access contract between backends
 // Validates: Requirements 2.2, 8.2
 test("Property 2: the data-access contract behaves consistently for get/all/run/exec sequences", async () => {
   await ready();
@@ -128,8 +128,8 @@ test("Property 2: the data-access contract behaves consistently for get/all/run/
 // exec(sql) runs direct SQL (DDL/statement) honouring the same contract: it
 // completes without returning rows, and its effect is visible through the
 // get/all read operations. We create an auxiliary table, exec an INSERT, then
-// read it back — exercising exec() alongside get/all in one sequence.
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalência do contrato de acesso a dados entre backends
+// read it back, exercising exec() alongside get/all in one sequence.
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the data access contract between backends
 // Validates: Requirements 2.2, 8.2
 test("Property 2: exec() runs direct SQL whose effect is observable via get/all", async () => {
   await ready();
@@ -146,7 +146,7 @@ test("Property 2: exec() runs direct SQL whose effect is observable via get/all"
 
   await fc.assert(
     fc.asyncProperty(kvKey, kvVal, async (k, v) => {
-      // Direct SQL via exec() (no bound params) — equivalent to running raw SQL.
+      // Direct SQL via exec() (no bound params), equivalent to running raw SQL.
       await db.exec(
         `INSERT OR REPLACE INTO prop2_kv (k,v) VALUES ('${k}','${v}')`
       );

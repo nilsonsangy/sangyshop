@@ -7,21 +7,32 @@
     "start": "node src/server.js",
     "test": "node --test \"test/**/*.test.js\""
   },
-  "keywords": ["owasp", "owasp-top-10", "security", "blue-team", "vulnerable-app", "education", "appsec"],
+  "keywords": [
+    "owasp",
+    "owasp-top-10",
+    "security",
+    "blue-team",
+    "vulnerable-app",
+    "education",
+    "appsec"
+  ],
   "author": "Prof. Nilson Sangy",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1167.0",
+    "@azure/identity": "4.14.1",
+    "@azure/storage-blob": "12.34.0",
+    "ejs": "3.1.9",
     "express": "4.18.2",
     "express-session": "1.17.3",
-    "pg": "8.23.1",
-    "sql.js": "1.8.0",
-    "ejs": "3.1.9",
     "lodash": "4.17.11",
+    "marked": "0.3.6",
     "minimist": "1.2.0",
-    "marked": "0.3.6"
+    "pg": "8.23.1",
+    "sql.js": "1.8.0"
   },
   "devDependencies": {
-    "supertest": "7.3.1",
-    "fast-check": "4.10.2"
+    "fast-check": "4.10.2",
+    "supertest": "7.3.1"
   }
 }

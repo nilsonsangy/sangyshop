@@ -3,7 +3,7 @@
 //
 // Feature: sangyshop-postgres-secret-ver-codigo, Property 3
 //
-// Property 3: Leitura sem correspondência retorna vazio
+// Property 3: Read with no match returns empty
 //   For any single-row read whose condition matches no row, get(...) returns an
 //   empty value (absence of a record) WITHOUT throwing.
 //
@@ -35,7 +35,7 @@ before(async () => {
   await db.init();
 });
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 3: Leitura sem correspondência retorna vazio
+// Feature: sangyshop-postgres-secret-ver-codigo, Property 3: Read with no match returns empty
 // Validates: Requirements 2.3
 test("Property 3: get() with no matching row returns empty (undefined) without throwing", async () => {
   await fc.assert(

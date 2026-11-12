@@ -95,7 +95,7 @@ test("Property 8: with A01 ON, a non-admin user is blocked from another user's o
   resetToggles();
 });
 
-// Feature: sangyshop-sessao-navegacao-ingles, Property 9: Acesso legítimo preservado com A01 ligado
+// Feature: sangyshop-sessao-navegacao-ingles, Property 9: Legitimate access preserved with A01 on
 // Validates: Requirements 3.9
 test("Property 9: with A01 ON, a user still reads their own order", async () => {
   const app = await createTestApp();

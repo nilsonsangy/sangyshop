@@ -1,14 +1,21 @@
 node_modules/
 logs/
 *.log
+.env
 src/db/*.db
 src/db/*.db-wal
 src/db/*.db-shm
 .DS_Store
 
-# deployment-security: never commit real secrets
-deployment-security/docker/hardened/db_password.txt
+# ops: never commit real secrets
+ops/docker/hardened/db_password.txt
 # multi-cloud-deploy: real per-user config (secret-free, but account-specific); template cloud.config.example.ps1 stays committed
-deployment-security/cloud/cloud.config.ps1
+ops/cloud.config.ps1
 # Kiro IDE workspace artifacts (specs, settings) - not versioned
 .kiro/
+# lab-manifest: generated per-lab, never commit
+lab-manifest*.json
+!lab-manifest.example.json
+
+# attack-simulation: generated step logs and any discovered lab credential
+attack-simulation/out/

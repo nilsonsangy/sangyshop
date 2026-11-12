@@ -6,6 +6,10 @@ const session = require("express-session");
 const path = require("path");
 const { isOn, readAll } = require("./lib/defenses");
 const db = require("./db/database");
+const { accessLogMiddleware } = require("./lib/accesslog");
+const { createStore } = require("./lib/objectstore");
+const { mountMedia } = require("./routes/media");
+const { mountLab } = require("./routes/lab");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +22,8 @@ app.set("views", path.join(__dirname, "views"));
 // which Pod served the request. Outside Kubernetes (Docker, `npm start`) the
 // variable is absent and the badge is simply hidden.
 app.locals.podName = process.env.POD_NAME || null;
+// Structured JSON access log (stdout). Disabled with STRUCTURED_LOGS=off.
+app.use(accessLogMiddleware);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
@@ -57,6 +63,12 @@ app.use("/", require("./routes/admin"));
 app.use("/", require("./routes/orders"));
 app.use("/", require("./routes/diag"));
 app.use("/", require("./routes/code"));
+
+// Object store (OBJECT_STORE=none by default: no routes, no cloud credentials).
+mountMedia(app, createStore(process.env));
+
+// Opt-in lab routes (only when LAB_MODE=1 and APP_MODE is vulnerable).
+mountLab(app, process.env);
 
 // Route that throws an error on purpose, to demonstrate A02 (exposed stack trace).
 app.get("/debug/boom", (req, res) => {
