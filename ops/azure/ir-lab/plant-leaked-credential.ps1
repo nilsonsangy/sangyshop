@@ -3,7 +3,7 @@
     Plants the lab "leaked" credential: service principal sp-lab-leaked + /lab/leaked.json on the lab VM.
 
 .DESCRIPTION
-    Azure counterpart of aws/ir-lab/plant-leaked-credential.ps1 (IAM user sangyshop-lab-leaked).
+    Azure counterpart of ops/aws/ir-lab/plant-leaked-credential.ps1 (IAM user sangyshop-lab-leaked).
     Creates (idempotent, safe to re-run):
       1. App registration + service principal 'sp-lab-leaked' (app registration tagged lab=sangyshop-lab-azure)
       2. Role 'Reader' on the lab resource group

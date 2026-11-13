@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Shared helpers for full-teardown.ps1 and verify-zero-cost.ps1 (aws/ir-lab).
+    Shared helpers for full-teardown.ps1 and verify-zero-cost.ps1 (ops/aws/ir-lab).
 
 .DESCRIPTION
     Dot-source it from the two scripts:

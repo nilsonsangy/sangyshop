@@ -3,7 +3,7 @@
     Pester 5.x property test: reading the lab manifest merges every candidate file without losing anything.
 
 .DESCRIPTION
-    Read-LabManifestEntries (aws/ir-lab/LabTeardown-Common.ps1) reads the file named by LAB_MANIFEST_PATH
+    Read-LabManifestEntries (ops/aws/ir-lab/LabTeardown-Common.ps1) reads the file named by LAB_MANIFEST_PATH
     plus the standard files under the home folder (legacy lab-manifest.json and the current
     manifest-<lab>.json). For generated sets of manifests in both on-disk shapes, the merge must be:
       - additive: every (type, id, region) of every file is in the result, exactly once;

@@ -3,7 +3,7 @@
     Step 6 of the simulated attack: uses the leaked service principal against Azure (max 10 API calls).
 
 .DESCRIPTION
-    Azure counterpart of aws/ir-lab/use-leaked-credential.ps1. Reads the credential file that the
+    Azure counterpart of ops/aws/ir-lab/use-leaked-credential.ps1. Reads the credential file that the
     attack script saved in step 5 (out/exposed-credential.json, from GET /debug/config) and calls
     Azure with it, so the Activity Log and Microsoft Entra ID sign-in logs record the identity and
     the source IP. Calls (8 at most, hard cap 10):
