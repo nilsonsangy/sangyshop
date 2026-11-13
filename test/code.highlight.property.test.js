@@ -2,9 +2,8 @@
 // Property-based test for the SangyShop "View Code" route
 // (src/routes/code.js), rendering src/views/code-fragment.ejs.
 //
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 14:
+// Feature: sangyshop-postgres-secret-ver-codigo,
 //   Highlight selection by defense state.
-// Validates: Requirements 7.3, 7.4, 7.6
 //
 // The route resolves which code block to emphasize from the Defenses_Panel
 // state of the vulnerability's associated defense (the authoritative source,
@@ -75,7 +74,7 @@ afterEach(() => {
   resetToggles();
 });
 
-test("Property 14: highlight tracks the defense toggle (secure iff ON, else vulnerable)", async () => {
+test("highlight tracks the defense toggle (secure iff ON, else vulnerable)", async () => {
   // Build the app once and reuse it across every run (performance). The toggle
   // override is in-memory and swapped per run via setToggle.
   const app = await createTestApp();

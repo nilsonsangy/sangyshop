@@ -1,6 +1,6 @@
 // src/routes/admin.js
 // Defenses panel (turn each toggle on/off) and log viewer (A09).
-// This is the area that makes the "attack -> defend -> prove" flow visible to the student.
+// This is the area that makes the "attack -> defend -> prove" flow visible to the user.
 const express = require("express");
 const router = express.Router();
 const { readAll, setDefense } = require("../lib/defenses");

@@ -1,0 +1,8 @@
+// Investigation: calls made by the exposed service principal (identity triage).
+// Replace <APP-ID-OR-OBJECT-ID> with the sp-lab-leaked application (client) id or object id.
+// Shows the source IP and the first call time in UTC.
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where Caller == "<APP-ID-OR-OBJECT-ID>"
+| project TimeGenerated, Caller, CallerIpAddress, OperationNameValue, ActivityStatusValue, ResourceGroup
+| order by TimeGenerated asc

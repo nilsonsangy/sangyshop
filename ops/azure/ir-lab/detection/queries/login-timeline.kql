@@ -1,0 +1,8 @@
+// Investigation: login timeline (success and failure) in UTC, to find the first success after failures.
+// Use it for the A09 contrast (defence off: few or no rows; defence on: structured rows).
+SangyShopApp_CL
+| where TimeGenerated > ago(24h)
+| extend rec = parse_json(RawData)
+| where tostring(rec.event) == "auth_login"
+| project TimeGenerated, client_ip = tostring(rec.ip), username = tostring(rec.username), result = tostring(rec.result)
+| order by TimeGenerated asc

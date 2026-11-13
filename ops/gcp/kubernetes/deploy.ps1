@@ -17,35 +17,35 @@
     Pipeline (every external CLI call is echoed before it runs, via the shared
     Invoke-Echoed helper in lib/Common.ps1):
 
-        1. Auth check / set active project                (Req 6.3/6.4)
-        2. Artifact Registry describe-or-create           (Req 4.1)
+        1. Auth check / set active project
+        2. Artifact Registry describe-or-create
         3. Configure registry Docker auth
-        4. Build the hardened image                       (Req 2.1/4.5)
-        5. Push the hardened image                        (Req 4.5)
-        6. generate + store password in Secret Manager    (Req 3.2/4.4) -- BEFORE
+        4. Build the hardened image
+        5. Push the hardened image
+        6. generate + store password in Secret Manager -- BEFORE
            provisioning, stdin only, never an echoed CLI arg
-        7. Cloud SQL describe-or-create + db + user       (Req 4.1/9.5)
-        8. GKE cluster describe-or-create                 (Req 4.1)
-        9. get-credentials for kubectl                    (Req 4.8)
-       10. render overlay + substitute placeholders + apply (Req 2.5/3.1/3.3)
-       11. wait for rollout                               (Req 4.8)
-       12. read the LoadBalancer external IP as the URL    (Req 4.7/9.2)
-       13. print lockdown + teardown reminder             (Req 9.2/9.3)
+        7. Cloud SQL describe-or-create + db + user
+        8. GKE cluster describe-or-create
+        9. get-credentials for kubectl
+       10. render overlay + substitute placeholders + apply
+       11. wait for rollout
+       12. read the LoadBalancer external IP as the URL
+       13. print lockdown + teardown reminder
 
     Safety:
-      * Only the hardened variant is ever built/pushed/deployed (Req 2.1).
+      * Only the hardened variant is ever built/pushed/deployed.
       * Aborts before any push/deploy if the hardened Dockerfile is missing or a
         non-:hardened image / non-hardened APP_MODE is referenced.
       * Ingress is restricted to an explicitly provided source-address set and
-        0.0.0.0/0 and ::/0 are rejected (Req 9.3/9.4).
-      * Cloud SQL is reachable by the cluster on 5432 only, not public (Req 9.5).
+        0.0.0.0/0 and ::/0 are rejected.
+      * Cloud SQL is reachable by the cluster on 5432 only, not public.
       * The committed overlay is NEVER rewritten; placeholder substitution happens
         on a rendered temp copy that is applied and then removed.
       * -WhatIf prints the full ordered command list and executes NO external
-        command, exiting 0 (Req 6.5).
+        command, exiting 0.
 
-    Windows PowerShell 5.1 compatible (Req 6.1). Every external CLI call routes
-    through Invoke-Echoed (Req 1.3), enforced by tests/EchoOnly.Guard.Tests.ps1.
+    Windows PowerShell 5.1 compatible. Every external CLI call routes
+    through Invoke-Echoed, enforced by tests/EchoOnly.Guard.Tests.ps1.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the git-ignored config two folders up
@@ -53,7 +53,7 @@
 
 .PARAMETER WhatIf
     Dry run: print the full ordered command list without executing any external
-    command, then exit 0 (Req 6.5).
+    command, then exit 0.
 
 .PARAMETER ReuseExisting
     Reuse an already-present Artifact Registry repo / Cloud SQL instance / secret
@@ -63,8 +63,8 @@
 .PARAMETER AllowedSourceRanges
     REQUIRED allowed-ingress source set. Each entry is a source address/CIDR that
     may reach the service's LoadBalancer. 0.0.0.0/0 and ::/0 are rejected
-    (Req 9.3/9.4). If omitted/empty the script stops before any ingress change
-    (Req 9.4).
+. If omitted/empty the script stops before any ingress change
+.
 #>
 [CmdletBinding()]
 param(
@@ -85,12 +85,12 @@ $ErrorActionPreference = 'Stop'
 # WhatIf-aware command runner.
 #
 # Every external CLI call in this script goes through Invoke-Cli, never through
-# a bare CLI token (Req 1.3). When -WhatIf is set, Invoke-Cli records and prints
-# the planned command line WITHOUT executing anything (Req 6.5); otherwise it
-# delegates to the shared Invoke-Echoed helper (Req 1.1/1.4/1.5), which echoes
+# a bare CLI token. When -WhatIf is set, Invoke-Cli records and prints
+# the planned command line WITHOUT executing anything; otherwise it
+# delegates to the shared Invoke-Echoed helper, which echoes
 # the exact command and then runs it.
 #
-# Secret rule (Req 3.2): a secret is NEVER passed as a CLI argument. Commands
+# Secret rule: a secret is NEVER passed as a CLI argument. Commands
 # that consume the password do so via stdin (gcloud ... --data-file=-); the
 # -StdinSecret switch marks those so the planned/echoed line shows a redacted
 # note instead of the value.
@@ -135,7 +135,7 @@ function Invoke-Cli {
     $display = $displayParts -join ' '
 
     if ($WhatIf) {
-        # Req 6.5: record + print the planned command; execute NOTHING. Model a
+        # record + print the planned command; execute NOTHING. Model a
         # "would succeed" exit so describe-or-create logic picks a deterministic
         # branch for the planned list (we plan the CREATE branch under -WhatIf).
         $script:PlannedCommands.Add($display)
@@ -144,11 +144,11 @@ function Invoke-Cli {
         return $null
     }
 
-    # Real execution path: route through the shared, echoing helper (Req 1.3).
+    # Real execution path: route through the shared, echoing helper.
     $result = $null
     if ($PSBoundParameters.ContainsKey('StdinSecret')) {
         # Feed the secret through stdin so it never becomes an echoed CLI arg
-        # (Req 3.2). Invoke-Echoed echoes only $Exe + $CmdArgs, so the password
+        #. Invoke-Echoed echoes only $Exe + $CmdArgs, so the password
         # stays off the command line and out of logs.
         if ($AllowFail) {
             $result = ($StdinSecret | Invoke-Echoed -Exe $Exe -CmdArgs $CmdArgs -AllowFail)
@@ -179,7 +179,7 @@ function Invoke-Cli {
 }
 
 # ---------------------------------------------------------------------------
-# 0. Load + validate config (fail-closed BEFORE any external command, Req 7.1).
+# 0. Load + validate config (fail-closed BEFORE any external command).
 # ---------------------------------------------------------------------------
 Write-Step "Loading configuration (cloud: Gcp)"
 $cfg = Get-CloudConfig -ConfigPath $ConfigPath -Cloud 'Gcp'
@@ -203,21 +203,21 @@ $imageUri     = $arImageName + ":" + $imageTag        # full ref with the harden
 $k8sNamespace = 'sangyshop-hardened'
 
 # ---------------------------------------------------------------------------
-# Req 2.1 / 2.4: hardened-only pre-flight. Abort BEFORE any push or deploy if the
+# hardened-only pre-flight. Abort BEFORE any push or deploy if the
 # hardened Dockerfile is missing, the image tag is not :hardened, or APP_MODE is
 # not hardened. Nothing external has run yet at this point.
 # ---------------------------------------------------------------------------
 $appMode = 'hardened'
-Write-Step "Verifying hardened-only invariants (Req 2.1)"
+Write-Step "Verifying hardened-only invariants"
 
 if ($imageTag -ne 'hardened') {
-    throw "Refusing to deploy: image tag is '$imageTag', but only the hardened variant (tag ':hardened') may be deployed (Req 2.1). Fix Common.ImageTag in the config."
+    throw "Refusing to deploy: image tag is '$imageTag', but only the hardened variant (tag ':hardened') may be deployed. Fix Common.ImageTag in the config."
 }
 if ($imageUri -notmatch ':hardened$') {
-    throw "Refusing to deploy: image reference '$imageUri' is not a ':hardened' image; only the hardened variant may be deployed (Req 2.1)."
+    throw "Refusing to deploy: image reference '$imageUri' is not a ':hardened' image; only the hardened variant may be deployed."
 }
 if ($appMode -ne 'hardened') {
-    throw "Refusing to deploy: APP_MODE is '$appMode', but only 'hardened' may be deployed (Req 2.1)."
+    throw "Refusing to deploy: APP_MODE is '$appMode', but only 'hardened' may be deployed."
 }
 
 # Repo root is three folders up from this script
@@ -226,7 +226,7 @@ $repoRoot       = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $dockerfileRel  = 'ops/docker/hardened/Dockerfile'
 $dockerfilePath = Join-Path $repoRoot $dockerfileRel
 if (-not (Test-Path -LiteralPath $dockerfilePath -PathType Leaf)) {
-    throw "Refusing to build: hardened Dockerfile not found at '$dockerfilePath' (expected '$dockerfileRel'). Aborting before any push or deploy (Req 2.4)."
+    throw "Refusing to build: hardened Dockerfile not found at '$dockerfilePath' (expected '$dockerfileRel'). Aborting before any push or deploy."
 }
 
 # The GCP kustomize overlay, relative to this script: ./overlays.
@@ -236,30 +236,30 @@ if (-not (Test-Path -LiteralPath $overlayDir -PathType Container)) {
 }
 
 # ---------------------------------------------------------------------------
-# Req 9.3 / 9.4: an explicit allowed-ingress source set is REQUIRED, and the
+# an explicit allowed-ingress source set is REQUIRED, and the
 # open ranges 0.0.0.0/0 and ::/0 are prohibited. Validate before any ingress
 # change (indeed before any external command).
 # ---------------------------------------------------------------------------
-Write-Step "Validating allowed ingress source set (Req 9.3, 9.4)"
+Write-Step "Validating allowed ingress source set"
 $ranges = @()
 if ($AllowedSourceRanges) {
     $ranges = @($AllowedSourceRanges | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() })
 }
 if ($ranges.Count -eq 0) {
-    throw "An allowed source-address set is required (-AllowedSourceRanges). Refusing to deploy without locked-down ingress; the app must never be exposed to 0.0.0.0/0 (Req 9.4)."
+    throw "An allowed source-address set is required (-AllowedSourceRanges). Refusing to deploy without locked-down ingress; the app must never be exposed to 0.0.0.0/0."
 }
 $openRanges = @('0.0.0.0/0', '::/0')
 foreach ($r in $ranges) {
     if ($openRanges -contains $r) {
-        throw "Disallowed ingress source '$r'. The open ranges 0.0.0.0/0 and ::/0 are prohibited; restrict ingress to your own address (Req 9.3)."
+        throw "Disallowed ingress source '$r'. The open ranges 0.0.0.0/0 and ::/0 are prohibited; restrict ingress to your own address."
     }
 }
 
 # ---------------------------------------------------------------------------
-# 1. Auth check BEFORE any create/modify (Req 6.3). On failure, stop with
-#    install + auth guidance and a non-zero exit (Req 6.4).
+# 1. Auth check BEFORE any create/modify. On failure, stop with
+#    install + auth guidance and a non-zero exit.
 # ---------------------------------------------------------------------------
-Write-Step "Checking GCP authentication and setting the active project (Req 6.3)"
+Write-Step "Checking GCP authentication and setting the active project"
 $cli = 'gcloud'
 try {
     # List active credentialed accounts; fails (or lists none) when not signed in.
@@ -284,10 +284,10 @@ catch {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Artifact Registry: describe-or-create (idempotent, Req 4.1). The describe is
+# 2. Artifact Registry: describe-or-create (idempotent). The describe is
 #    -AllowFail so a missing repo (its only expected failure) triggers a create.
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring Artifact Registry repository '$arRepo' exists (Req 4.1)"
+Write-Step "Ensuring Artifact Registry repository '$arRepo' exists"
 $arDescribe = @('artifacts', 'repositories', 'describe', $arRepo, '--location', $region, '--format=value(name)')
 Invoke-Cli -Exe "gcloud" -CmdArgs $arDescribe -AllowFail | Out-Null
 $arExists = ($script:LastCliExit -eq 0)
@@ -308,10 +308,10 @@ Write-Step "Configuring Docker auth for $arHost"
 Invoke-Cli -Exe "gcloud" -CmdArgs @('auth', 'configure-docker', $arHost, '--quiet') | Out-Null
 
 # ---------------------------------------------------------------------------
-# 4. Build the hardened image from the hardened Dockerfile (Req 2.1/4.5).
+# 4. Build the hardened image from the hardened Dockerfile.
 #    Build context is the repo root so the Dockerfile's `COPY . .` sees the app.
 # ---------------------------------------------------------------------------
-Write-Step "Building the hardened image '$imageUri' (Req 2.1)"
+Write-Step "Building the hardened image '$imageUri'"
 Invoke-Cli -Exe "docker" -CmdArgs @(
     'build',
     '-t', $imageUri,
@@ -320,20 +320,20 @@ Invoke-Cli -Exe "docker" -CmdArgs @(
 ) | Out-Null
 
 # ---------------------------------------------------------------------------
-# 5. Push the hardened image (Req 4.5). On a real build/push failure Invoke-Echoed
+# 5. Push the hardened image. On a real build/push failure Invoke-Echoed
 #    throws, halting before any cluster deploy.
 # ---------------------------------------------------------------------------
-Write-Step "Pushing the hardened image to Artifact Registry (Req 4.5)"
+Write-Step "Pushing the hardened image to Artifact Registry"
 Invoke-Cli -Exe "docker" -CmdArgs @('push', $imageUri) | Out-Null
 
 # ---------------------------------------------------------------------------
 # 6 (before 7 at runtime). Generate + store the DB password in Secret Manager
-#    BEFORE provisioning Cloud SQL (Req 3.2/4.4). The value is piped via stdin
-#    (--data-file=-), never an echoed CLI arg (Req 3.2). Secret Manager is the
+#    BEFORE provisioning Cloud SQL. The value is piped via stdin
+#    (--data-file=-), never an echoed CLI arg. Secret Manager is the
 #    single source of truth; the Secrets Store CSI driver later syncs it into the
 #    in-cluster `sangyshop-db` Secret and the app reads /run/secrets/db_password.
 # ---------------------------------------------------------------------------
-Write-Step "Generating and storing the DB password in Secret Manager (Req 3.2, 4.4)"
+Write-Step "Generating and storing the DB password in Secret Manager"
 $dbPassword = $null
 if (-not $WhatIf) {
     $dbPassword = New-DbPassword   # >=24 chars, 4 character classes; never logged
@@ -364,12 +364,12 @@ else {
 }
 
 # ---------------------------------------------------------------------------
-# 7. Cloud SQL for PostgreSQL: describe-or-create (idempotent, Req 4.1).
+# 7. Cloud SQL for PostgreSQL: describe-or-create (idempotent).
 #    Never a container. A private IP is enabled so the GKE cluster reaches
 #    Postgres on 5432 over the VPC; public IPv4 is disabled so the instance is
-#    not publicly reachable (Req 9.5).
+#    not publicly reachable.
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring Cloud SQL for PostgreSQL instance '$sqlInstance' exists (Req 4.1, 9.5)"
+Write-Step "Ensuring Cloud SQL for PostgreSQL instance '$sqlInstance' exists"
 $sqlDescribe = @('sql', 'instances', 'describe', $sqlInstance, '--format=value(name)')
 Invoke-Cli -Exe "gcloud" -CmdArgs $sqlDescribe -AllowFail | Out-Null
 $sqlExists = ($script:LastCliExit -eq 0)
@@ -379,7 +379,7 @@ if ($WhatIf -or -not $sqlExists) {
         '--database-version=POSTGRES_16',
         '--region', $region,
         '--tier=db-f1-micro',
-        '--no-assign-ip',                      # no public IPv4 -> not publicly reachable (Req 9.5)
+        '--no-assign-ip',                      # no public IPv4 -> not publicly reachable
         '--availability-type=zonal'
     ) | Out-Null
 }
@@ -393,7 +393,7 @@ if ($WhatIf -or -not $dbExists) {
     Invoke-Cli -Exe "gcloud" -CmdArgs @('sql', 'databases', 'create', $dbName, '--instance', $sqlInstance) | Out-Null
 }
 
-# DB user: set its password FROM the stored secret, piped via stdin (Req 3.2) so
+# DB user: set its password FROM the stored secret, piped via stdin so
 # the password is never an echoed CLI arg. create-or-set.
 $userDescribe = @('sql', 'users', 'list', '--instance', $sqlInstance, "--filter=name=$dbUser", '--format=value(name)')
 Invoke-Cli -Exe "gcloud" -CmdArgs $userDescribe -AllowFail | Out-Null
@@ -414,9 +414,9 @@ else {
 }
 
 # Resolve the Cloud SQL host the in-cluster app connects to on 5432 (its private
-# IP). This becomes the overlay's __CLOUDSQL_HOST__ substitution (Req 9.5). Under
+# IP). This becomes the overlay's __CLOUDSQL_HOST__ substitution. Under
 # -WhatIf nothing runs, so use a documented placeholder for the planned render.
-Write-Step "Resolving the Cloud SQL private host for the overlay (Req 9.5)"
+Write-Step "Resolving the Cloud SQL private host for the overlay"
 $cloudSqlHost = $null
 $hostArgs = @('sql', 'instances', 'describe', $sqlInstance, '--format=value(ipAddresses[0].ipAddress)')
 $cloudSqlHostRaw = Invoke-Cli -Exe "gcloud" -CmdArgs $hostArgs -AllowFail
@@ -429,14 +429,14 @@ else {
     }
     $cloudSqlHost = ([string]$cloudSqlHostRaw).Trim()
     if ([string]::IsNullOrWhiteSpace($cloudSqlHost)) {
-        throw "Could not resolve the Cloud SQL private IP for '$sqlInstance'. Confirm the instance has a private IP before deploying (Req 9.5)."
+        throw "Could not resolve the Cloud SQL private IP for '$sqlInstance'. Confirm the instance has a private IP before deploying."
     }
 }
 
 # ---------------------------------------------------------------------------
-# 8. GKE cluster: describe-or-create (idempotent, Req 4.1).
+# 8. GKE cluster: describe-or-create (idempotent).
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring GKE cluster '$gkeCluster' exists (Req 4.1)"
+Write-Step "Ensuring GKE cluster '$gkeCluster' exists"
 $gkeDescribe = @('container', 'clusters', 'describe', $gkeCluster, '--region', $region, '--format=value(name)')
 Invoke-Cli -Exe "gcloud" -CmdArgs $gkeDescribe -AllowFail | Out-Null
 $gkeExists = ($script:LastCliExit -eq 0)
@@ -451,9 +451,9 @@ if ($WhatIf -or -not $gkeExists) {
 }
 
 # ---------------------------------------------------------------------------
-# 9. Fetch kubeconfig credentials so kubectl targets this cluster (Req 4.8).
+# 9. Fetch kubeconfig credentials so kubectl targets this cluster.
 # ---------------------------------------------------------------------------
-Write-Step "Fetching GKE credentials for kubectl (Req 4.8)"
+Write-Step "Fetching GKE credentials for kubectl"
 Invoke-Cli -Exe "gcloud" -CmdArgs @(
     'container', 'clusters', 'get-credentials', $gkeCluster,
     '--region', $region
@@ -461,7 +461,7 @@ Invoke-Cli -Exe "gcloud" -CmdArgs @(
 
 # ---------------------------------------------------------------------------
 # 10. Render the GCP overlay, substitute its placeholders, and apply the result
-#     (Req 2.5/3.1/3.3). The base manifest lives OUTSIDE the overlay directory,
+#. The base manifest lives OUTSIDE the overlay directory,
 #     so the overlay must be built with load restrictions disabled; `kubectl
 #     apply -k` cannot pass that flag, so we render then apply in two steps
 #     (per the overlay README).
@@ -476,11 +476,11 @@ Invoke-Cli -Exe "gcloud" -CmdArgs @(
 #       __GCP_PROJECT_ID__  project owning the Secret Manager secret
 #       __GSM_SECRET__      Secret Manager secret name (db_password)
 # ---------------------------------------------------------------------------
-Write-Step "Rendering the GCP overlay (load restrictions disabled) (Req 2.5)"
+Write-Step "Rendering the GCP overlay (load restrictions disabled)"
 $renderArgs = @('kustomize', '--load-restrictor', 'LoadRestrictionsNone', $overlayDir)
 $renderedRaw = Invoke-Cli -Exe "kubectl" -CmdArgs $renderArgs
 
-Write-Step "Substituting overlay placeholders and applying the manifest (Req 3.1, 3.3)"
+Write-Step "Substituting overlay placeholders and applying the manifest"
 # Build the rendered manifest text (array of output lines under real execution).
 if ($WhatIf) {
     # Nothing was rendered; model the apply step with a placeholder body so the
@@ -508,7 +508,7 @@ $rendered = $rendered.Replace('__GSM_SECRET__',     $secretName)
 
 # Apply the substituted manifest. The rendered YAML is piped to `kubectl apply
 # -f -` via stdin (non-secret -StdinData), keeping kubectl a quoted -Exe argument
-# (Req 1.3) and never rewriting the committed overlay.
+# and never rewriting the committed overlay.
 if (-not $WhatIf) {
     # Also persist the substituted manifest to a temp file for troubleshooting;
     # removed after a successful apply.
@@ -525,18 +525,18 @@ finally {
 }
 
 # ---------------------------------------------------------------------------
-# 11. Wait for the Deployment rollout to complete (Req 4.8).
+# 11. Wait for the Deployment rollout to complete.
 # ---------------------------------------------------------------------------
-Write-Step "Waiting for the '$appName' Deployment rollout in namespace '$k8sNamespace' (Req 4.8)"
+Write-Step "Waiting for the '$appName' Deployment rollout in namespace '$k8sNamespace'"
 Invoke-Cli -Exe "kubectl" -CmdArgs @(
     '-n', $k8sNamespace,
     'rollout', 'status', "deploy/$appName"
 ) | Out-Null
 
 # ---------------------------------------------------------------------------
-# 12. Read the LoadBalancer external IP as the service URL (Req 4.7/9.2).
+# 12. Read the LoadBalancer external IP as the service URL.
 # ---------------------------------------------------------------------------
-Write-Step "Reading the LoadBalancer external IP for '$appName' (Req 4.7)"
+Write-Step "Reading the LoadBalancer external IP for '$appName'"
 $svcIpArgs = @(
     '-n', $k8sNamespace,
     'get', 'svc', $appName,
@@ -545,7 +545,7 @@ $svcIpArgs = @(
 $externalIp = Invoke-Cli -Exe "kubectl" -CmdArgs $svcIpArgs -AllowFail
 
 # ---------------------------------------------------------------------------
-# Dry run ends here: print the planned command list and exit 0 (Req 6.5).
+# Dry run ends here: print the planned command list and exit 0.
 # ---------------------------------------------------------------------------
 if ($WhatIf) {
     Write-Step "Dry run (-WhatIf): planned command list (no command was executed)"

@@ -39,9 +39,8 @@ async function loginAs(app, username) {
 
 afterEach(resetToggles);
 
-// Feature: sangyshop-sessao-navegacao-ingles, Property 7: IDOR preservado com A01 desligado
-// Validates: Requirements 3.6, 3.7
-test("Property 7: with A01 OFF, any logged-in user reads any order by id (IDOR)", async () => {
+// IDOR preservado com A01 desligado
+test("with A01 OFF, any logged-in user reads any order by id (IDOR)", async () => {
   const app = await createTestApp();
   setToggle("A01_access_control", false);
 
@@ -63,9 +62,8 @@ test("Property 7: with A01 OFF, any logged-in user reads any order by id (IDOR)"
   resetToggles();
 });
 
-// Feature: sangyshop-sessao-navegacao-ingles, Property 8: Bloqueio de recurso alheio com A01 ligado
-// Validates: Requirements 3.8
-test("Property 8: with A01 ON, a non-admin user is blocked from another user's order", async () => {
+// Block de recurso alheio com A01 ligado
+test("with A01 ON, a non-admin user is blocked from another user's order", async () => {
   const app = await createTestApp();
   setToggle("A01_access_control", true);
 
@@ -95,9 +93,8 @@ test("Property 8: with A01 ON, a non-admin user is blocked from another user's o
   resetToggles();
 });
 
-// Feature: sangyshop-sessao-navegacao-ingles, Property 9: Legitimate access preserved with A01 on
-// Validates: Requirements 3.9
-test("Property 9: with A01 ON, a user still reads their own order", async () => {
+// Legitimate access preserved with A01 on
+test("with A01 ON, a user still reads their own order", async () => {
   const app = await createTestApp();
   setToggle("A01_access_control", true);
 

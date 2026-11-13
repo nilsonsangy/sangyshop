@@ -10,7 +10,7 @@
 #
 # INTENTIONAL ANTIPATTERN (teaching): the PostgreSQL credentials (DB_Secret) are kept
 # in PLAINTEXT right here in the compose file and passed as plaintext env vars to the
-# app. This demonstrates "vulnerable apps store secrets insecurely" (R4.1). The hardened
+# app. This demonstrates "vulnerable apps store secrets insecurely". The hardened
 # deployment reads the same password from a Docker secret instead.
 name: sangyshop-insecure
 
@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: SangyDbPass!2025
       POSTGRES_DB: sangyshop
     volumes:
-      # Named volume keeps the data across container restarts (Data_Volume, R1.2/R9.2).
+      # Named volume keeps the data across container restarts.
       - db-data:/var/lib/postgresql/data
     ports:
       # Published for optional external inspection of the vulnerable database.
@@ -39,7 +39,7 @@ services:
     depends_on:
       - db
     environment:
-      # Vulnerable mode: credentials provided in plaintext via the environment (R4.1/R4.4).
+      # Vulnerable mode: credentials provided in plaintext via the environment.
       APP_MODE: vulnerable
       DB_BACKEND: pg
       DB_HOST: db
@@ -52,5 +52,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  # Named volume for PostgreSQL persistence (R1.2/R9.2).
+  # Named volume for PostgreSQL persistence.
   db-data:

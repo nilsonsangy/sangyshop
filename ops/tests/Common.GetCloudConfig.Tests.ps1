@@ -3,12 +3,12 @@
     Pester 5.x unit tests for Get-CloudConfig (lib/Common.ps1).
 
 .DESCRIPTION
-    Covers the config loader/validator contract (task 2.5):
+    Covers the config loader/validator contract:
 
       * Missing / empty / whitespace required keys for the active cloud are
-        rejected, and each offending key is named in the error (Req 7.1, 7.3).
+        rejected, and each offending key is named in the error.
       * Invalid globally-unique suffixes are rejected: too short (<3), too long
-        (>24), uppercase, non-alphanumeric, and missing (Req 7.5, 7.6).
+        (>24), uppercase, non-alphanumeric, and missing.
       * A well-formed config loads and the Common defaults are applied
         (AppName/DbName/DbUser/ImageTag = sangyshop/sangyshop/sangyshop/hardened).
 
@@ -133,7 +133,7 @@ Describe 'Get-CloudConfig' {
         }
     }
 
-    Context 'missing / empty / whitespace required keys (Req 7.3)' {
+    Context 'missing / empty / whitespace required keys' {
         It 'rejects a missing required key for the active cloud and names it' {
             # Gcp section present but ProjectId omitted.
             $body = @'
@@ -258,7 +258,7 @@ Describe 'Get-CloudConfig' {
         }
     }
 
-    Context 'invalid UniqueSuffix (Req 7.5 / 7.6)' {
+    Context 'invalid UniqueSuffix' {
         It 'rejects suffix "<Suffix>" (<Reason>)' -ForEach @(
             @{ Suffix = 'ab';                          Reason = 'too short (<3)' }
             @{ Suffix = 'abcdefghijklmnopqrstuvwxy';   Reason = 'too long (>24)' }

@@ -19,3 +19,19 @@ lab-manifest*.json
 
 # attack-simulation: generated step logs and any discovered lab credential
 attack-simulation/out/
+# ops: local environment values (alert e-mail); the example file stays committed
+ops/.env
+ops/.env.*
+!ops/.env.example
+
+# Python/test caches
+__pycache__/
+
+# Python/test caches
+*.pyc
+
+# Python/test caches
+.pytest_cache/
+
+# Python/test caches
+.hypothesis/

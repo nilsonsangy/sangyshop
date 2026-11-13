@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-    Pester 5.x unit tests for New-DbPassword (lib/Common.ps1, task 2.6).
+    Pester 5.x unit tests for New-DbPassword (lib/Common.ps1).
 
 .DESCRIPTION
     Verifies the DB-password generator's security contract:
 
-      * Req 4.4 - every generated password is at least 24 characters long (the
+      * Every generated password is at least 24 characters long (the
         hard floor is enforced even when a smaller -Length is requested) and
         always contains all four character classes: lowercase, uppercase,
         digits, and a symbol from the restricted set -_.=+*#%.
 
-      * Req 3.2 - the generated value is the function's ONLY output and never
+      * The generated value is the function's ONLY output and never
         leaks to the host / an echoed transcript. These tests capture everything
         the function writes to Write-Host and the information/success/stdout
         streams during generation and assert the password never appears there.
@@ -42,7 +42,7 @@ BeforeAll {
     }
 }
 
-Describe 'New-DbPassword length and floor (Req 4.4)' {
+Describe 'New-DbPassword length and floor' {
     # 1 and 24 exercise the floor; 32 is the default; 40 is above the floor.
     It 'returns at least 24 characters for -Length <Length>' -ForEach @(
         @{ Length = 1 }
@@ -78,7 +78,7 @@ Describe 'New-DbPassword length and floor (Req 4.4)' {
     }
 }
 
-Describe 'New-DbPassword character classes (Req 4.4)' {
+Describe 'New-DbPassword character classes' {
     It 'includes all four character classes for -Length <Length>' -ForEach @(
         @{ Length = 1 }
         @{ Length = 24 }
@@ -105,7 +105,7 @@ Describe 'New-DbPassword character classes (Req 4.4)' {
     }
 }
 
-Describe 'New-DbPassword does not leak to an echoed transcript (Req 3.2)' {
+Describe 'New-DbPassword does not leak to an echoed transcript' {
     It 'never prints the generated value to any output stream for -Length <Length>' -ForEach @(
         @{ Length = 1 }
         @{ Length = 24 }

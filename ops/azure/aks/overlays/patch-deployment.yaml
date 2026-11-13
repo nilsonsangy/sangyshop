@@ -9,13 +9,13 @@
 #
 # The existing `db-secret` volume (a `secret` volume -> sangyshop-db, key
 # db_password -> path db_password) is UNCHANGED, so the app keeps reading
-# /run/secrets/db_password exactly as before — only its backing source moved
+# /run/secrets/db_password exactly as before: only its backing source moved
 # from the in-cluster placeholder Secret to the CSI-synced one.
 #
 # securityContext (pod and container) is intentionally not touched here so the
 # hardened settings from the base manifest are preserved.
 #
-# PLACEHOLDER substituted by azure/kubernetes/deploy.ps1 (task 12.2):
+# PLACEHOLDER substituted by azure/kubernetes/deploy.ps1:
 #   __PG_HOST__  Flexible Server PostgreSQL host reachable on 5432
 apiVersion: apps/v1
 kind: Deployment

@@ -7,11 +7,11 @@
 //  - vulnerable mode (antipattern, on purpose): the password comes ONLY from a
 //    plaintext environment variable or a hardcoded fallback baked into the code.
 //    It NEVER reads the Docker secret file. This demonstrates "vulnerable apps
-//    store secrets insecurely" (Requirements 4.2, 4.4).
+//    store secrets insecurely".
 //  - hardened mode (secure pattern): the password is read EXCLUSIVELY from a
 //    secret FILE, trimmed, and the resolution is fail-closed: a missing file, or
 //    content that is empty after trimming, throws a descriptive Error instead of
-//    falling back to env/code (Requirements 5.1, 5.2, 5.5, 5.6).
+//    falling back to env/code.
 //
 //    By default the file is the Docker secret mounted at /run/secrets/db_password
 //    (local docker-compose, GCP, Azure, EKS). The path is configurable via the

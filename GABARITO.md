@@ -14,7 +14,7 @@ the seed. This makes SQLi and IDOR impact concrete against a realistic, persiste
 
 > Note: the automated test suite (`npm test`) runs against an in-memory backend selected by
 > `DB_BACKEND=memory`, so tests stay fast and need no Docker. That in-memory backend is a
-> test harness only — it is **not** the application's storage. In every deployment (insecure
+> test harness only, it is **not** the application's storage. In every deployment (insecure
 > or hardened) the running app talks to PostgreSQL.
 
 ## The DB secret: insecure vs. secure
@@ -26,7 +26,7 @@ to contrast the antipattern with the secure pattern:
   repo-root `docker-compose.yml` (`DB_PASSWORD: SangyDbPass!2025`) and there is a **hardcoded
   fallback** in the source (`src/db/credentials.js`: user `sangyshop`, password
   `SangyDbPass!2025`). The app reads the password only from the plaintext env var or that
-  code fallback — it never consults a secret file. The express-session secret in
+  code fallback, it never consults a secret file. The express-session secret in
   `src/server.js` is likewise hardcoded as a secondary example of the same antipattern.
 - **Secure (`sangyshop:hardened`).** The password is read **exclusively** from a Docker
   secret mounted at `/run/secrets/db_password` (`APP_MODE=hardened`), trimmed, and resolution
@@ -34,7 +34,7 @@ to contrast the antipattern with the secure pattern:
   error and exits non-zero instead of falling back to env or code. The hardened compose sources
   that secret from a local `db_password.txt`, which is git-ignored and never committed.
 
-Talking point: "vulnerable apps store secrets insecurely" — compare the two compose files and
+Talking point: "vulnerable apps store secrets insecurely", compare the two compose files and
 the two credential paths side by side.
 
 ## "View Code" button
@@ -48,7 +48,7 @@ follows the vulnerability's defense toggle (the Defenses Panel is the source of 
 - Defense **ON** -> the **secure** block is highlighted (the fixed code).
 
 A03 (supply chain) has no toggle, so its snippet always highlights the dependencies block in
-`package.json`. Use "View Code" during each exercise to show students exactly which lines
+`package.json`. Use "View Code" during each exercise to show users exactly which lines
 change between the attack and the defense.
 
 ## Resetting defenses (initial attack state)

@@ -1,0 +1,7 @@
+// Investigation (conditional): Entra ID service principal sign-ins.
+// Requires a Microsoft Entra ID P1 or P2 licence and enable-entra.ps1. Without the licence the
+// tables stay empty: use activitylog-summary.kql and serviceprincipal-activity.kql instead.
+AADServicePrincipalSignInLogs
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, ServicePrincipalName, AppId, IPAddress, ResultType, ResultDescription
+| order by TimeGenerated asc

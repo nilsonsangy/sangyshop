@@ -4,8 +4,8 @@
     (azure/vm/deploy.ps1 and azure/vm/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 10.3 (Property 2: a simulation executes no external command) for the
-    Azure VM modality. Requirements 30.1, 30.7, 33.5.
+    Covers the guarantee that a simulation executes no external command, for the
+    Azure VM modality.
 
     Each script runs in a FRESH child PowerShell against a well-formed temporary
     config written under $TestDrive. Nothing here touches a real cloud.
@@ -18,7 +18,7 @@
          "[ n] az ..." lines and a "DRY RUN complete" footer; the list must be
          non-empty and every line must be an `az ...` command.
 
-    Source validation (Requirement 30.4/30.5) is checked as a fail-closed gate:
+    Source validation is checked as a fail-closed gate:
     0.0.0.0/0, ::/0, a missing value and anything that is not exactly a single-host
     IPv4 /32 make deploy.ps1 exit non-zero BEFORE any planned command is produced.
 
@@ -137,7 +137,7 @@ AfterAll {
     else { $env:LAB_SENTINEL = $script:SavedSentinel }
 }
 
-Describe 'Azure VM deploy.ps1 -WhatIf dry run (Req 30.1, 30.7, 33.5)' {
+Describe 'Azure VM deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
             '-AllowedSourceRanges', '203.0.113.7/32', '-WhatIf')
@@ -211,7 +211,7 @@ Describe 'Azure VM deploy.ps1 -WhatIf dry run (Req 30.1, 30.7, 33.5)' {
     }
 }
 
-Describe 'Azure VM deploy.ps1 source-range validation (Req 30.4, 30.5)' {
+Describe 'Azure VM deploy.ps1 source-range validation' {
     It 'rejects <Label> ("<Value>") with a non-zero exit, before any command' -ForEach $script:BadSources {
         $r = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
             '-AllowedSourceRanges', $Value, '-WhatIf')
@@ -243,7 +243,7 @@ Describe 'Azure VM deploy.ps1 source-range validation (Req 30.4, 30.5)' {
     }
 }
 
-Describe 'Azure VM teardown.ps1 -WhatIf dry run (Req 33.5)' {
+Describe 'Azure VM teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines

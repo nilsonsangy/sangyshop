@@ -33,7 +33,7 @@ docker compose up -d --build
 Open **http://localhost:7000** (the vulnerable baseline).
 
 To run the **hardened** variant alongside it (each variant is its own isolated Compose
-project — `sangyshop-insecure` and `sangyshop-hardened` — with separate networks and volumes):
+project, `sangyshop-insecure` and `sangyshop-hardened`, with separate networks and volumes):
 
 ```
 cp ops/docker/hardened/db_password.txt.example ops/docker/hardened/db_password.txt
@@ -89,6 +89,23 @@ needs no cloud credentials.
 | `LAB_MODE` | unset | Set to `1` to enable the lab routes (`/.well-known/sangyshop-lab`, `/debug/config`). Only honored when `APP_MODE` is vulnerable (the default). |
 | `LAB_CLOUD` | unset | Cloud label (for example `aws` or `azure`) reported by the lab marker route. |
 | `LAB_LEAKED_FILE` | `/lab/leaked.json` | File served by `/debug/config` (the "forgotten" configuration leak used in the lab). |
+
+## Cloud incident response labs
+
+This repository contains everything needed to run the cloud incident response lab on AWS or Azure:
+
+- `ops/aws/ec2/` and `ops/azure/vm/` deploy the vulnerable application.
+- `ops/aws/ir-lab/` and `ops/azure/ir-lab/` build the detection stack, check that detection is ready,
+  print the response commands and remove everything afterwards.
+- `ops/aws/iam/` holds the lab IAM group and least-privilege policy templates for AWS.
+- `attack-simulation/` runs the controlled attack. It refuses to start without a fresh readiness
+  stamp from `check-detection-ready.ps1`, unless you pass `--ack-no-detection`.
+
+The generic response tools (evidence collection, containment) live in the separate NimbusDFIR
+project. Point the scripts to your local checkout with the `NIMBUSDFIR_PATH` environment variable.
+The detection alert e-mail is read from `LAB_ALERT_EMAIL` or from `ops/.env` (copy `ops/.env.example`);
+it is never stored in the repository. See [`ops/README.md`](ops/README.md) for the full flow, the
+permissions each cloud needs and the exit codes.
 
 ## For the instructor
 

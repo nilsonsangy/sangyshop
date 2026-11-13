@@ -1,0 +1,223 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Ec2NetworkAndInstances",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AssociateRouteTable",
+        "ec2:AttachInternetGateway",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:CreateInternetGateway",
+        "ec2:CreateNetworkAcl",
+        "ec2:CreateNetworkAclEntry",
+        "ec2:CreateRoute",
+        "ec2:CreateRouteTable",
+        "ec2:CreateSecurityGroup",
+        "ec2:CreateSubnet",
+        "ec2:CreateTags",
+        "ec2:CreateVpc",
+        "ec2:DeleteInternetGateway",
+        "ec2:DeleteNetworkAcl",
+        "ec2:DeleteNetworkAclEntry",
+        "ec2:DeleteRouteTable",
+        "ec2:DeleteSecurityGroup",
+        "ec2:DeleteSubnet",
+        "ec2:DeleteVpc",
+        "ec2:DetachInternetGateway",
+        "ec2:ModifySubnetAttribute",
+        "ec2:ModifyVpcAttribute",
+        "ec2:ReplaceNetworkAclAssociation",
+        "ec2:RunInstances",
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:TerminateInstances"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "${Region}"
+        }
+      }
+    },
+    {
+      "Sid": "Ec2SweepOfTaggedLabResources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DeleteKeyPair",
+        "ec2:DeleteNatGateway",
+        "ec2:DeleteSnapshot",
+        "ec2:DeleteVolume"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "${Region}",
+          "aws:ResourceTag/lab": "sangyshop-lab-aws"
+        }
+      }
+    },
+    {
+      "Sid": "Ec2ReleaseAddress",
+      "Effect": "Allow",
+      "Action": "ec2:ReleaseAddress",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "${Region}"
+        }
+      }
+    },
+    {
+      "Sid": "RdsDeleteTaggedSnapshots",
+      "Effect": "Allow",
+      "Action": "rds:DeleteDBSnapshot",
+      "Resource": "arn:aws:rds:${Region}:${AccountId}:snapshot:*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/lab": "sangyshop-lab-aws"
+        }
+      }
+    },
+    {
+      "Sid": "Ec2AndTaggingRead",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeAddresses",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeKeyPairs",
+        "ec2:DescribeNatGateways",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSnapshots",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeVpcs",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "tag:GetResources"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RdsLabDatabase",
+      "Effect": "Allow",
+      "Action": [
+        "rds:AddTagsToResource",
+        "rds:CreateDBInstance",
+        "rds:CreateDBSubnetGroup",
+        "rds:DeleteDBInstance",
+        "rds:DeleteDBSubnetGroup",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSnapshots",
+        "rds:DescribeDBSubnetGroups",
+        "rds:ModifyDBInstance",
+        "rds:StartDBInstance",
+        "rds:StopDBInstance"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "${Region}"
+        }
+      }
+    },
+    {
+      "Sid": "S3LabBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion",
+        "s3:GetBucketLocation",
+        "s3:GetBucketTagging",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:ListBucketVersions",
+        "s3:PutBucketTagging",
+        "s3:PutObject",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutPublicAccessBlock"
+      ],
+      "Resource": [
+        "arn:aws:s3:::sangyshop-*",
+        "arn:aws:s3:::sangyshop-*/*"
+      ]
+    },
+    {
+      "Sid": "S3ListAllBuckets",
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsLabSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:TagResource"
+      ],
+      "Resource": "arn:aws:secretsmanager:${Region}:${AccountId}:secret:sangyshop*"
+    },
+    {
+      "Sid": "SecretsList",
+      "Effect": "Allow",
+      "Action": "secretsmanager:ListSecrets",
+      "Resource": "*"
+    },
+    {
+      "Sid": "LogsLabAppGroups",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:TagResource"
+      ],
+      "Resource": "arn:aws:logs:${Region}:${AccountId}:log-group:/sangyshop/*"
+    },
+    {
+      "Sid": "LogsDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CodeCommitLabRepo",
+      "Effect": "Allow",
+      "Action": [
+        "codecommit:CreateRepository",
+        "codecommit:DeleteRepository",
+        "codecommit:GetRepository",
+        "codecommit:TagResource"
+      ],
+      "Resource": "arn:aws:codecommit:${Region}:${AccountId}:sangyshop*"
+    },
+    {
+      "Sid": "SsmReadAndRunCommand",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetCommandInvocation",
+        "ssm:SendCommand"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CallerIdentity",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    }
+  ]
+}

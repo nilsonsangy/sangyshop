@@ -4,25 +4,25 @@
     (gcp/docker/deploy.ps1 and gcp/docker/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 6.3 of the multi-cloud-deploy plan. Each script is executed in a
+    Covers the dry run of the deploy and teardown scripts. Each script is executed in a
     fresh child PowerShell with -WhatIf against a well-formed temporary GCP config
     written under $TestDrive. Nothing here touches a real cloud: the scripts need
     no cloud CLI installed to run their dry run, so these assertions hold on
     Windows with no account and no gcloud/docker on PATH.
 
-    deploy.ps1 (Req 6.5, 3.1, 3.3):
+    deploy.ps1:
       * Runs with -WhatIf and a safe -AllowedSourceRanges value; exits 0.
       * Prints the full ordered planned command list and executes NO external
         command (the dry-run footer reports "none executed").
       * Every planned line is a `gcloud ...` or `docker ...` command; the expected
         gcloud/docker steps all appear.
-      * The planned env set carries NO DB_PASSWORD (Req 3.1): the deploy sets env
+      * The planned env set carries NO DB_PASSWORD: the deploy sets env
         via --set-env-vars=APP_MODE=hardened,DB_BACKEND=pg,... and that string must
         not contain DB_PASSWORD anywhere in the captured dry-run output.
       * The native secret file mount --set-secrets=/run/secrets/db_password=...
-        appears in the planned command set (Req 3.3).
+        appears in the planned command set.
 
-    teardown.ps1 (Req 6.5):
+    teardown.ps1:
       * Runs with -WhatIf; exits 0.
       * Prints the full ordered planned command list (reverse-order deletes) and
         executes NO external command.
@@ -117,7 +117,7 @@ BeforeAll {
     }
 }
 
-Describe 'GCP Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
+Describe 'GCP Docker-only deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
             '-AllowedSourceRanges', '203.0.113.7/32', '-WhatIf'
@@ -158,13 +158,13 @@ Describe 'GCP Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         }
     }
 
-    It 'sets NO DB_PASSWORD env anywhere in the planned command set (Req 3.1)' {
+    It 'sets NO DB_PASSWORD env anywhere in the planned command set' {
         # The deploy wires env via --set-env-vars=APP_MODE=hardened,DB_BACKEND=pg,...
         # which must NOT contain a DB_PASSWORD entry. Grep the whole captured
         # dry-run output to be safe. Match is CASE-SENSITIVE (-CMatch) on purpose:
         # the lowercase 'db_password' is the Secret Manager id and the
         # /run/secrets/db_password FILE mount (both correct and required); only the
-        # uppercase env-var form DB_PASSWORD is forbidden (Req 3.1).
+        # uppercase env-var form DB_PASSWORD is forbidden.
         $script:Deploy.Text | Should -Not -CMatch 'DB_PASSWORD'
         ($script:DeployPlanned -join "`n") | Should -Not -CMatch 'DB_PASSWORD'
     }
@@ -180,7 +180,7 @@ Describe 'GCP Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         $runLine | Should -Not -CMatch 'DB_PASSWORD'
     }
 
-    It 'mounts the secret as the file /run/secrets/db_password (Req 3.3)' {
+    It 'mounts the secret as the file /run/secrets/db_password' {
         ($script:DeployPlanned -join "`n") |
             Should -Match '--set-secrets=/run/secrets/db_password=db_password:latest'
     }
@@ -192,7 +192,7 @@ Describe 'GCP Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
     }
 }
 
-Describe 'GCP Docker-only teardown.ps1 -WhatIf dry run (Req 6.5)' {
+Describe 'GCP Docker-only teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines

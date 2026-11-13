@@ -1,13 +1,13 @@
 // test/navbar.example.test.js
 // Example and edge-case tests for the unified navbar and the logout flow
-// (task 2.7). Covers:
-//   EXAMPLE   - anonymous navbar shows "Login" and omits "My Orders" (Req 2.2/2.4)
-//   EXAMPLE   - the SangyShop brand (href="/products") is on every page (Req 1.5)
-//   EXAMPLE   - logout while logged in -> 302 to /login (Req 2.7)
+//. Covers:
+//   EXAMPLE   - anonymous navbar shows "Login" and omits "My Orders"
+//   EXAMPLE   - the SangyShop brand (href="/products") is on every page
+//   EXAMPLE   - logout while logged in -> 302 to /login
 //   EDGE_CASE - rendering partials/navbar.ejs WITHOUT `user` in scope does not
-//               throw and falls back to the anonymous variant (Req 1.4)
+//               throw and falls back to the anonymous variant
 //   EDGE_CASE - logout whose session.destroy fails -> 500, error message, user
-//               stays authenticated (no redirect) (Req 2.8)
+//               stays authenticated (no redirect)
 //
 // Uses the native node:test runner + supertest, reusing test/helpers.js
 // (createTestApp, agent, login, SEED). The isolated partial render uses ejs
@@ -28,7 +28,7 @@ const VIEWS = path.join(SRC, "views");
 const NAVBAR_PARTIAL = path.join(VIEWS, "partials", "navbar.ejs");
 
 // ---------------------------------------------------------------------------
-// EXAMPLE: anonymous navbar shows "Login" and omits "My Orders" (Req 2.2/2.4)
+// EXAMPLE: anonymous navbar shows "Login" and omits "My Orders"
 // ---------------------------------------------------------------------------
 test("EXAMPLE: anonymous navbar on GET /login shows Login and omits My Orders", async () => {
   const app = await createTestApp();
@@ -45,7 +45,7 @@ test("EXAMPLE: anonymous navbar on GET /login shows Login and omits My Orders", 
 });
 
 // ---------------------------------------------------------------------------
-// EXAMPLE: brand present on every page with href="/products" (Req 1.5)
+// EXAMPLE: brand present on every page with href="/products"
 // ---------------------------------------------------------------------------
 test('EXAMPLE: SangyShop brand with href="/products" is present on every page', async () => {
   const app = await createTestApp();
@@ -75,7 +75,7 @@ test('EXAMPLE: SangyShop brand with href="/products" is present on every page', 
 });
 
 // ---------------------------------------------------------------------------
-// EXAMPLE: logout while logged in -> 302 to /login (Req 2.7)
+// EXAMPLE: logout while logged in -> 302 to /login
 // ---------------------------------------------------------------------------
 test("EXAMPLE: logout while logged in redirects 302 to /login", async () => {
   const app = await createTestApp();
@@ -89,7 +89,7 @@ test("EXAMPLE: logout while logged in redirects 302 to /login", async () => {
 
 // ---------------------------------------------------------------------------
 // EDGE_CASE: rendering navbar.ejs WITHOUT `user` in scope does not throw and
-// falls back to the anonymous variant (Req 1.4)
+// falls back to the anonymous variant
 // ---------------------------------------------------------------------------
 test("EDGE_CASE: navbar partial renders without `user` and falls back to anonymous", () => {
   const template = fs.readFileSync(NAVBAR_PARTIAL, "utf8");
@@ -108,7 +108,7 @@ test("EDGE_CASE: navbar partial renders without `user` and falls back to anonymo
 
 // ---------------------------------------------------------------------------
 // EDGE_CASE: logout whose session.destroy fails -> 500, error message, user
-// stays authenticated (no redirect) (Req 2.8)
+// stays authenticated (no redirect)
 // ---------------------------------------------------------------------------
 test("EDGE_CASE: logout with session.destroy error returns 500 and keeps the user authenticated", async () => {
   // Minimal Express app wired ONLY with the auth router. A middleware injects a

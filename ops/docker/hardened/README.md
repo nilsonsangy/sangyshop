@@ -26,7 +26,7 @@ during the image build.
 The database password (the DB_Secret) is never kept in plaintext here:
 
 - It lives only in the git-ignored `db_password.txt`, fed in through Docker's
-  `secrets` mechanism — not baked into the image and not passed as a plaintext env var.
+  `secrets` mechanism, not baked into the image and not passed as a plaintext env var.
 - Postgres reads it from the mounted secret file via `POSTGRES_PASSWORD_FILE`.
 - The app runs in hardened mode (`APP_MODE=hardened`, `DB_BACKEND=pg`) and reads the
   password from `/run/secrets/db_password` in `src/db/credentials.js`. Only the

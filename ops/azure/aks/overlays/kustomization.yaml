@@ -9,7 +9,7 @@
 #   2. web Service    -> type: LoadBalancer (Azure Standard LB -> external IP)
 #   3. PVC StorageClass -> managed-csi (see patch-pvc-storageclass.yaml; it is
 #                        documented but NOT wired in, because this overlay drops
-#                        the only PVC — see the StorageClass note below)
+#                        the only PVC: see the StorageClass note below)
 #   4. secret source  -> Azure Key Vault via the Secrets Store CSI driver,
 #                        delivering /run/secrets/db_password (same file contract)
 #
@@ -31,7 +31,7 @@
 # only in a variant that keeps an in-cluster PVC.
 #
 # ---------------------------------------------------------------------------
-# PLACEHOLDERS (substituted by azure/aks/deploy.ps1, task 12.2)
+# PLACEHOLDERS (substituted by azure/aks/deploy.ps1)
 #
 # The deploy script performs an in-place text substitution on the rendered
 # overlay (or edits a working copy) before `kubectl apply -k`, replacing:
@@ -63,7 +63,7 @@
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# BUILD / APPLY (for azure/aks/deploy.ps1, task 12.2)
+# BUILD / APPLY (for azure/aks/deploy.ps1)
 #
 # The base manifest lives OUTSIDE this overlay directory and is referenced by a
 # relative path. Kustomize's default load restrictor refuses to read files

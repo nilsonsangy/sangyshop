@@ -1,6 +1,5 @@
 // attack-simulation/test/marker.property.test.js
-// Property 8: Attack script gate
-// Validates: Requirements 13.3, 13.4
+// Attack script gate
 //
 // isLabMarker is the gate: true iff status === 200, body.app === "sangyshop",
 // body.mode === "vulnerable" and header X-SangyShop-Lab === "vulnerable-lab".
@@ -80,7 +79,7 @@ const validArb = fc
     body: { ...extraBody, app: EXPECTED_APP, mode: EXPECTED_MODE },
   }));
 
-test("Property 8: all four conditions hold => true (any header-name casing, extra fields)", () => {
+test("all four conditions hold => true (any header-name casing, extra fields)", () => {
   fc.assert(
     fc.property(validArb, (res) => {
       assert.equal(isLabMarker(res), true);
@@ -89,7 +88,7 @@ test("Property 8: all four conditions hold => true (any header-name casing, extr
   );
 });
 
-test("Property 8: wrong status => false", () => {
+test("wrong status => false", () => {
   fc.assert(
     fc.property(validArb, statusBadArb, (res, status) => {
       assert.equal(isLabMarker({ ...res, status }), false);
@@ -98,7 +97,7 @@ test("Property 8: wrong status => false", () => {
   );
 });
 
-test("Property 8: wrong body.app => false", () => {
+test("wrong body.app => false", () => {
   fc.assert(
     fc.property(validArb, variantArb(EXPECTED_APP), (res, app) => {
       assert.equal(isLabMarker({ ...res, body: { ...res.body, app } }), false);
@@ -107,7 +106,7 @@ test("Property 8: wrong body.app => false", () => {
   );
 });
 
-test("Property 8: wrong body.mode => false", () => {
+test("wrong body.mode => false", () => {
   fc.assert(
     fc.property(validArb, variantArb(EXPECTED_MODE), (res, mode) => {
       assert.equal(isLabMarker({ ...res, body: { ...res.body, mode } }), false);
@@ -116,7 +115,7 @@ test("Property 8: wrong body.mode => false", () => {
   );
 });
 
-test("Property 8: missing or wrong X-SangyShop-Lab header => false", () => {
+test("missing or wrong X-SangyShop-Lab header => false", () => {
   fc.assert(
     fc.property(
       validArb,
@@ -135,7 +134,7 @@ test("Property 8: missing or wrong X-SangyShop-Lab header => false", () => {
   );
 });
 
-test("Property 8: missing/malformed body, headers or response => false", () => {
+test("missing/malformed body, headers or response => false", () => {
   fc.assert(
     fc.property(
       validArb,
@@ -150,7 +149,7 @@ test("Property 8: missing/malformed body, headers or response => false", () => {
   );
 });
 
-test("Property 8: iff: result equals the conjunction of the four conditions", () => {
+test("iff: result equals the conjunction of the four conditions", () => {
   const maybe = (good, bad) => fc.oneof(fc.constant(good), bad);
   fc.assert(
     fc.property(

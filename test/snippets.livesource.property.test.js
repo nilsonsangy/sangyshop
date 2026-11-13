@@ -34,9 +34,8 @@ function readLive(relFile) {
   return fs.readFileSync(path.join(APP_ROOT, relFile), "utf8");
 }
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 13: Snippet matches the real source code
-// Validates: Requirements 7.2
-test("Property 13: every snippet range returned by getSnippet is a literal substring of the live source file", async () => {
+// Snippet matches the real source code
+test("every snippet range returned by getSnippet is a literal substring of the live source file", async () => {
   await fc.assert(
     fc.asyncProperty(fc.constantFrom(...vulnKeys), async (vuln) => {
       const snippet = await getSnippet(vuln);

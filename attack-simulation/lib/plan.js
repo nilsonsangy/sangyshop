@@ -1,6 +1,6 @@
 // attack-simulation/lib/plan.js
 // Pure planning module: validates rate/volume options against fixed ceilings
-// and builds an ordered, numbered step plan for the Script_Ataque.
+// and builds an ordered, numbered step plan for the attack script.
 //
 // No I/O here. See lib/http.js for the side-effecting request execution that
 // is expected to respect the budgets this module computes.
@@ -10,7 +10,7 @@ const DEFAULT_RATE_RPS = 5;
 const DEFAULT_TOTAL_REQUESTS = 150;
 
 // Rigid (hard) ceilings. Requests to exceed these are always rejected,
-// regardless of what the caller asks for (Requirement 13.5).
+// regardless of what the caller asks for.
 const RIGID_RATE_RPS = 10;
 const RIGID_TOTAL_REQUESTS = 300;
 

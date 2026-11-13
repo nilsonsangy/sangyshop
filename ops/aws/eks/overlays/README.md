@@ -1,7 +1,7 @@
 # AWS / EKS Kustomize overlay
 
 Per-cloud adaptation of the shared hardened manifest for Amazon EKS. The base
-manifest is the single source of truth and is **never modified** — this overlay
+manifest is the single source of truth and is **never modified**, this overlay
 references it by relative path and layers only the AWS-specific deltas on top.
 
 **Base:** `../../../kubernetes/hardened/sangyshop-hardened.yaml`
@@ -14,7 +14,7 @@ references it by relative path and layers only the AWS-specific deltas on top.
 | 2 | Web `sangyshop` Service → `type: LoadBalancer` | `service-loadbalancer.yaml` |
 | 3 | StorageClass `gp3` (encrypted EBS) | `storageclass-gp3.yaml` |
 | 4 | Secret source → SecretsStore CSI / External Secrets → K8s Secret `sangyshop-db` → file `/run/secrets/db_password` | `secretproviderclass.yaml` + `app-rds.yaml` |
-| — | Drop in-cluster Postgres (StatefulSet + PVC + `sangyshop-db` Service); repoint `DB_HOST` at managed RDS | `delete-postgres.yaml` + `app-rds.yaml` |
+| n/a | Drop in-cluster Postgres (StatefulSet + PVC + `sangyshop-db` Service); repoint `DB_HOST` at managed RDS | `delete-postgres.yaml` + `app-rds.yaml` |
 
 **Left intact (inherited from the base, unchanged):** the hardened
 `securityContext` (non-root, read-only root FS, dropped capabilities,
@@ -23,7 +23,7 @@ default-deny + allow `NetworkPolicies`.
 
 The DB-password **file contract is preserved**: the password still arrives in
 the container as the trimmed plain-text file `/run/secrets/db_password` (read by
-`src/db/credentials.js`). Only the *source* of that file changes — the
+`src/db/credentials.js`). Only the *source* of that file changes, the
 SecretsStore CSI driver pulls it from AWS Secrets Manager and syncs it into the
 `sangyshop-db` Kubernetes Secret the base already mounts. `DB_PASSWORD` is never
 set as an environment variable.
@@ -31,7 +31,7 @@ set as an environment variable.
 ## Placeholders and substitution
 
 This overlay is committed with **placeholders only**: no account IDs, hosts, or
-secrets. `aws/eks/deploy.ps1` (task 10.2) renders a throwaway copy with
+secrets. `aws/eks/deploy.ps1` renders a throwaway copy with
 the values below substituted from `cloud.config.ps1`, then runs
 `kubectl apply -k` on the rendered copy. The committed files stay
 placeholder-only.

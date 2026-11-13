@@ -8,11 +8,10 @@
     (Write-Step), config loading/validation (Get-CloudConfig), and DB-password
     generation (New-DbPassword).
 
-    This file currently contains STUBS only. Later tasks (see tasks.md task 2.x)
-    fill in each function body. Keeping the stubs here lets the cloud scripts and
-    Pester tests reference the functions before they are implemented.
+    This file holds the shared helpers used by every cloud script and by the
+    Pester tests.
 
-    Requirement 6.1: these scripts must run on Windows PowerShell 5.1+. Do not use
+    These scripts must run on Windows PowerShell 5.1+. Do not use
     syntax newer than 5.1 in this file.
 #>
 
@@ -23,7 +22,7 @@ function Invoke-Echoed {
     .SYNOPSIS
         Echoes an external command line to stdout, then executes it.
     .DESCRIPTION
-        STUB - implemented in task 2.1. Prints "$Exe <args>" before running,
+        Prints "$Exe <args>" before running,
         executes $Exe with $CmdArgs as a discrete argument array (never via a
         shell / Invoke-Expression), throws a terminating error on a non-zero exit
         unless -AllowFail is set, and returns the command's stdout.
@@ -35,7 +34,7 @@ function Invoke-Echoed {
         [switch]                         $AllowFail
     )
 
-    # --- Req 1.2: render each token so the printed line is copyable/runnable ---
+    # --- Render each token so the printed line is copyable/runnable ---
     # An argument needs quoting if it is empty, or contains whitespace, a quote,
     # or any shell metacharacter. We quote with double quotes and backslash-escape
     # embedded double quotes and backslashes so the result is a single, runnable
@@ -64,7 +63,7 @@ function Invoke-Echoed {
     }
     $display = $displayParts -join ' '
 
-    # --- Req 1.1: echo the exact command line BEFORE executing it. ---
+    # --- Echo the exact command line BEFORE executing it. ---
     Write-Host "> $display" -ForegroundColor Cyan
 
     # --- Resolve $Exe to the external APPLICATION before invoking it. ---
@@ -85,7 +84,7 @@ function Invoke-Echoed {
                "Install it and ensure its directory is on your PATH (verify with: Get-Command -Name '$Exe' -CommandType Application).")
     }
 
-    # --- Req 1.4 / 6.2: execute with the argument ARRAY as discrete arguments. ---
+    # --- Execute with the argument ARRAY as discrete arguments. ---
     # Never Invoke-Expression, never a shell (bash/sh). The splat passes each
     # element of $CmdArgs as its own argument with no string re-parsing. We call
     # the resolved application PATH so a same-named function can never shadow it.
@@ -98,12 +97,12 @@ function Invoke-Echoed {
         $output | ForEach-Object { Write-Host $_ }
     }
 
-    # --- Req 1.5: fail-closed on a non-zero exit unless failure is tolerated. ---
+    # --- Fail-closed on a non-zero exit unless failure is tolerated. ---
     if ($code -ne 0 -and -not $AllowFail) {
         throw "Command failed (exit $code): $display"
     }
 
-    # --- Req 1.6: on a tolerated failure, return control and expose the exit
+    # --- On a tolerated failure, return control and expose the exit
     #     code. $LASTEXITCODE remains set for the caller; also surface it here. ---
     $global:LASTEXITCODE = $code
 
@@ -116,7 +115,7 @@ function Write-Step {
     .SYNOPSIS
         Emits a consistent, greppable step/section banner to stdout.
     .DESCRIPTION
-        Req 1.1: prints a fixed-prefix banner so progress is easy to follow and
+        Prints a fixed-prefix banner so progress is easy to follow and
         grep for across a long deploy/teardown run. Every banner uses the same
         "==> " marker, making `... | Select-String '^==> '` a reliable filter.
         Windows PowerShell 5.1 compatible (no newer syntax).
@@ -139,15 +138,15 @@ function Get-CloudConfig {
     .DESCRIPTION
         Loads the config file (default: cloud.config.ps1 beside this library, or an
         explicit -ConfigPath), applies safe Common defaults, and validates it BEFORE
-        any external command could run (Req 7.1, fail-closed):
+        any external command could run (fail-closed):
 
           * Required keys for the active cloud (-Cloud) must be present and must not
             be null, empty, or whitespace. Every offending key is named in the error
-            (Req 7.3).
+.
           * The globally-unique suffix must be 3-24 lowercase-alphanumeric characters;
-            an invalid suffix stops execution with a message (Req 7.5, 7.6).
+            an invalid suffix stops execution with a message.
           * No password / secret field may appear anywhere in the config; any such
-            field stops execution (Req 7.4).
+            field stops execution.
 
         Returns the validated, defaulted hashtable. Windows PowerShell 5.1 compatible
         (no newer syntax).
@@ -178,7 +177,7 @@ function Get-CloudConfig {
         throw "Get-CloudConfig: modality 'vm' is only valid with -Cloud Azure (got '$Cloud')."
     }
 
-    # --- Req 7.1: load per-user values from the config file before anything else. ---
+    # --- Load per-user values from the config file before anything else. ---
     if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
         throw "Get-CloudConfig: no config path supplied. Copy cloud.config.example.ps1 to cloud.config.ps1 and pass -ConfigPath or run from the cloud folder."
     }
@@ -199,7 +198,7 @@ function Get-CloudConfig {
         throw "Get-CloudConfig: '$ConfigPath' did not return a configuration hashtable (expected a top-level @{ ... })."
     }
 
-    # --- Req 7.4: reject any secret-bearing field anywhere in the config. ---
+    # --- Reject any secret-bearing field anywhere in the config. ---
     # Secrets belong only in the cloud secret manager, never in this file. Match key
     # names case-insensitively against common secret indicators, walking nested
     # hashtables so a secret cannot hide inside a per-cloud section.
@@ -243,13 +242,13 @@ function Get-CloudConfig {
         }
     }
 
-    # --- Req 7.5 / 7.6: validate the globally-unique suffix (3-24 lower-alnum). ---
+    # --- Validate the globally-unique suffix (3-24 lower-alnum). ---
     $suffix = if ($cfg.Contains('UniqueSuffix')) { [string]$cfg['UniqueSuffix'] } else { $null }
     if ([string]::IsNullOrWhiteSpace($suffix) -or ($suffix -cnotmatch '^[a-z0-9]{3,24}$')) {
         throw ("Get-CloudConfig: invalid UniqueSuffix '" + $suffix + "'. It must be 3-24 characters of lowercase letters (a-z) and digits (0-9) only.")
     }
 
-    # --- Req 7.3: required keys for the active cloud must be present & non-blank. ---
+    # --- Required keys for the active cloud must be present & non-blank. ---
     # Only the selected cloud's section is validated so unused clouds' placeholders
     # do not block a correctly-configured deployment.
     $requiredByCloud = @{
@@ -329,7 +328,7 @@ function New-DbPassword {
     .SYNOPSIS
         Generates a strong random DB password. Never logged or echoed.
     .DESCRIPTION
-        STUB - implemented in task 2.6. Returns a random password of at least 24
+        Returns a random password of at least 24
         characters including lowercase, uppercase, digits, and symbols.
     #>
     [CmdletBinding()]
@@ -337,7 +336,7 @@ function New-DbPassword {
         [int] $Length = 32
     )
 
-    # --- Req 4.4: enforce a hard floor of 24 characters regardless of -Length. ---
+    # --- Enforce a hard floor of 24 characters regardless of -Length. ---
     # A caller passing a smaller (or non-positive) value is silently raised to the
     # minimum rather than producing a weak secret.
     $minLength = 24
@@ -345,7 +344,7 @@ function New-DbPassword {
         $Length = $minLength
     }
 
-    # --- Character classes (Req 4.4: lowercase, uppercase, digits, symbols). ---
+    # --- Character classes (lowercase, uppercase, digits, symbols). ---
     # The symbol set is deliberately restricted to characters that are safe to pass
     # through PostgreSQL passwords and the cloud CLIs / shells that carry them, so a
     # generated password never needs shell-escaping and never breaks a connection
@@ -382,7 +381,7 @@ function New-DbPassword {
             }
         }
 
-        # Build the character list: one guaranteed pick from each class (Req 4.4),
+        # Build the character list: one guaranteed pick from each class,
         # then fill the remainder from the combined set.
         $chars = New-Object System.Collections.Generic.List[char]
         foreach ($class in $classes) {
@@ -401,7 +400,7 @@ function New-DbPassword {
             $chars[$j] = $tmp
         }
 
-        # --- Req 3.2: return the value as the function's ONLY output. It is never
+        # --- Return the value as the function's ONLY output. It is never
         #     written to the host, a log, or an echoed command line here. ---
         return (-join $chars)
     }
@@ -475,7 +474,7 @@ function New-RunId {
 function Get-LabTags {
     <#
     .SYNOPSIS
-        Returns the Tag_Lab hashtable: lab, run-id, component and optional evidence=true.
+        Returns the lab tag hashtable: lab, run-id, component and optional evidence=true.
     .DESCRIPTION
         Plain string key/value pairs, usable to build both AWS (Key=,Value=) and Azure
         (key=value) tag arguments.
@@ -508,7 +507,7 @@ function Get-LabTags {
 function Get-LabManifestPath {
     <#
     .SYNOPSIS
-        Resolves the Manifesto_Lab path: $env:LAB_MANIFEST_PATH or $HOME/.sangyshop-lab/manifest-<lab>.json.
+        Resolves the lab manifest path: $env:LAB_MANIFEST_PATH or $HOME/.sangyshop-lab/manifest-<lab>.json.
     #>
     [CmdletBinding()]
     param([Parameter(Mandatory)][string] $Lab)
@@ -521,15 +520,56 @@ function Get-LabManifestPath {
     return (Join-Path $dir ("manifest-$Lab.json"))
 }
 
+function Find-LabManifestResourceId {
+    <#
+    .SYNOPSIS
+        Returns the id of the newest manifest entry of a type (and component), or $null.
+    .DESCRIPTION
+        Read only. Used to default parameters such as the app bucket or the instance id from
+        what the deploy step recorded. Entries of any ownership count. When -Region is given,
+        entries recorded for another region are ignored. A missing or invalid manifest gives $null.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string] $Type,
+        [Parameter(Mandatory)][string] $Lab,
+        [string] $Component = 'deploy',
+        [string] $Region,
+        [string] $ManifestPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ManifestPath)) { $ManifestPath = Get-LabManifestPath -Lab $Lab }
+    if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { return $null }
+    try { $doc = [System.IO.File]::ReadAllText($ManifestPath) | ConvertFrom-Json } catch { return $null }
+    if ($null -eq $doc -or -not $doc.PSObject.Properties['resources'] -or $null -eq $doc.resources) { return $null }
+
+    $found = $null
+    foreach ($e in @($doc.resources)) {
+        if (-not $e.PSObject.Properties['type'] -or -not $e.PSObject.Properties['id']) { continue }
+        if ("$($e.type)" -cne $Type) { continue }
+        if ($Component -and $e.PSObject.Properties['component'] -and "$($e.component)" -cne $Component) { continue }
+        if ($Region -and $e.PSObject.Properties['region'] -and "$($e.region)" -and "$($e.region)" -cne $Region) { continue }
+        if (-not [string]::IsNullOrWhiteSpace("$($e.id)")) { $found = "$($e.id)" }
+    }
+    return $found
+}
+
 function Add-LabManifestEntry {
     <#
     .SYNOPSIS
-        Adds or updates one resource in the Manifesto_Lab (idempotent by (type, id)).
+        Adds or updates one resource in the lab_manifest (idempotent by (type, id)).
     .DESCRIPTION
         Used for resources that cannot carry tags (access keys, SNS subscriptions, NACL
         entries, service principals...). The file lives outside the repositories. Writes
         are atomic: serialize to a temp file in the same folder, then replace/rename.
         A named mutex serializes concurrent read-modify-write cycles.
+
+        Call this right after each successful mutating cloud call, before the next one,
+        so every entry is persisted atomically on its own.
+
+        -Ownership is 'created' (default) or 'reused'. A 'reused' entry records a
+        resource that already existed; it never gets a delete block. Entries written
+        before this field existed have no 'ownership' and must be read as 'created'.
     #>
     [CmdletBinding()]
     param(
@@ -540,6 +580,8 @@ function Add-LabManifestEntry {
         [Parameter(Mandatory)][ValidateSet('deploy', 'detection', 'blocker', 'evidence', 'credential')]
         [string] $Component,
         [hashtable] $DeleteHint,
+        [ValidateSet('created', 'reused')]
+        [string] $Ownership = 'created',
         [string] $Lab = 'sangyshop-lab-aws',
         [string] $ManifestPath
     )
@@ -592,7 +634,10 @@ function Add-LabManifestEntry {
             component   = $Component
             created_utc = $nowUtc
         }
-        if ($PSBoundParameters.ContainsKey('DeleteHint') -and $null -ne $DeleteHint) {
+        $entry['ownership'] = $Ownership
+        # Reused resources pre-existed the lab run and must never be deleted by it,
+        # so they carry no delete block even if a hint was passed.
+        if ($Ownership -eq 'created' -and $PSBoundParameters.ContainsKey('DeleteHint') -and $null -ne $DeleteHint) {
             $entry['delete'] = $DeleteHint
         }
 
@@ -637,4 +682,191 @@ function Add-LabManifestEntry {
         if ($held) { $mutex.ReleaseMutex() }
         $mutex.Dispose()
     }
+}
+
+function Import-LabDotEnv {
+    <#
+    .SYNOPSIS
+        Loads KEY=VALUE pairs from a .env file into the process environment.
+    .DESCRIPTION
+        Defaults to ops/.env, resolved relative to this library rather than to the
+        calling script. A variable that is already set (non-empty) in the process is
+        never overwritten. Blank lines and lines starting with '#' are ignored, an
+        optional leading 'export ' is accepted, and matching single or double quotes
+        around a value are removed. A missing file is not an error. Values are never
+        printed. Returns the names of the variables that were set.
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $Path = (Join-Path (Join-Path $PSScriptRoot '..') '.env')
+    )
+
+    $loaded = New-Object System.Collections.Generic.List[string]
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return @()
+    }
+
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        $text = $line.Trim()
+        if ($text.Length -eq 0 -or $text.StartsWith('#')) { continue }
+        if ($text -match '^export\s+') { $text = $text -replace '^export\s+', '' }
+
+        $eq = $text.IndexOf('=')
+        if ($eq -lt 1) { continue }
+        $name  = $text.Substring(0, $eq).Trim()
+        $value = $text.Substring($eq + 1).Trim()
+        if ($name -cnotmatch '^[A-Za-z_][A-Za-z0-9_]*$') { continue }
+
+        if ($value.Length -ge 2 -and
+            (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+             ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+
+        $current = [Environment]::GetEnvironmentVariable($name, 'Process')
+        if ([string]::IsNullOrEmpty($current)) {
+            [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+            $loaded.Add($name)
+        }
+    }
+    return $loaded.ToArray()
+}
+
+function Test-LabEmailFormat {
+    <#
+    .SYNOPSIS
+        Returns $true when the text looks like an e-mail address.
+    #>
+    [CmdletBinding()]
+    param(
+        [AllowNull()][AllowEmptyString()][string] $Email
+    )
+
+    if ($null -eq $Email) { return $false }
+    return ($Email -cmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+}
+
+function Resolve-LabAlertEmail {
+    <#
+    .SYNOPSIS
+        Resolves the alert e-mail address for the lab detection stack.
+    .DESCRIPTION
+        Order: the -Email parameter, then the LAB_ALERT_EMAIL environment variable
+        (after loading ops/.env without overriding existing variables), then an
+        interactive prompt. With no value and no console, or with a value that fails
+        the format check, the process exits with code 2. The address itself is never
+        printed: only the source it came from is reported. Returns the trimmed address.
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $Email,
+        [switch] $NonInteractive,
+        [string] $DotEnvPath
+    )
+
+    $value  = $null
+    $source = $null
+
+    if (-not [string]::IsNullOrWhiteSpace($Email)) {
+        $value  = $Email.Trim()
+        $source = 'the -Email parameter'
+    }
+
+    if ($null -eq $value) {
+        if ($PSBoundParameters.ContainsKey('DotEnvPath')) {
+            $envBefore = $env:LAB_ALERT_EMAIL
+            Import-LabDotEnv -Path $DotEnvPath | Out-Null
+        }
+        else {
+            $envBefore = $env:LAB_ALERT_EMAIL
+            Import-LabDotEnv | Out-Null
+        }
+        if (-not [string]::IsNullOrWhiteSpace($env:LAB_ALERT_EMAIL)) {
+            $value  = $env:LAB_ALERT_EMAIL.Trim()
+            $source = if ([string]::IsNullOrWhiteSpace($envBefore)) { 'the ops/.env file' } else { 'the LAB_ALERT_EMAIL environment variable' }
+        }
+    }
+
+    if ($null -eq $value) {
+        $canPrompt = (-not $NonInteractive) -and
+                     ($null -eq (Get-Variable -Name LabCliHandler -Scope Global -ErrorAction SilentlyContinue)) -and
+                     [Environment]::UserInteractive -and
+                     (-not [Console]::IsInputRedirected)
+        if ($canPrompt) {
+            $answer = Read-Host -Prompt 'Alert e-mail address'
+            if (-not [string]::IsNullOrWhiteSpace($answer)) {
+                $value  = $answer.Trim()
+                $source = 'an interactive prompt'
+            }
+        }
+    }
+
+    if ($null -eq $value) {
+        [Console]::Error.WriteLine('Resolve-LabAlertEmail: no alert e-mail available. Pass -Email, set LAB_ALERT_EMAIL, or define it in ops/.env (see ops/.env.example).')
+        exit 2
+    }
+
+    if (-not (Test-LabEmailFormat -Email $value)) {
+        [Console]::Error.WriteLine("Resolve-LabAlertEmail: the e-mail from $source is not a valid address.")
+        exit 2
+    }
+
+    Write-Host "Alert e-mail source: $source"
+    return $value
+}
+
+function Resolve-LabRegion {
+    <#
+    .SYNOPSIS
+        Resolves the AWS region for the lab scripts.
+    .DESCRIPTION
+        Order: the -Region parameter, then Aws.Region from the config hashtable
+        (as returned by Get-CloudConfig). With neither, an English message is written
+        to stderr and the process exits with code 2. Returns the trimmed region.
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $Region,
+        [hashtable] $Config
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Region)) {
+        return $Region.Trim()
+    }
+
+    if ($null -ne $Config -and $Config.Contains('Aws') -and ($Config['Aws'] -is [hashtable]) -and
+        $Config['Aws'].Contains('Region') -and
+        -not [string]::IsNullOrWhiteSpace([string]$Config['Aws']['Region'])) {
+        return ([string]$Config['Aws']['Region']).Trim()
+    }
+
+    [Console]::Error.WriteLine('Resolve-LabRegion: no AWS region available. Pass -Region or set Aws.Region in the config file.')
+    exit 2
+}
+
+function Hide-LabSecrets {
+    <#
+    .SYNOPSIS
+        Minimal secret masking used when the full redaction library is not available.
+    .DESCRIPTION
+        Masks access key identifiers (AKIA/ASIA plus 16 characters), values labeled
+        SecretAccessKey or SessionToken (JSON, key=value or key: value forms), and
+        stand-alone 40-character secret key shaped strings. Returns the masked text.
+    #>
+    [CmdletBinding()]
+    param(
+        [AllowNull()][AllowEmptyString()][string] $Text
+    )
+
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $mask = '[REDACTED]'
+    $out = $Text
+
+    # Labeled values: "SecretAccessKey": "value", SecretAccessKey=value, SessionToken: value
+    $out = [regex]::Replace($out, '(?i)("?(?:SecretAccessKey|SessionToken|aws_secret_access_key|aws_session_token)"?\s*[:=]\s*"?)([^"\s,}]+)', ('${1}' + $mask))
+    # Access key identifiers.
+    $out = [regex]::Replace($out, '(?<![A-Z0-9])(?:AKIA|ASIA)[0-9A-Z]{16}(?![A-Z0-9])', $mask)
+    # Unlabeled 40-character secret key shape.
+    $out = [regex]::Replace($out, '(?<![A-Za-z0-9/+=])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])', $mask)
+    return $out
 }

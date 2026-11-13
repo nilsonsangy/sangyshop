@@ -1,5 +1,5 @@
 // test/helpers.smoke.test.js
-// Smoke test for the test infrastructure (task 1). It does NOT exercise feature
+// Smoke test for the test infrastructure. It does NOT exercise feature
 // behaviour yet; it only proves the helper boots an in-memory app, the session
 // cookie jar works, and the A01 toggle stub flips response behaviour WITHOUT
 // writing config/defenses.json.

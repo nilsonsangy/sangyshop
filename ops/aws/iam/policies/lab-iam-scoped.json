@@ -1,0 +1,117 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "IamWriteSangyshopRolesAndProfiles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AddRoleToInstanceProfile",
+        "iam:CreateInstanceProfile",
+        "iam:CreateRole",
+        "iam:DeleteInstanceProfile",
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:TagInstanceProfile",
+        "iam:TagRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::${AccountId}:role/sangyshop-*",
+        "arn:aws:iam::${AccountId}:instance-profile/sangyshop-*"
+      ]
+    },
+    {
+      "Sid": "IamAttachOnlyKnownPoliciesToLabRoles",
+      "Effect": "Allow",
+      "Action": "iam:AttachRolePolicy",
+      "Resource": "arn:aws:iam::${AccountId}:role/sangyshop-*",
+      "Condition": {
+        "ArnEquals": {
+          "iam:PolicyARN": [
+            "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+            "arn:aws:iam::${AccountId}:policy/sangyshop-*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "IamWriteSangyshopLeakedUser",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateAccessKey",
+        "iam:CreateUser",
+        "iam:DeleteAccessKey",
+        "iam:DeleteLoginProfile",
+        "iam:DeleteUser",
+        "iam:DeleteUserPolicy",
+        "iam:DetachUserPolicy",
+        "iam:PutUserPolicy",
+        "iam:RemoveUserFromGroup",
+        "iam:TagUser",
+        "iam:UpdateAccessKey"
+      ],
+      "Resource": "arn:aws:iam::${AccountId}:user/sangyshop-*"
+    },
+    {
+      "Sid": "IamDeleteSangyshopPolicies",
+      "Effect": "Allow",
+      "Action": [
+        "iam:DeletePolicy",
+        "iam:DeletePolicyVersion"
+      ],
+      "Resource": "arn:aws:iam::${AccountId}:policy/sangyshop-*"
+    },
+    {
+      "Sid": "IamDetachFromSangyshopGroups",
+      "Effect": "Allow",
+      "Action": "iam:DetachGroupPolicy",
+      "Resource": "arn:aws:iam::${AccountId}:group/sangyshop-*"
+    },
+    {
+      "Sid": "PassOnlySangyshopRolesToLabServices",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::${AccountId}:role/sangyshop-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": [
+            "ec2.amazonaws.com",
+            "lambda.amazonaws.com",
+            "vpc-flow-logs.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "IamRead",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetAccessKeyLastUsed",
+        "iam:GetInstanceProfile",
+        "iam:GetPolicy",
+        "iam:GetRole",
+        "iam:GetUser",
+        "iam:ListAccessKeys",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListEntitiesForPolicy",
+        "iam:ListGroupsForUser",
+        "iam:ListInstanceProfiles",
+        "iam:ListInstanceProfilesForRole",
+        "iam:ListInstanceProfileTags",
+        "iam:ListPolicies",
+        "iam:ListPolicyTags",
+        "iam:ListPolicyVersions",
+        "iam:ListRolePolicies",
+        "iam:ListRoles",
+        "iam:ListRoleTags",
+        "iam:ListUserPolicies",
+        "iam:ListUsers",
+        "iam:ListUserTags"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

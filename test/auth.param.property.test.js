@@ -29,10 +29,9 @@ const ADMIN_PASSWORD = SEED.credentials.admin; // "SangyAdmin!2025"
 
 afterEach(resetToggles);
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 7: Login parametrizado
+// Login parametrizado
 // rejects the injection with the defense on
-// Validates: Requirements 3.4, 3.5, 3.7 (also covers R8.3)
-test("Property 7: with A05 ON, admin'-- plus a wrong password returns 401 and no session", async () => {
+test("with A05 ON, admin'-- plus a wrong password returns 401 and no session", async () => {
   const app = await createTestApp();
   setToggle("A05_injection", true);
 

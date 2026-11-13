@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
-    Pester 5.x unit tests for Invoke-Echoed (lib/Common.ps1, task 2.1).
+    Pester 5.x unit tests for Invoke-Echoed (lib/Common.ps1).
 
 .DESCRIPTION
-    Covers Requirements 1.1, 1.2, 1.4, 1.5, 1.6:
-      * 1.1 - the exact command line (exe + every arg, in order) is printed
+    Covers these behaviors:
+      * the exact command line (exe + every arg, in order) is printed
               to stdout BEFORE the command runs.
-      * 1.2 - arguments with whitespace / quotes / shell metacharacters are
+      * arguments with whitespace / quotes / shell metacharacters are
               quoted-or-escaped in the printed line; simple args are not.
-      * 1.4 - arguments are handed to the executable as a discrete array, with
+      * arguments are handed to the executable as a discrete array, with
               no shell / string (Invoke-Expression) evaluation, so an arg full
               of shell metacharacters reaches the exe verbatim.
-      * 1.5 - a non-zero exit WITHOUT -AllowFail throws a terminating error that
+      * a non-zero exit WITHOUT -AllowFail throws a terminating error that
               names the failed command and its exit code.
-      * 1.6 - a non-zero exit WITH -AllowFail returns control and exposes the
+      * a non-zero exit WITH -AllowFail returns control and exposes the
               exit code ($LASTEXITCODE) to the caller.
 
     Requires Pester 5.x (see tests/README.md). Run with:
@@ -46,7 +46,7 @@ BeforeAll {
     # Temp script that prints each argument it receives on its own line, framed
     # with sentinels. Invoked via `-File`, so everything after it on the command
     # line arrives as discrete $args - the true argv the child process saw. This
-    # lets us prove Invoke-Echoed did NOT route through a shell (Req 1.4).
+    # lets us prove Invoke-Echoed did NOT route through a shell.
     $script:EchoArgsScript = Join-Path ([System.IO.Path]::GetTempPath()) ("echoargs_{0}.ps1" -f ([guid]::NewGuid().ToString('N')))
     @'
 foreach ($a in $args) {
@@ -72,7 +72,7 @@ AfterAll {
 
 Describe 'Invoke-Echoed' {
 
-    Context 'Req 1.1 / 1.2 - echoes the exact, correctly-quoted command line before executing' {
+    Context 'Echoes the exact, correctly-quoted command line before executing' {
 
         BeforeEach {
             # Capture every Write-Host call so we can inspect the printed line.
@@ -152,7 +152,7 @@ Describe 'Invoke-Echoed' {
         }
     }
 
-    Context 'Req 1.4 - arguments are passed as a discrete array (no shell / string evaluation)' {
+    Context 'Arguments are passed as a discrete array (no shell / string evaluation)' {
 
         It 'passes a shell-metacharacter argument to the executable verbatim' {
             # If Invoke-Echoed used a shell or Invoke-Expression, this token would
@@ -180,7 +180,7 @@ Describe 'Invoke-Echoed' {
         }
     }
 
-    Context 'Req 1.5 - non-zero exit throws without -AllowFail' {
+    Context 'Non-zero exit throws without -AllowFail' {
 
         It 'throws a terminating error on a non-zero exit' {
             {
@@ -211,7 +211,7 @@ Describe 'Invoke-Echoed' {
         }
     }
 
-    Context 'Req 1.6 - non-zero exit with -AllowFail returns control and exposes the exit code' {
+    Context 'Non-zero exit with -AllowFail returns control and exposes the exit code' {
 
         It 'does not throw when -AllowFail is set and the command fails' {
             {

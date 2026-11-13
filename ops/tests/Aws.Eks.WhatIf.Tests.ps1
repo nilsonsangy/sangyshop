@@ -4,7 +4,7 @@
     (aws/eks/deploy.ps1 and aws/eks/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 10.4 of the multi-cloud-deploy plan. Each script is executed in a
+    Covers the dry run of the deploy and teardown scripts. Each script is executed in a
     fresh child PowerShell with -WhatIf against a well-formed temporary AWS config
     written under $TestDrive. Nothing here touches a real cloud: under -WhatIf the
     scripts record and print their planned command list and execute NO external
@@ -14,7 +14,7 @@
     -WhatIf invocation, a $TestDrive config .ps1, and a Get-PlannedCommands
     transcript parser).
 
-    deploy.ps1 (Req 6.5, 3.1, 3.3):
+    deploy.ps1:
       * Runs with -WhatIf and a safe -AllowedSourceRanges ('203.0.113.7/32');
         exits 0.
       * Prints the full ordered planned command list and executes NO external
@@ -40,9 +40,9 @@
         CASE-SENSITIVE (-CNotMatch): the lowercase /run/secrets/db_password file
         path and the lowercase Secrets Manager id (sangyshop/db_password) are both
         correct and allowed; only the uppercase env-var form DB_PASSWORD is
-        forbidden (Req 3.1).
+        forbidden.
 
-    teardown.ps1 (Req 6.5):
+    teardown.ps1:
       * Runs with -WhatIf; exits 0.
       * Prints the full ordered planned command list (reverse-order deletes) and
         executes NO external command: kubectl namespace delete, aws rds
@@ -143,7 +143,7 @@ BeforeAll {
     }
 }
 
-Describe 'AWS Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
+Describe 'AWS Kubernetes deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         # deploy REQUIRES -AllowedSourceRanges; pass a safe non-open CIDR.
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
@@ -179,7 +179,7 @@ Describe 'AWS Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         # The ECR login is the one special-cased native pipe: the login token flows
         # only through the OS pipe between the two processes, so it is neither an
         # echoed CLI arg nor a rendered stdin marker. The single planned line shows
-        # both command names without the token (Req 3.2).
+        # both command names without the token.
         $loginLine = $script:DeployPlanned | Where-Object { $_ -match 'docker login ' } | Select-Object -First 1
         $loginLine | Should -Not -BeNullOrEmpty
         $loginLine | Should -Match 'aws ecr get-login-password --region .+ \| docker login --username AWS --password-stdin'
@@ -243,11 +243,11 @@ Describe 'AWS Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         $eksIdx    | Should -BeLessThan $applyIdx
     }
 
-    It 'sets NO DB_PASSWORD env anywhere in the planned command set (Req 3.1)' {
+    It 'sets NO DB_PASSWORD env anywhere in the planned command set' {
         # Match is CASE-SENSITIVE (-CNotMatch) on purpose: the lowercase Secrets
         # Manager id (sangyshop/db_password) and the lowercase /run/secrets/
         # db_password file path are both correct and required; only the uppercase
-        # env-var form DB_PASSWORD is forbidden (Req 3.1).
+        # env-var form DB_PASSWORD is forbidden.
         $script:Deploy.Text | Should -Not -CMatch 'DB_PASSWORD'
         ($script:DeployPlanned -join "`n") | Should -Not -CMatch 'DB_PASSWORD'
     }
@@ -259,7 +259,7 @@ Describe 'AWS Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
     }
 }
 
-Describe 'AWS Kubernetes teardown.ps1 -WhatIf dry run (Req 6.5)' {
+Describe 'AWS Kubernetes teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines

@@ -1,17 +1,17 @@
 // test/smoke.integration.test.js
 // Integration / smoke tests for the English navigation + session feature
-// (task 17.1). Boots the full in-memory app via test/helpers.js and exercises
+//. Boots the full in-memory app via test/helpers.js and exercises
 // the real route/template stack end to end. Covers:
 //   INTEGRATION - the 5 pages render without a template error: anonymous
 //                 GET /products, /defenses, /logs, /login -> 200, and after
 //                 logging in as alice, GET /orders -> 200. No 500 and no
-//                 template stack trace. (Req 8.3)
+//                 template stack trace.
 //   INTEGRATION - login state persists across the 5 pages in one session
 //                 (cookie jar): the authenticated navbar ("alice (customer)",
-//                 href /logout and /orders) is present on every page. (Req 8.5)
+//                 href /logout and /orders) is present on every page.
 //   EDGE_CASE   - template-failure isolation: a route that renders a missing
 //                 view falls into the error handler (500) while GET /products
-//                 keeps returning 200 on the same app instance. (Req 8.4)
+//                 keeps returning 200 on the same app instance.
 //
 // Uses the native node:test runner + supertest and node:assert/strict,
 // reusing test/helpers.js (createTestApp, agent, login, SEED).
@@ -44,7 +44,7 @@ function assertNoTemplateStackTrace(res, url) {
 }
 
 // ---------------------------------------------------------------------------
-// INTEGRATION: the 5 pages render without a template error (Req 8.3)
+// INTEGRATION: the 5 pages render without a template error
 // ---------------------------------------------------------------------------
 test("INTEGRATION: all 5 pages respond 200 with no template error", async () => {
   const app = await createTestApp();
@@ -66,7 +66,7 @@ test("INTEGRATION: all 5 pages respond 200 with no template error", async () => 
 });
 
 // ---------------------------------------------------------------------------
-// INTEGRATION: login state persists across the 5 pages in one session (Req 8.5)
+// INTEGRATION: login state persists across the 5 pages in one session
 // ---------------------------------------------------------------------------
 test("INTEGRATION: login persists the authenticated navbar across all 5 pages", async () => {
   const app = await createTestApp();
@@ -92,7 +92,7 @@ test("INTEGRATION: login persists the authenticated navbar across all 5 pages", 
 });
 
 // ---------------------------------------------------------------------------
-// EDGE_CASE: template-failure isolation (Req 8.4)
+// EDGE_CASE: template-failure isolation
 //
 // Isolation comes from Express's per-request error handling: an exception while
 // rendering one request's view is routed to the app error handler for THAT

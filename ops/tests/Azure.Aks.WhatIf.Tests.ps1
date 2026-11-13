@@ -4,14 +4,14 @@
     scripts (azure/aks/deploy.ps1 and azure/aks/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 12.4 of the multi-cloud-deploy plan. Each script is executed with
+    Covers the dry run of the deploy and teardown scripts. Each script is executed with
     -WhatIf in a CHILD PowerShell process whose PATH is both (a) stripped of every
     real cloud CLI directory and (b) seeded with a set of POISONED az/docker/
     kubectl .cmd shims that, if they are ever invoked, print a unique marker and
     exit 1. This gives a doubly-protected "no cloud" sandbox: the real CLIs are
     unreachable, and any accidental external call to a stubbed name surfaces the
     marker in captured output (which we assert is ABSENT). That is a direct proof
-    that the dry run "executes NO external command" (Req 6.5). Modeled on
+    that the dry run "executes NO external command". Modeled on
     Azure.Aci.WhatIf.Tests.ps1 (the poisoned-stub PATH sandbox) and
     Gcp.Kubernetes.WhatIf.Tests.ps1 (the $TestDrive config .ps1 + planned-list
     transcript parser).
@@ -24,7 +24,7 @@
     We parse the "  n. <command>" list for deploy where available and otherwise
     assert on the merged output / the "[ n]" ordinals.
 
-    deploy.ps1 (Req 6.5, 3.1, 3.3):
+    deploy.ps1:
       * Runs with -WhatIf and exits 0 with NO cloud CLI installed. The azure
         deploy's Assert-AllowedSourceRanges tolerates a missing -AllowedSourceRanges
         under -WhatIf (it prints a NOTE and returns), so `-WhatIf` alone suffices;
@@ -50,7 +50,7 @@
       * No DB_PASSWORD env token appears anywhere (CASE-SENSITIVE -CNotMatch): the
         lowercase /run/secrets/db_password file path and the lowercase Key Vault
         objectAlias db_password are both correct and allowed; only the uppercase
-        env-var form DB_PASSWORD is forbidden (Req 3.1). The password value is
+        env-var form DB_PASSWORD is forbidden. The password value is
         never on a command line: the dry run renders secret-bearing steps with a
         <generated-password-file> placeholder only.
       * A STATIC read of deploy.ps1 confirms (a) the Key Vault secret is delivered
@@ -60,7 +60,7 @@
         path lives in the overlay (not the dry-run command stream), this static
         assertion supplements the output assertions for the YAML-carried contract.
 
-    teardown.ps1 (Req 6.5):
+    teardown.ps1:
       * Runs with -WhatIf; exits 0.
       * Prints the ordered command list and executes NOTHING external. Plans the
         reverse-order deletes: kubectl overlay delete + namespace delete,
@@ -200,7 +200,7 @@ BeforeAll {
     }
 }
 
-Describe 'Azure Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
+Describe 'Azure Kubernetes deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         # -WhatIf alone should exit 0 (Assert-AllowedSourceRanges tolerates the
         # missing ingress set in dry-run); retry with a safe CIDR only if needed.
@@ -341,11 +341,11 @@ Describe 'Azure Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         }
     }
 
-    It 'sets NO DB_PASSWORD env token anywhere in the planned command set (Req 3.1)' {
+    It 'sets NO DB_PASSWORD env token anywhere in the planned command set' {
         # CASE-SENSITIVE (-CNotMatch) on purpose: the lowercase Key Vault
         # objectAlias (db_password) and the lowercase /run/secrets/db_password
         # file path are both correct and required; only the uppercase env-var form
-        # DB_PASSWORD is forbidden (Req 3.1).
+        # DB_PASSWORD is forbidden.
         $script:Deploy.Text | Should -Not -CMatch 'DB_PASSWORD'
         ($script:DeployPlanned -join "`n") | Should -Not -CMatch 'DB_PASSWORD'
     }
@@ -357,7 +357,7 @@ Describe 'Azure Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
     }
 }
 
-Describe 'Azure Kubernetes deploy.ps1 static source assertions (secret delivery + file contract, Req 3.1/3.3)' {
+Describe 'Azure Kubernetes deploy.ps1 static source assertions (secret delivery + file contract)' {
     # The Key Vault secret FILE path (/run/secrets/db_password) is carried by the
     # committed Azure overlay (rendered + applied by deploy), so it cannot appear
     # in the dry-run command stream. We supplement the output assertions above
@@ -410,7 +410,7 @@ Describe 'Azure Kubernetes deploy.ps1 static source assertions (secret delivery 
     }
 }
 
-Describe 'Azure Kubernetes teardown.ps1 -WhatIf dry run (Req 6.5)' {
+Describe 'Azure Kubernetes teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript
     }
@@ -466,7 +466,7 @@ Describe 'Azure Kubernetes teardown.ps1 -WhatIf dry run (Req 6.5)' {
         $aksIdx | Should -BeLessThan $pgIdx
         $pgIdx  | Should -BeLessThan $kvIdx
         $kvIdx  | Should -BeLessThan $idIdx
-        # The native registry is removed LAST (Req 5.3).
+        # The native registry is removed LAST.
         $idIdx  | Should -BeLessThan $acrIdx
     }
 

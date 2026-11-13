@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Static echo-only guard (Requirement 1.3).
+    Static echo-only guard.
 
     Scans every deploy.ps1 / teardown.ps1 anywhere under ops/
     and asserts that the five cloud CLIs -- aws, az, gcloud, kubectl, docker -- are
@@ -24,8 +24,8 @@
     The EC2 (ops/aws/ec2) and Azure VM (ops/azure/vm) modalities are also covered by
     explicit name, including their start-lab/stop-lab scripts.
 
-    This enforces design Property 1 (echo-before-exec): no script may call a cloud
-    CLI by any path other than Invoke-Echoed, so a student always sees the exact
+    This enforces the echo-before-exec rule: no script may call a cloud
+    CLI by any path other than Invoke-Echoed, so a user always sees the exact
     command before it runs.
 
     Requires Pester 5.x (or 6.x). See tests/README.md for install guidance. Run:
@@ -166,7 +166,7 @@ BeforeAll {
     }
 }
 
-Describe 'Echo-only guard (Requirement 1.3)' {
+Describe 'Echo-only guard' {
 
     Context 'detector unit checks (synthetic in-memory scripts)' {
         It 'flags a bare CLI command token at the start of a line' {
@@ -335,7 +335,7 @@ Describe 'Echo-only guard (Requirement 1.3)' {
         }
     }
 
-    # Task 10.3 (Property 2, Req 10.15, 11.5, 30.7, 33.5): the EC2 and Azure VM
+    # The EC2 and Azure VM
     # modalities are covered by NAME, not only by the recursive discovery above, so
     # deleting or moving one of them cannot silently shrink the scan. start-lab and
     # stop-lab are included because they also reach a cloud CLI.

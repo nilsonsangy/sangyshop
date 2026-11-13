@@ -18,7 +18,7 @@ COPY ops/docker/hardened/package-lock.json ./package-lock.json
 
 # Deterministic install from the hardened lockfile, production deps only.
 # Installs `pg` (the PostgreSQL driver) among the corrected dependencies.
-# Fail-closed: no fallback to `npm install` — if the lockfile is inconsistent,
+# Fail-closed: no fallback to `npm install`: if the lockfile is inconsistent,
 # the build must fail instead of silently resolving different versions.
 RUN rm -rf node_modules && npm ci --omit=dev
 
@@ -43,7 +43,7 @@ ENV PORT=3000
 
 # Runtime wiring (see docker-compose.yml): the app runs in hardened mode
 # (APP_MODE=hardened, DB_BACKEND=pg) and reads the PostgreSQL password from the
-# Docker secret mounted at /run/secrets/db_password — never from a plaintext
+# Docker secret mounted at /run/secrets/db_password: never from a plaintext
 # env var or hardcoded value (R5.1/R5.2/R9.4). The secret is provided
 # out-of-band at run time and is not baked into this image.
 CMD ["node", "src/server.js"]

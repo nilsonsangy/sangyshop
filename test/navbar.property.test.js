@@ -2,10 +2,9 @@
 //
 // Property-based tests for the unified SangyShop navbar.
 //
-// These three properties all live in THIS single file (tasks 2.5, 2.6, 7.2 of
-// the sangyshop-sessao-navegacao-ingles feature). They render the shared
-// partial src/views/partials/navbar.ejs in isolation (Properties 1 and 2) and
-// the five full views that include it (Property 3), using the ejs API directly
+// These three properties all live in THIS single file. They render the shared
+// partial src/views/partials/navbar.ejs in isolation (the first two properties) and
+// the five full views that include it, using the ejs API directly
 //, no HTTP server needed.
 //
 // Runner: node:test (native). PBT library: fast-check (>= 100 iterations each).
@@ -64,10 +63,9 @@ function navLinkTexts(html) {
 }
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 1: Navbar variant
+// Navbar variant
 // selection by session state
 //
-// Validates: Requirements 1.3, 1.4, 2.2, 2.4
 //
 // For any session input, an authenticated user object {username, role}, null,
 // or undefined/absent, rendering navbar.ejs NEVER throws and produces exactly
@@ -75,7 +73,7 @@ function navLinkTexts(html) {
 // non-null, anonymous (has /login, no /orders, no /logout) when the value is
 // null, undefined or absent.
 // ===========================================================================
-test("Property 1: navbar variant is selected by session state", () => {
+test("navbar variant is selected by session state", () => {
   // sessionInput covers: authenticated object | null | undefined.
   const sessionInput = fc.oneof(
     authedUser,
@@ -108,7 +106,7 @@ test("Property 1: navbar variant is selected by session state", () => {
 // Also exercise the "absent" case explicitly: rendering with NO `user` local in
 // scope at all. The partial normalizes `typeof user !== 'undefined'`, so this
 // must fall back to the anonymous variant without throwing.
-test("Property 1 (addendum): navbar with no user local renders anonymous variant", () => {
+test("Addendum: navbar with no user local renders anonymous variant", () => {
   let html;
   assert.doesNotThrow(() => {
     html = ejs.render(PARTIAL_SRC, {});
@@ -119,16 +117,15 @@ test("Property 1 (addendum): navbar with no user local renders anonymous variant
 });
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 2: Authenticated
+// Authenticated
 // navbar content
 //
-// Validates: Requirements 2.1, 2.3
 //
 // For any authenticated user (any username and role), the rendered navbar
 // contains the username, the role, href="/logout" and the /orders (My Orders)
 // link.
 // ===========================================================================
-test("Property 2: authenticated navbar shows username, role, logout and My Orders", () => {
+test("authenticated navbar shows username, role, logout and My Orders", () => {
   fc.assert(
     fc.property(authedUser, (user) => {
       const html = renderNavbar(user);
@@ -153,10 +150,9 @@ test("Property 2: authenticated navbar shows username, role, logout and My Order
 });
 
 // ===========================================================================
-// Feature: sangyshop-sessao-navegacao-ingles, Property 3: Navbar
+// Navbar
 // consistency across pages
 //
-// Validates: Requirements 1.1, 1.2, 2.5
 //
 // For any session state ({username, role} object or null), rendering the five
 // full views and extracting the set of <a> texts inside <nav> yields an
@@ -174,7 +170,7 @@ function viewMatrix(user) {
   ];
 }
 
-test("Property 3: navbar nav links are identical across the five views", async () => {
+test("navbar nav links are identical across the five views", async () => {
   const sessionInput = fc.oneof(authedUser, fc.constant(null));
 
   await fc.assert(

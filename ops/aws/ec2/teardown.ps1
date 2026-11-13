@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Remove everything deploy.ps1 created for the EC2 + RDS lab (Deploy_EC2).
+    Remove everything deploy.ps1 created for the EC2 + RDS lab (EC2 deployment).
 
 .DESCRIPTION
     Removes the resources in the inverse order of creation, looking each one up
@@ -19,11 +19,11 @@
 
     Fail-but-continue: if a resource cannot be removed, its type and identifier
     are listed on stderr, the remaining independent resources are still removed
-    and the script exits non-zero. Exit 0 only when no Deploy_EC2 resource
+    and the script exits non-zero. Exit 0 only when no EC2 deployment resource
     remains.
 
     The detection stack, evidence, snapshots and exposed credentials are NOT
-    handled here: the account-wide Full_Teardown_AWS is the recommended command
+    handled here: the account-wide full AWS teardown is the recommended command
     to remove the whole lab and prevails over this script.
 
     Every external command is echoed before it runs. -WhatIf lists the commands
@@ -358,9 +358,9 @@ if ($WhatIf) {
 }
 
 # ---------------------------------------------------------------------------
-# Final verification: nothing from Deploy_EC2 may remain.
+# Final verification: nothing from ec2_deployment may remain.
 # ---------------------------------------------------------------------------
-Write-Step "Verifying that no Deploy_EC2 resource remains"
+Write-Step "Verifying that no EC2 deployment resource remains"
 $checks = @(
     @{ Type = 'ec2-instance'; Id = $ec2Name; Args = (@('ec2', 'describe-instances') + $rg + (Get-TagFilters $ec2Name) + @('Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down', '--query', 'Reservations[0].Instances[0].InstanceId', '--output', 'text')); ByExit = $false },
     @{ Type = 'rds-instance'; Id = $rdsId; Args = (@('rds', 'describe-db-instances') + $rg + @('--db-instance-identifier', $rdsId, '--query', 'DBInstances[0].DBInstanceIdentifier', '--output', 'text')); ByExit = $true },
@@ -384,9 +384,9 @@ if ($remaining.Count -gt 0) {
 
 Write-Host ""
 if ($script:removed.Count -eq 0) {
-    Write-Host "Teardown complete: no Deploy_EC2 resources remain (nothing to remove)." -ForegroundColor Green
+    Write-Host "Teardown complete: no EC2 deployment resources remain (nothing to remove)." -ForegroundColor Green
 }
 else {
-    Write-Host "Teardown complete: no Deploy_EC2 resources remain." -ForegroundColor Green
+    Write-Host "Teardown complete: no EC2 deployment resources remain." -ForegroundColor Green
 }
 exit 0

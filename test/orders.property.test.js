@@ -1,14 +1,13 @@
 // test/orders.property.test.js
-// Property-based tests for the "My Orders" page (feature:
-// sangyshop-sessao-navegacao-ingles, tasks 4.4, 4.5, 4.6).
+// Property-based tests for the "My Orders" page.
 //
 // Three properties live in this single file:
-//   - Property 4: orders are filtered by the session user (via supertest).
-//   - Property 5: every rendered order row shows id, product, quantity, total.
-//   - Property 6: every rendered order row links to /api/orders/<id> (IDOR seed).
+//   - orders are filtered by the session user (via supertest).
+//   - every rendered order row shows id, product, quantity, total.
+//   - every rendered order row links to /api/orders/<id> (IDOR seed).
 //
-// Properties 5 and 6 render src/views/orders.ejs directly with ejs.renderFile,
-// which resolves the navbar partial include by filename. Property 4 drives the
+// The row-content and IDOR-link properties render src/views/orders.ejs directly with ejs.renderFile,
+// which resolves the navbar partial include by filename. The user-filter property drives the
 // real route through a supertest cookie jar so the full session + DB path runs.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
@@ -42,11 +41,10 @@ function renderedOrderIds(html) {
 }
 
 // ---------------------------------------------------------------------------
-// Property 4, filtering orders by user.
-// Feature: sangyshop-sessao-navegacao-ingles, Property 4: Filtering of orders by user
-// Validates: Requirements 3.1
+// Filtering orders by user.
+// Filtering of orders by user
 // ---------------------------------------------------------------------------
-test("Property 4: GET /orders lists exactly the session user's orders", async () => {
+test("GET /orders lists exactly the session user's orders", async () => {
   const app = await createTestApp();
 
   await fc.assert(
@@ -93,8 +91,8 @@ const orderArb = fc.record({
   total: fc.double({ min: 0, max: 1_000_000, noNaN: true, noDefaultInfinity: true }),
 });
 
-// A list of orders with DISTINCT positive integer ids (Property 6 needs the
-// per-order href to be unambiguous; Property 5 is fine with distinct ids too).
+// A list of orders with DISTINCT positive integer ids (the IDOR-link property needs the
+// per-order href to be unambiguous; the row-content property is fine with distinct ids too).
 const distinctOrdersArb = fc
   .uniqueArray(
     fc.record({
@@ -124,11 +122,10 @@ function ejsEscape(s) {
 }
 
 // ---------------------------------------------------------------------------
-// Property 5, required fields per order row.
-// Feature: sangyshop-sessao-navegacao-ingles, Property 5: Required fields per order on the page
-// Validates: Requirements 3.2
+// Required fields per order row.
+// Required fields per order on the page
 // ---------------------------------------------------------------------------
-test("Property 5: each order row renders id, product, quantity and total", async () => {
+test("each order row renders id, product, quantity and total", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(orderArb, { minLength: 1, maxLength: 12 }), async (orders) => {
       const html = await renderOrders(orders);
@@ -158,11 +155,10 @@ test("Property 5: each order row renders id, product, quantity and total", async
 });
 
 // ---------------------------------------------------------------------------
-// Property 6, IDOR link per order.
-// Feature: sangyshop-sessao-navegacao-ingles, Property 6: Link de IDOR por pedido
-// Validates: Requirements 3.5
+// IDOR link per order.
+// Link de IDOR por pedido
 // ---------------------------------------------------------------------------
-test("Property 6: each order row links to exactly /api/orders/<id>", async () => {
+test("each order row links to exactly /api/orders/<id>", async () => {
   await fc.assert(
     fc.asyncProperty(distinctOrdersArb, async (orders) => {
       const html = await renderOrders(orders);

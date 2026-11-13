@@ -1,4 +1,4 @@
-# Azure VM lab (Deploy_VM_Azure)
+# Azure VM lab (Azure VM deployment)
 
 Deploys the **deliberately vulnerable** SangyShop (`APP_MODE=vulnerable`, all defenses
 off, `DB_BACKEND=pg`) to an Azure VM for the Azure incident-response lab, and removes
@@ -10,9 +10,9 @@ everything afterwards.
 
 ## What it creates
 
-All resources live in the lab resource group (Grupo_Recursos_Lab) except the evidence
+All resources live in the lab resource group (lab resource group) except the evidence
 group. Everything that accepts tags gets `lab=sangyshop-lab-azure`, `run-id=<RunId>` and
-`component=<...>`. Every resource is also recorded in the Manifesto_Lab
+`component=<...>`. Every resource is also recorded in the lab manifest
 (`$HOME/.sangyshop-lab/manifest-sangyshop-lab-azure.json`, or `$env:LAB_MANIFEST_PATH`).
 
 | Resource | Purpose |
@@ -78,7 +78,7 @@ prints the scheduled purge date), and the `sp-lab-leaked` service principal. It 
 to delete a group that lacks the `lab=sangyshop-lab-azure` tag. It exits 0 **only** when
 `az group exists` returns `false`. Re-running is safe: it prints "Nothing to remove" and
 exits 0. Failed removals are listed on stderr (type and id), other removals continue and
-the exit code is non-zero. The evidence group is left to the Full_Teardown_Azure.
+the exit code is non-zero. The evidence group is left to the full Azure teardown.
 
 ### `stop-lab.ps1` / `start-lab.ps1`
 
@@ -87,6 +87,22 @@ the PostgreSQL server (nothing is deleted); start resumes PostgreSQL first, then
 They warn that Azure restarts a stopped Flexible Server automatically after the period in
 the current documentation (7 days at the time of writing, confirm on the execution date),
 that disks and the public IP stay billed, and that stopping does not replace teardown.
+
+## Next: the incident response lab
+
+The detection stack, the readiness check and the response helpers live in `ops/azure/ir-lab/` of
+this repository:
+
+1. `ops/azure/ir-lab/detection/enable-all.ps1` enables the detection resources. The alert address
+   comes from `-Email`, `LAB_ALERT_EMAIL` or `ops/.env` (copy `ops/.env.example`).
+2. Run `ops/azure/ir-lab/check-detection-ready.ps1`. It is read-only and writes the readiness stamp
+   that `attack-simulation/attack.js` requires. Exit code 4 means something is not ready and the
+   message names the script that creates it.
+3. Run the attack, then `ops/azure/ir-lab/print-response-commands.ps1`. The NimbusDFIR checkout is
+   found through `NIMBUSDFIR_PATH` (see `ops/README.md`).
+
+The built-in roles each script needs are listed in `ops/README.md`. A denied call ends with exit
+code 3 and names the role to assign. `ops/azure/ir-lab/full-teardown.ps1` removes the whole lab.
 
 ## Example (fictitious identifiers)
 

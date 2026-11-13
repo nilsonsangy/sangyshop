@@ -1,0 +1,8 @@
+// Investigation: failed logins per client IP over the last 24 hours (no threshold).
+// Run it in Log Analytics > Logs after the simulated attack.
+SangyShopApp_CL
+| where TimeGenerated > ago(24h)
+| extend rec = parse_json(RawData)
+| where tostring(rec.event) == "auth_login" and tostring(rec.result) == "failure"
+| summarize failures = count(), first_seen_utc = min(TimeGenerated), last_seen_utc = max(TimeGenerated) by client_ip = tostring(rec.ip)
+| order by failures desc

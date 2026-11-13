@@ -4,8 +4,8 @@
     (aws/ec2/deploy.ps1 and aws/ec2/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 10.3 (Property 2: a simulation executes no external command) for the
-    EC2 modality. Requirements 10.8, 10.15, 11.5.
+    Covers the guarantee that a simulation executes no external command, for the
+    EC2 modality.
 
     Each script runs in a FRESH child PowerShell against a well-formed temporary
     config written under $TestDrive. Nothing here touches a real cloud.
@@ -18,7 +18,7 @@
          footer reporting "none executed"; the list must be non-empty and every line
          must be an `aws ...` command.
 
-    Source validation (Requirement 10.8) is checked as a fail-closed gate: 0.0.0.0/0,
+    Source validation is checked as a fail-closed gate: 0.0.0.0/0,
     ::/0, a missing value and anything that is not exactly a single-host IPv4 /32 make
     deploy.ps1 exit non-zero BEFORE any planned command is printed or executed.
 
@@ -27,7 +27,7 @@
 #>
 
 BeforeDiscovery {
-    # Values that must be rejected by -AllowedSourceRanges (Requirement 10.8).
+    # Values that must be rejected by -AllowedSourceRanges.
     $script:BadSources = @(
         @{ Label = '0.0.0.0/0';          Value = '0.0.0.0/0' }
         @{ Label = '::/0';               Value = '::/0' }
@@ -142,7 +142,7 @@ AfterAll {
     else { $env:LAB_SENTINEL = $script:SavedSentinel }
 }
 
-Describe 'AWS EC2 deploy.ps1 -WhatIf dry run (Req 10.8, 10.15, 11.5)' {
+Describe 'AWS EC2 deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
             '-AllowedSourceRanges', '203.0.113.7/32', '-WhatIf')
@@ -206,7 +206,7 @@ Describe 'AWS EC2 deploy.ps1 -WhatIf dry run (Req 10.8, 10.15, 11.5)' {
     }
 }
 
-Describe 'AWS EC2 deploy.ps1 source-range validation (Req 10.8)' {
+Describe 'AWS EC2 deploy.ps1 source-range validation' {
     It 'rejects <Label> ("<Value>") with a non-zero exit, before any command' -ForEach $script:BadSources {
         $r = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
             '-AllowedSourceRanges', $Value, '-WhatIf')
@@ -238,7 +238,7 @@ Describe 'AWS EC2 deploy.ps1 source-range validation (Req 10.8)' {
     }
 }
 
-Describe 'AWS EC2 teardown.ps1 -WhatIf dry run (Req 10.15, 11.5)' {
+Describe 'AWS EC2 teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines

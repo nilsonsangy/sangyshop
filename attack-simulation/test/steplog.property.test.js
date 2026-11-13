@@ -1,7 +1,6 @@
 // attack-simulation/test/steplog.property.test.js
-// Feature: aulas-24-25-resposta-incidentes-nuvem
-// Property 10: Invariantes do log de etapas
-// **Validates: Requirements 13.1, 13.6, 13.11**
+// Feature: cloud-incident-response
+// Invariantes do log de etapas
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fc = require("fast-check");
@@ -52,7 +51,7 @@ const lifecycleArb = fc
     return { specs, lines };
   });
 
-test("Property 10a: every formatStep line is a single-line valid JSON object", () => {
+test("every formatStep line is a single-line valid JSON object", () => {
   fc.assert(
     fc.property(
       fc.integer({ min: 1, max: 1000 }),
@@ -83,7 +82,7 @@ test("Property 10a: every formatStep line is a single-line valid JSON object", (
   );
 });
 
-test("Property 10b: step numbers are sequential from 1 and non-decreasing across lines", () => {
+test("step numbers are sequential from 1 and non-decreasing across lines", () => {
   fc.assert(
     fc.property(lifecycleArb, ({ specs, lines }) => {
       const records = lines.map((l) => JSON.parse(l));
@@ -100,7 +99,7 @@ test("Property 10b: step numbers are sequential from 1 and non-decreasing across
   );
 });
 
-test("Property 10c: summarize totals equal the sum of the generated inputs", () => {
+test("summarize totals equal the sum of the generated inputs", () => {
   fc.assert(
     fc.property(lifecycleArb, ({ specs, lines }) => {
       const sum = (key) => specs.reduce((acc, s) => acc + s[key], 0);
@@ -117,7 +116,7 @@ test("Property 10c: summarize totals equal the sum of the generated inputs", () 
   );
 });
 
-test("Property 10d: every step has exactly one start and one end line, start before end", () => {
+test("every step has exactly one start and one end line, start before end", () => {
   fc.assert(
     fc.property(lifecycleArb, ({ specs, lines }) => {
       const records = lines.map((l) => JSON.parse(l));
@@ -141,7 +140,7 @@ test("Property 10d: every step has exactly one start and one end line, start bef
   );
 });
 
-test("Property 10e: summarize startedAt/finishedAt are the min start ts and max end ts", () => {
+test("summarize startedAt/finishedAt are the min start ts and max end ts", () => {
   fc.assert(
     fc.property(lifecycleArb, ({ specs, lines }) => {
       const result = summarize(lines);

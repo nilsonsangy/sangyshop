@@ -26,7 +26,7 @@ placeholder **Secret**.
 Left intact: pod/container `securityContext`, RBAC
 (`ServiceAccount`/`Role`/`RoleBinding`), and all three `NetworkPolicies`.
 
-## Placeholders (substituted by `azure/aks/deploy.ps1`, task 12.2)
+## Placeholders (substituted by `azure/aks/deploy.ps1`)
 
 The overlay keeps literal `__TOKEN__` placeholders so it stays kustomize-
 buildable for review. The deploy script renders the overlay, replaces the

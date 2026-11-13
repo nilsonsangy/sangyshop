@@ -1,9 +1,8 @@
 // test/objectstore.property.test.js
 // Property-based tests for the opt-in object store layer.
 //
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 12:
+// Feature: cloud-incident-response,
 // Object store disabled by default.
-// Validates: Requirements 6.4, 6.5, 6.7, 30.9, 30.10, 30.12
 //
 //   1. Without OBJECT_STORE (or "none"): no AWS/Azure SDK is loaded and
 //      mountMedia registers no routes.
@@ -55,9 +54,7 @@ function assertSafeFailure(result, secrets) {
 
 afterEach(resetToggles);
 
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 12
-// Validates: Requirements 6.4, 6.5, 30.9
-test("Property 12a: OBJECT_STORE unset or none loads no cloud SDK and mounts no routes", async () => {
+test("OBJECT_STORE unset or none loads no cloud SDK and mounts no routes", async () => {
   assert.deepEqual(loadedSdkModules(), [], "precondition: no SDK loaded yet");
 
   await fc.assert(
@@ -87,9 +84,7 @@ test("Property 12a: OBJECT_STORE unset or none loads no cloud SDK and mounts no 
   assert.deepEqual(loadedSdkModules(), []);
 });
 
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 12
-// Validates: Requirements 6.7, 30.10
-test("Property 12b: active but misconfigured provider returns only the fixed error shape, no credentials", async () => {
+test("active but misconfigured provider returns only the fixed error shape, no credentials", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom("s3", "azure-blob"),
@@ -131,9 +126,7 @@ test("Property 12b: active but misconfigured provider returns only the fixed err
   );
 });
 
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 12
-// Validates: Requirements 6.7, 30.10
-test("Property 12c: SDK errors that echo credentials are mapped to fixed messages", async () => {
+test("SDK errors that echo credentials are mapped to fixed messages", async () => {
   await fc.assert(
     fc.asyncProperty(
       safeToken,
@@ -178,9 +171,7 @@ test("Property 12c: SDK errors that echo credentials are mapped to fixed message
   );
 });
 
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 12
-// Validates: Requirements 6.5, 6.7, 30.12
-test("Property 12d: login and product listing keep working when the store is disabled or failing", async () => {
+test("login and product listing keep working when the store is disabled or failing", async () => {
   const app = await createTestApp();
 
   // Failing store (S3 selected, SDK stubbed to fail): media routes answer 502 only.

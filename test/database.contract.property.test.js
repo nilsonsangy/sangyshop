@@ -1,10 +1,10 @@
 // test/database.contract.property.test.js
 // Property-based test for the Data_Access_Module contract (src/db/database.js).
 //
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the
+// Equivalence of the
 // data access contract between backends.
 //
-// Property 2 states that, for any valid sequence of get/all/run/exec
+// The contract states that, for any valid sequence of get/all/run/exec
 // operations, the backends produce equivalent results (same rows for all, same
 // single row or absence for get, same counting effect for run), preserving the
 // semantics of prepare(sql).get()/.all()/.run() and exec(sql).
@@ -17,7 +17,7 @@
 //
 // DB_BACKEND=memory is set at the very top, BEFORE database.js is required, so
 // the facade selects the in-memory backend. No temp files are created, so there
-// is nothing to clean up (R8.4).
+// is nothing to clean up.
 process.env.DB_BACKEND = "memory";
 
 const { test } = require("node:test");
@@ -28,7 +28,7 @@ const db = require("../src/db/database.js");
 
 const RUNS = 100;
 
-// A single shared, initialized backend. init() is idempotent (Property 1), so
+// A single shared, initialized backend. init() is idempotent, so
 // awaiting it once is enough; every property run reuses the same seeded store.
 let initialized = false;
 async function ready() {
@@ -42,9 +42,8 @@ async function ready() {
 const SEED_USERNAMES = ["admin", "alice", "bob", "carol"];
 const SEED_USER_IDS = [1, 2, 3, 4];
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the data access contract between backends
-// Validates: Requirements 2.2, 8.2
-test("Property 2: the data-access contract behaves consistently for get/all/run/exec sequences", async () => {
+// Equivalence of the data access contract between backends
+test("the data-access contract behaves consistently for get/all/run/exec sequences", async () => {
   await ready();
 
   // Generator over VALID operations against known seed rows plus insert-and-
@@ -129,9 +128,8 @@ test("Property 2: the data-access contract behaves consistently for get/all/run/
 // completes without returning rows, and its effect is visible through the
 // get/all read operations. We create an auxiliary table, exec an INSERT, then
 // read it back, exercising exec() alongside get/all in one sequence.
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 2: Equivalence of the data access contract between backends
-// Validates: Requirements 2.2, 8.2
-test("Property 2: exec() runs direct SQL whose effect is observable via get/all", async () => {
+// Equivalence of the data access contract between backends
+test("exec() runs direct SQL whose effect is observable via get/all", async () => {
   await ready();
 
   await db.exec(

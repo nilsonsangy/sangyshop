@@ -9,7 +9,7 @@
 .DESCRIPTION
     The destroy half of one of the six (cloud, modality) targets in the
     multi-cloud-deploy spec. Resources are removed in REVERSE dependency order
-    (Req 5.2): compute first, then the managed Postgres server, then the stored
+: compute first, then the managed Postgres server, then the stored
     DB password (secret) and its vault, then the pull identity + role assignment,
     then (optionally) the registry.
 
@@ -19,17 +19,17 @@
       4. Deletes the Key Vault secret, then the Key Vault itself.
       5. Removes the AcrPull role assignment and the user-assigned identity that
          deploy created so no orphaned principal/role is left behind.
-      6. Deletes the ACR unless -KeepRegistry (Req 5.3).
+      6. Deletes the ACR unless -KeepRegistry.
 
     EVERY external CLI call goes through Invoke-Echoed from lib/Common.ps1
-    (echo-before-exec, Req 1.3). This script never calls `az` directly.
+    (echo-before-exec). This script never calls `az` directly.
 
     Every delete is issued with -AllowFail so an already-deleted resource is
     skipped and treated as successfully removed; this makes re-runs converge to
-    "nothing left" and exit success (Req 5.4). The identifier of each removed
-    resource is printed to stdout (Req 5.5). On a REAL removal failure (anything
+    "nothing left" and exit success. The identifier of each removed
+    resource is printed to stdout. On a REAL removal failure (anything
     other than "not found"), teardown keeps going, records the resource, writes an
-    error indication to stderr, and exits non-success (Req 5.6).
+    error indication to stderr, and exits non-success.
 
     As a documented catch-all, `az group delete --name <rg> --yes --no-wait`
     removes everything in the lab resource group in one shot. It is destructive
@@ -39,7 +39,7 @@
     SECURITY NOTE: SangyShop is deliberately vulnerable. Tearing it down promptly
     is mandatory: these resources are billable and must never be left exposed.
 
-    Windows PowerShell 5.1 compatible (Req 6.1). No bash/sh is ever invoked (Req 6.2).
+    Windows PowerShell 5.1 compatible. No bash/sh is ever invoked.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the shared config two levels up.
@@ -51,10 +51,10 @@
 
 .PARAMETER KeepRegistry
     Preserve the Azure Container Registry (and its images). By default the ACR is
-    deleted, since deploy.ps1 created it (Req 5.3).
+    deleted, since deploy.ps1 created it.
 
 .PARAMETER WhatIf
-    Dry run (Req 6.5): prints the full ordered list of external commands that
+    Dry run: prints the full ordered list of external commands that
     WOULD run, executes nothing, and exits 0.
 
 .EXAMPLE
@@ -96,7 +96,7 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
 # =============================================================================
 # -WhatIf planning: in dry-run we only print the command line that WOULD run and
 # execute nothing. Invoke-Planned is the single gate every external call passes
-# through so the echo-only rule (Req 1.3) and the dry-run rule (Req 6.5) are both
+# through so the echo-only rule and the dry-run rule are both
 # satisfied from one place. Mirrors azure/docker/deploy.ps1.
 # =============================================================================
 $script:PlanOrdinal = 0
@@ -118,16 +118,16 @@ function Invoke-Planned {
 }
 
 # Convenience wrappers so call sites read cleanly. Teardown always tolerates
-# failure (every delete uses -AllowFail, Req 5.4), so both wrappers forward
+# failure (every delete uses -AllowFail), so both wrappers forward
 # -AllowFail; Az is kept for parity/read-only shape in the plan.
 function Az    { param([Parameter(ValueFromRemainingArguments)][string[]] $A) Invoke-Planned -Exe 'az' -CmdArgs $A }
 function AzTry { param([Parameter(ValueFromRemainingArguments)][string[]] $A) Invoke-Planned -Exe 'az' -CmdArgs $A -AllowFail }
 
 # -----------------------------------------------------------------------------
 # Teardown bookkeeping. $removed holds the identifiers of resources we removed
-# (or confirmed already gone) for the stdout summary (Req 5.5); $failed holds any
+# (or confirmed already gone) for the stdout summary; $failed holds any
 # resource whose delete returned a REAL error so we can report to stderr and exit
-# non-success (Req 5.6).
+# non-success.
 # -----------------------------------------------------------------------------
 $script:removed = New-Object System.Collections.Generic.List[string]
 $script:failed  = New-Object System.Collections.Generic.List[string]
@@ -136,8 +136,8 @@ $script:failed  = New-Object System.Collections.Generic.List[string]
 # In -WhatIf we only enqueue the command into the plan (nothing executes).
 # A zero exit means the resource was removed (or the command accepted the no-op).
 # A non-zero exit is inspected: a "not found / does not exist" style failure is an
-# already-deleted resource and counts as success (Req 5.4); any other non-zero is
-# a real failure recorded for stderr + non-success exit (Req 5.6).
+# already-deleted resource and counts as success; any other non-zero is
+# a real failure recorded for stderr + non-success exit.
 function Remove-Resource {
     param(
         [Parameter(Mandatory)][string]   $Id,       # human-readable resource identifier
@@ -169,7 +169,7 @@ function Remove-Resource {
         return
     }
 
-    # A real removal failure. Keep going (Req 5.6); record for the stderr summary.
+    # A real removal failure. Keep going; record for the stderr summary.
     $script:failed.Add($Id)
     Write-Host ("  FAILED to remove (continuing): {0}" -f $Id) -ForegroundColor Red
 }
@@ -248,14 +248,14 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 1. Compute first: delete the ACI container group (Req 5.2).
+    # 1. Compute first: delete the ACI container group.
     # -------------------------------------------------------------------------
     Write-Step "Deleting the ACI container group '$aciName'"
     Remove-Resource -Id ("ACI container group: " + $aciName) `
         -CmdArgs @('container', 'delete', '--resource-group', $rg, '--name', $aciName, '--yes', '--output', 'none')
 
     # -------------------------------------------------------------------------
-    # 2. Managed Postgres: delete the Flexible Server (Req 5.2). Removing the
+    # 2. Managed Postgres: delete the Flexible Server. Removing the
     #    server also removes its firewall rules, so they need no separate delete.
     # -------------------------------------------------------------------------
     Write-Step "Deleting the PostgreSQL Flexible Server '$pgServer'"
@@ -264,7 +264,7 @@ try {
 
     # -------------------------------------------------------------------------
     # 3. Stored DB password: delete the Key Vault secret, then the vault itself
-    #    (Req 5.2 - the stored DB password comes after compute + DB). Deleting the
+    #    (the stored DB password comes after compute + DB). Deleting the
     #    secret before the vault keeps the removed-id log precise even when the
     #    vault lingers in a soft-deleted state.
     # -------------------------------------------------------------------------
@@ -302,7 +302,7 @@ try {
         }
         else {
             # The identity or the registry is already gone, so the assignment
-            # cannot exist either. Count it as already absent (Req 5.4).
+            # cannot exist either. Count it as already absent.
             $script:removed.Add("AcrPull role assignment for " + $idName + ' (already absent)')
             Write-Host ("  already absent: AcrPull role assignment for {0}" -f $idName) -ForegroundColor DarkGray
         }
@@ -314,7 +314,6 @@ try {
     # -------------------------------------------------------------------------
     # 5. Native registry: delete the ACR unless -KeepRegistry. deploy.ps1 created
     #    it, so by default teardown removes it AFTER the stored DB password
-    #    (Req 5.3).
     # -------------------------------------------------------------------------
     if ($KeepRegistry) {
         Write-Step "Keeping the Azure Container Registry '$acrName' (-KeepRegistry)"
@@ -364,7 +363,7 @@ try {
     }
 
     if ($script:failed.Count -gt 0) {
-        # Req 5.6: report each resource that could not be removed to stderr and
+        # report each resource that could not be removed to stderr and
         # exit non-success, after having attempted every other delete.
         Write-Error (@(
             "Teardown finished but the following resource(s) could NOT be removed:",

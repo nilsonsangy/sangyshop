@@ -1,6 +1,6 @@
 // test/diag.route.property.test.js
 // Property-based tests for the SangyShop /_diag route (src/routes/diag.js),
-// the HTTP surface of the posture diagnostic endpoint (Aula 17).
+// the HTTP surface of the posture diagnostic endpoint.
 //
 // Unlike test/posture.property.test.js (which drives the PURE collectors with a
 // mocked `deps` layer), these tests exercise the ROUTE end to end via supertest.
@@ -14,8 +14,7 @@
 // The Express app is built ONCE and reused across all runs for performance; the
 // per-run variation is entirely in process.env and the request shape.
 //
-// This file is established by task 6.2 (Property 2). Later tasks (6.3, 6.4)
-// append Properties 3 and 4 below.
+// Later properties are appended below.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fc = require("fast-check");
@@ -70,14 +69,13 @@ function applyEnv(simulated) {
 // "outside Kubernetes" (vars missing) across runs.
 const envSignal = fc.option(fc.string(), { nil: undefined });
 
-// Feature: sangyshop-diagnostico-postura, Property 2: Endpoint always responds 200 and never throws
-// Validates: Requirements 1.3, 10.1, 10.2
+// Endpoint always responds 200 and never throws
 //
 // For every combination of simulated environment (inside or outside Kubernetes), a
 // GET /_diag request responds with HTTP 200 and does not propagate an exception,
 // regardless of which signals could be collected or which
 // representation (json/html) is negotiated.
-test("Property 2: GET /_diag always responds 200 and never throws", async () => {
+test("GET /_diag always responds 200 and never throws", async () => {
   // Build the app once and reuse it across every run (performance).
   const app = await createTestApp();
 
@@ -134,8 +132,7 @@ test("Property 2: GET /_diag always responds 200 and never throws", async () => 
     { numRuns: RUNS }
   );
 });
-// Feature: sangyshop-diagnostico-postura, Property 3: Non-exfiltration
-// Validates: Requirements 5.2, 8.2, 12.1, 12.3
+// Non-exfiltration
 //
 // The sensitive variables and token collectors report only PRESENCE
 // (booleans), never the VALUE. This property exercises the GET /_diag route end
@@ -162,7 +159,7 @@ const syntheticToken = fc
   .string({ minLength: 8, maxLength: 24 })
   .map((suffix) => `SYNTHETIC-TOKEN-${suffix}`);
 
-test("Property 3: /_diag never exfiltrates secret values (DB_PASSWORD/token)", async () => {
+test("/_diag never exfiltrates secret values (DB_PASSWORD/token)", async () => {
   // Build the app once and reuse it across every run (performance).
   const app = await createTestApp();
 
@@ -208,8 +205,7 @@ test("Property 3: /_diag never exfiltrates secret values (DB_PASSWORD/token)", a
   );
 });
 
-// Feature: sangyshop-diagnostico-postura, Property 4: Arbitrary parameters do not read paths
-// Validates: Requirements 12.2
+// Arbitrary parameters do not read paths
 //
 // The GET /_diag endpoint reports a FIXED set of posture signals: no
 // querystring can change that set or make the route read/reflect paths
@@ -276,7 +272,7 @@ const sentinelQuery = fc
     return { query, sentinels };
   });
 
-test("Property 4: /_diag ignores arbitrary params: fixed signal set, never reads/reflects paths", async () => {
+test("/_diag ignores arbitrary params: fixed signal set, never reads/reflects paths", async () => {
   // Build the app once and reuse it across every run (performance).
   const app = await createTestApp();
 

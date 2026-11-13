@@ -8,7 +8,7 @@
 #   2. web Service    -> type: LoadBalancer (GCP L4 LB -> external IP)
 #   3. PVC StorageClass -> standard-rwo (see patch-pvc-storageclass.yaml; it is
 #                        documented but NOT wired in, because this overlay drops
-#                        the only PVC — see the StorageClass note below)
+#                        the only PVC: see the StorageClass note below)
 #   4. secret source  -> GCP Secret Manager via the Secrets Store CSI driver,
 #                        delivering /run/secrets/db_password (same file contract)
 #
@@ -29,7 +29,7 @@
 # variant that keeps an in-cluster PVC.
 #
 # ---------------------------------------------------------------------------
-# PLACEHOLDERS (substituted by gcp/kubernetes/deploy.ps1, task 7.2)
+# PLACEHOLDERS (substituted by gcp/kubernetes/deploy.ps1)
 #
 # The deploy script performs an in-place text substitution on the rendered
 # overlay (or edits a working copy) before `kubectl apply -k`, replacing:
@@ -56,7 +56,7 @@
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# BUILD / APPLY (for gcp/kubernetes/deploy.ps1, task 7.2)
+# BUILD / APPLY (for gcp/kubernetes/deploy.ps1)
 #
 # The base manifest lives OUTSIDE this overlay directory and is referenced by a
 # relative path. Kustomize's default load restrictor refuses to read files

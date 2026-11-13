@@ -62,9 +62,8 @@ before(async () => {
   );
 });
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 1: Idempotence of initialization and seed
-// Validates: Requirements 1.3, 1.4
-test("Property 1: repeated init() never changes users/products/orders counts (idempotent init + seed)", async () => {
+// Idempotence of initialization and seed
+test("repeated init() never changes users/products/orders counts (idempotent init + seed)", async () => {
   await fc.assert(
     // N = number of ADDITIONAL init() invocations after the first seed.
     fc.asyncProperty(fc.integer({ min: 1, max: 10 }), async (n) => {

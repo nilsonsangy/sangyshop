@@ -3,7 +3,7 @@
 // DB_BACKEND environment variable.
 //
 //   DB_BACKEND=pg      (default)  real, persistent PostgreSQL via the `pg` driver
-//   DB_BACKEND=memory             in-memory backend used by the test suite (R8),
+//   DB_BACKEND=memory             in-memory backend used by the test suite,
 //                                 so `npm test` runs without a PostgreSQL in Docker
 //
 // The contract is ASYNC (the `pg` driver is async), and every backend exposes
@@ -45,7 +45,7 @@ const SEED_USERS = [
 ];
 
 const SEED_PRODUCTS = [
-  ["SangyShop T-Shirt", "Cotton, Blue Team course print", 79.9],
+  ["SangyShop T-Shirt", "Cotton, Blue Team print", 79.9],
   ["Hacker Mug", "300ml ceramic, OWASP theme", 49.9],
   ["Sticker Pack", "10 offensive/defensive security stickers", 19.9],
   ["DFIR Hoodie", "Hooded, digital forensics", 189.9],
@@ -79,7 +79,7 @@ function createMemoryBackend() {
   function createSchema() {
     // sql.js (SQLite) schema; SERIAL/TIMESTAMP of PostgreSQL map to
     // AUTOINCREMENT / datetime('now') here. Idempotent via IF NOT EXISTS so a
-    // repeated init() never recreates the tables (R1.3/R1.4, Property 1).
+    // repeated init() never recreates the tables.
     rawDb.run(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,7 +118,7 @@ function createMemoryBackend() {
 
   function seedOnce() {
     // Seed only when the users table is empty, so a second init() over the
-    // same backend never duplicates rows (R1.4, Property 1).
+    // same backend never duplicates rows.
     if (!usersIsEmpty()) return;
 
     SEED_USERS.forEach((r) =>
@@ -224,7 +224,7 @@ function createPgBackend() {
   let ready = false;
 
   // PostgreSQL schema, idempotent (CREATE TABLE IF NOT EXISTS). A repeated
-  // init() never recreates the tables (R1.3/R1.4, Property 1). SERIAL/TEXT/
+  // init() never recreates the tables. SERIAL/TEXT/
   // DOUBLE PRECISION/TIMESTAMP per design.md Data Models.
   async function createSchema() {
     await pool.query(`
@@ -263,7 +263,7 @@ function createPgBackend() {
   }
 
   // Seed only when the users table is empty, so a second init() over the same
-  // Data_Volume never duplicates rows (R1.4, Property 1). Inserts use
+  // Data_Volume never duplicates rows. Inserts use
   // parameterized values ($1,$2,...).
   async function seedOnce() {
     if (!(await usersIsEmpty())) return;
@@ -309,7 +309,7 @@ function createPgBackend() {
 
       // Resolve the DB_Secret for the current mode. In hardened mode this is
       // fail-closed (throws if the secret is missing/empty); in vulnerable mode
-      // it falls back to the hardcoded plaintext credentials (R4.2).
+      // it falls back to the hardcoded plaintext credentials.
       const creds = credentials.resolve(APP_MODE);
 
       // SSL is opt-in via DB_SSL so local docker-compose and the other clouds
@@ -334,7 +334,7 @@ function createPgBackend() {
       });
 
       try {
-        // Force an actual connection so a failure/timeout surfaces here (R1.5)
+        // Force an actual connection so a failure/timeout surfaces here
         // rather than lazily on the first query.
         const client = await pool.connect();
         client.release();
@@ -414,5 +414,5 @@ const api = {
 };
 
 module.exports = api;
-// Exposed for isolated unit testing of the `?`->`$n` translation (task 3.2).
+// Exposed for isolated unit testing of the `?`->`$n` translation.
 module.exports.translatePlaceholders = translatePlaceholders;

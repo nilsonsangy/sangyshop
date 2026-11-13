@@ -1,0 +1,8 @@
+// Investigation: VNet flow logs summary. Only works if Traffic Analytics is on (it is NOT in this lab),
+// so by default read the JSON blobs in the flow-log storage account instead:
+//   container insights-logs-flowlogflowevent (az storage blob list / download).
+// If you enable Traffic Analytics on your own, this query summarises denied and allowed flows.
+NTANetAnalytics
+| where TimeGenerated > ago(24h)
+| summarize flows = count(), bytes = sum(BytesSrcToDest + BytesDestToSrc) by SrcIp, DestIp, DestPort, FlowStatus
+| order by flows desc

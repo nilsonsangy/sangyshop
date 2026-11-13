@@ -1,6 +1,6 @@
 // src/lib/defenses.js
 // Central defense toggle panel. Reads and writes config/defenses.json.
-// This is the pedagogical core: the student turns each defense on/off and reproduces the attack.
+// This is the pedagogical core: the user turns each defense on/off and reproduces the attack.
 const fs = require("fs");
 const path = require("path");
 

@@ -1,0 +1,49 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ChangeLabNaclEntriesOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateNetworkAclEntry",
+        "ec2:DeleteNetworkAclEntry",
+        "ec2:ReplaceNetworkAclEntry"
+      ],
+      "Resource": "arn:aws:ec2:${REGION}:${ACCOUNT_ID}:network-acl/${NACL_ID}"
+    },
+    {
+      "Sid": "ReadNaclEntries",
+      "Effect": "Allow",
+      "Action": "ec2:DescribeNetworkAcls",
+      "Resource": "*"
+    },
+    {
+      "Sid": "StartInsightsQueryOnAppLogGroup",
+      "Effect": "Allow",
+      "Action": "logs:StartQuery",
+      "Resource": "arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:${LOG_GROUP}:*"
+    },
+    {
+      "Sid": "ReadInsightsQueryResults",
+      "Effect": "Allow",
+      "Action": "logs:GetQueryResults",
+      "Resource": "*"
+    },
+    {
+      "Sid": "NotifyFailureOnLabTopic",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "${TOPIC_ARN}"
+    },
+    {
+      "Sid": "WriteOwnFunctionLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:/aws/lambda/${FUNCTION_NAME}:*"
+    }
+  ]
+}

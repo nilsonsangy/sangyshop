@@ -1,10 +1,9 @@
 <#
 .SYNOPSIS
-    Pester 5.x tests for Get-LabTags / Add-LabManifestEntry (lib/Common.ps1, task 9.3).
+    Pester 5.x tests for Get-LabTags / Add-LabManifestEntry (lib/Common.ps1).
 
 .DESCRIPTION
-    Property 7: Etiquetas e Manifesto de todo recurso criado.
-    Validates: Requirements 46.1, 46.2, 48.1, 48.2
+    Etiquetas e Manifest de todo recurso criado.
 
     Pester has no native property-based engine, so each property is exercised by a
     loop of >= 100 generated cases driven by a fixed-seed System.Random (reproducible).
@@ -49,7 +48,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-LabTags (Req 46.1, 46.2)' {
+Describe 'Get-LabTags' {
     It 'always returns lab, run-id and component for 100+ generated RunIds' {
         $rng = [System.Random]::new($script:Seed)
         for ($i = 0; $i -lt 120; $i++) {
@@ -86,7 +85,7 @@ Describe 'Get-LabTags (Req 46.1, 46.2)' {
     }
 }
 
-Describe 'Add-LabManifestEntry (Req 48.1, 48.2)' {
+Describe 'Add-LabManifestEntry' {
     BeforeEach {
         $script:Dir = New-TestDir
         $script:Mf = Join-Path $script:Dir 'manifest.json'

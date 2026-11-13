@@ -1,6 +1,5 @@
 // attack-simulation/test/plan.property.test.js
-// Property 9: Rate and volume ceilings.
-// Validates: Requirements 13.5
+// Rate and volume ceilings.
 
 "use strict";
 
@@ -19,7 +18,7 @@ const {
 
 const NUM_RUNS = 100;
 
-test("Property 9: inputs within the rigid ceilings are always accepted", () => {
+test("inputs within the rigid ceilings are always accepted", () => {
   fc.assert(
     fc.property(
       fc.float({ min: Math.fround(0.01), max: RIGID_RATE_RPS, noNaN: true }),
@@ -34,7 +33,7 @@ test("Property 9: inputs within the rigid ceilings are always accepted", () => {
   );
 });
 
-test("Property 9: exceeding the rate ceiling is always rejected regardless of totalRequests", () => {
+test("exceeding the rate ceiling is always rejected regardless of totalRequests", () => {
   fc.assert(
     fc.property(
       fc.float({ min: Math.fround(RIGID_RATE_RPS + 0.01), max: 100000, noNaN: true }),
@@ -50,7 +49,7 @@ test("Property 9: exceeding the rate ceiling is always rejected regardless of to
   );
 });
 
-test("Property 9: exceeding the total requests ceiling is always rejected regardless of rateRps", () => {
+test("exceeding the total requests ceiling is always rejected regardless of rateRps", () => {
   fc.assert(
     fc.property(
       fc.float({ min: Math.fround(0.01), max: RIGID_RATE_RPS, noNaN: true }),
@@ -66,7 +65,7 @@ test("Property 9: exceeding the total requests ceiling is always rejected regard
   );
 });
 
-test("Property 9: exceeding either ceiling is always rejected, no matter how the other value is set", () => {
+test("exceeding either ceiling is always rejected, no matter how the other value is set", () => {
   fc.assert(
     fc.property(
       fc.float({ min: Math.fround(0.01), max: 100000, noNaN: true }),
@@ -89,7 +88,7 @@ test("Property 9: exceeding either ceiling is always rejected, no matter how the
   );
 });
 
-test("Property 9: per-step budgets in the returned plan never exceed their fixed maximums", () => {
+test("per-step budgets in the returned plan never exceed their fixed maximums", () => {
   // The sum of all fixed per-step budgets is 6 + 60 + 12 + 30 + 4 = 112,
   // which is comfortably below the rigid total ceiling of 300. Using the
   // full STEP_ORDER on every run keeps totalRequests large enough to avoid
@@ -116,7 +115,7 @@ test("Property 9: per-step budgets in the returned plan never exceed their fixed
   );
 });
 
-test("Property 9: the sum of per-step budgets in a returned plan never exceeds the requested total", () => {
+test("the sum of per-step budgets in a returned plan never exceeds the requested total", () => {
   const sumOfAllBudgets = STEP_ORDER.reduce((sum, name) => sum + STEP_BUDGETS[name], 0);
 
   fc.assert(
@@ -137,7 +136,7 @@ test("Property 9: the sum of per-step budgets in a returned plan never exceeds t
   );
 });
 
-test("Property 9: a requested total below the sum of per-step budgets is always rejected", () => {
+test("a requested total below the sum of per-step budgets is always rejected", () => {
   const sumOfAllBudgets = STEP_ORDER.reduce((sum, name) => sum + STEP_BUDGETS[name], 0);
 
   fc.assert(

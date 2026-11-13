@@ -1,0 +1,8 @@
+// SangyShop lab: brute-force login detection (alert rule and Sentinel analytics rule).
+// Returns one row per client IP with 10 or more failed logins inside a 1-minute bin.
+// Schema: accesslog.js writes JSON lines (event, result, ip, username) into RawData.
+SangyShopApp_CL
+| extend rec = parse_json(RawData)
+| where tostring(rec.event) == "auth_login" and tostring(rec.result) == "failure"
+| summarize failures = count(), usernames = make_set(tostring(rec.username), 5) by client_ip = tostring(rec.ip), bin(TimeGenerated, 1m)
+| where failures >= 10

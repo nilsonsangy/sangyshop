@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Deploy the VULNERABLE SangyShop on AWS EC2 + RDS PostgreSQL (Deploy_EC2, lab 24).
+    Deploy the VULNERABLE SangyShop on AWS EC2 + RDS PostgreSQL (EC2 deployment, lab 24).
 
 .DESCRIPTION
     Provisions the incident-response lab environment in a single region (us-east-1
@@ -25,7 +25,7 @@
            /lab volume, APP_MODE=vulnerable, DB_BACKEND=pg
 
     Every resource carries the lab tags (lab, run-id, component) built by
-    Get-LabTags, and is also recorded in the Manifesto_Lab through
+    Get-LabTags, and is also recorded in the lab manifest through
     Add-LabManifestEntry (a JSON file outside the repository).
 
     Safety:
@@ -87,6 +87,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot '..\..\lib\Common.ps1')
+. (Join-Path $PSScriptRoot '..\AwsLabNames.ps1')
 
 $script:PlannedCommands = New-Object System.Collections.Generic.List[string]
 $script:LastCliExit     = 0
@@ -212,7 +213,8 @@ try {
     $volumeGb  = [string]$ec2Cfg.VolumeGb
 
     # Derived names (teardown.ps1, stop-lab.ps1 and start-lab.ps1 mirror these).
-    $lab         = 'sangyshop-lab-aws'
+    $names      = Get-AwsLabNames -Config $cfg
+    $lab         = $names['LabTag']
     $prefix      = "$appName-lab"
     $vpcName     = "$prefix-vpc"
     $igwName     = "$prefix-igw"
@@ -230,14 +232,14 @@ try {
     $dbSubnetGrp = "$prefix-db-subnets"
     $rdsId       = "$prefix-pg"
     $ec2Name     = "$prefix-ec2"
-    $logGroup    = '/sangyshop/app'
+    $logGroup    = $names['AppLogGroup']
     $repoName    = $appName
     $appPort     = '3000'
     $dbPort      = '5432'
-    $vpcCidr     = '10.20.0.0/16'
-    $pubCidr     = '10.20.1.0/24'
-    $privACidr   = '10.20.2.0/24'
-    $privBCidr   = '10.20.3.0/24'
+    $vpcCidr     = '192.168.81.0/24'
+    $pubCidr     = '192.168.81.0/26'
+    $privACidr   = '192.168.81.64/26'
+    $privBCidr   = '192.168.81.128/26'
     $azA         = "${region}a"
     $azB         = "${region}b"
     $githubUrl   = 'https://github.com/nilsonsangy/sangyshop.git'
@@ -576,8 +578,30 @@ try {
     }
     $udFile = New-TempFile -Content $userData -Extension '.sh'
 
-    $amiOut = Invoke-Cli -Exe 'aws' -CmdArgs (@('ssm', 'get-parameter') + $rg + @('--name', '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64', '--query', 'Parameter.Value', '--output', 'text'))
-    $amiId = if ($WhatIf) { '<al2023-ami-id>' } else { Get-Scalar $amiOut }
+    # Prefer the SSM public parameter (one call, always current). If the caller lacks
+    # ssm:GetParameter (AccessDeniedException), fall back to ec2:DescribeImages, which is
+    # already covered by the standard EC2 full-access policies this lab assumes.
+    $amiId = $null
+    if ($WhatIf) {
+        $amiId = '<al2023-ami-id>'
+    }
+    else {
+        $amiOut = Invoke-Cli -Exe 'aws' -CmdArgs (@('ssm', 'get-parameter') + $rg + @('--name', '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64', '--query', 'Parameter.Value', '--output', 'text')) -AllowFail
+        if ($script:LastCliExit -eq 0) {
+            $amiId = Get-Scalar $amiOut
+        }
+        if ([string]::IsNullOrWhiteSpace($amiId) -or $amiId -eq 'None') {
+            Write-Host "  ssm:GetParameter unavailable; resolving the AMI via ec2:DescribeImages instead" -ForegroundColor DarkGray
+            $amiFallbackOut = Invoke-Cli -Exe 'aws' -CmdArgs (@('ec2', 'describe-images') + $rg + @(
+                '--owners', 'amazon',
+                '--filters', 'Name=name,Values=al2023-ami-2023.*-kernel-6.1-x86_64', 'Name=state,Values=available',
+                '--query', 'sort_by(Images, &CreationDate)[-1].ImageId', '--output', 'text'))
+            $amiId = Get-Scalar $amiFallbackOut
+            if ([string]::IsNullOrWhiteSpace($amiId) -or $amiId -eq 'None') {
+                throw "Could not resolve an Amazon Linux 2023 AMI id via ssm:GetParameter or ec2:DescribeImages."
+            }
+        }
+    }
 
     $runArgs = @('ec2', 'run-instances') + $rg + @(
         '--image-id', $amiId,

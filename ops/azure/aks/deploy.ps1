@@ -19,51 +19,51 @@
     Pipeline (every external CLI call is echoed before it runs, through the shared
     Invoke-Echoed helper in lib/Common.ps1):
 
-        1. Authentication check (account show)               (Req 6.3/6.4)
+        1. Authentication check (account show)
         2. Resource group (idempotent)
-        3. ACR describe-or-create                            (Req 4.1)
-        4. Registry login, build the hardened image, push    (Req 2.1/2.3/4.5)
+        3. ACR describe-or-create
+        4. Registry login, build the hardened image, push
         5. Key Vault describe-or-create + generate+store the
-           password (file only, never an echoed arg)         (Req 3.2/4.4)
+           password (file only, never an echoed arg)
         6. Flexible Server describe-or-create; seed the admin
-           password from the stored secret via @file         (Req 4.1/4.3/9.5)
-        7. Locked-down Postgres firewall rule(s)              (Req 9.5)
+           password from the stored secret via @file
+        7. Locked-down Postgres firewall rule(s)
         8. User-assigned identity + Key Vault get access +
            ACR pull, for the CSI secrets provider
         9. AKS describe-or-create with --attach-acr and the
-           Key Vault secrets provider addon                  (Req 4.1)
-       10. Fetch cluster credentials for the cluster CLI      (Req 4.8)
+           Key Vault secrets provider addon
+       10. Fetch cluster credentials for the cluster CLI
        11. Render overlay copy, substitute placeholders,
-           apply with the load-restrictor pipe form          (Req 2.5/3.1/3.3)
-       12. Wait for rollout                                  (Req 4.8)
-       13. Read the external IP as the URL                    (Req 4.7/9.2)
-       14. Print lockdown + teardown reminder                (Req 9.2/9.3)
+           apply with the load-restrictor pipe form
+       12. Wait for rollout
+       13. Read the external IP as the URL
+       14. Print lockdown + teardown reminder
 
     Safety:
-      * Only the hardened variant is ever built/pushed/deployed (Req 2.1).
+      * Only the hardened variant is ever built/pushed/deployed.
       * Aborts before any push/deploy if the hardened Dockerfile is missing
-        (Req 2.4) or a non-:hardened image / non-hardened APP_MODE is referenced.
+ or a non-:hardened image / non-hardened APP_MODE is referenced.
       * Ingress is restricted to an explicitly provided source-address set and
-        the open ranges 0.0.0.0/0 and ::/0 are rejected (Req 9.3/9.4).
+        the open ranges 0.0.0.0/0 and ::/0 are rejected.
       * Flexible Server is reachable by the AKS workload on 5432 only, kept off
-        the public internet (Req 9.5).
+        the public internet.
       * The committed overlay is NEVER rewritten; placeholders are substituted in
-        a throwaway rendered copy only (Req 2.5).
+        a throwaway rendered copy only.
       * The generated password is NEVER passed as a CLI argument or echoed; it is
         delivered to Key Vault / Flexible Server exclusively by file so the echoed
-        command stream never reveals it (Req 3.2).
+        command stream never reveals it.
       * -WhatIf prints the full ordered command list and executes NOTHING, exiting
-        0 (Req 6.5).
+        0.
 
-    Windows PowerShell 5.1 compatible (Req 6.1). Every external CLI call routes
-    through Invoke-Echoed (Req 1.3), enforced by tests/EchoOnly.Guard.Tests.ps1.
+    Windows PowerShell 5.1 compatible. Every external CLI call routes
+    through Invoke-Echoed, enforced by tests/EchoOnly.Guard.Tests.ps1.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the git-ignored config two folders up
     (ops/cloud.config.ps1).
 
 .PARAMETER WhatIf
-    Dry run (Req 6.5): prints the full ordered list of external commands that
+    Dry run: prints the full ordered list of external commands that
     WOULD run, executes nothing, and exits 0.
 
 .PARAMETER ReuseExisting
@@ -74,8 +74,8 @@
 
 .PARAMETER AllowedSourceRanges
     REQUIRED for a real deploy. The explicit set of source CIDRs / IPs allowed to
-    reach the app and the database. 0.0.0.0/0 and ::/0 are rejected (Req 9.3/9.4).
-    If omitted on a non-dry-run, the script stops before any change (Req 9.4).
+    reach the app and the database. 0.0.0.0/0 and ::/0 are rejected.
+    If omitted on a non-dry-run, the script stops before any change.
 
 .EXAMPLE
     .\deploy.ps1 -AllowedSourceRanges '203.0.113.7/32'
@@ -110,10 +110,10 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
 # =============================================================================
 # -WhatIf planning: in dry-run we only print the command line that WOULD run and
 # execute nothing. Invoke-Planned is the single gate every external call passes
-# through so the echo-only rule (Req 1.3) and the dry-run rule (Req 6.5) are both
+# through so the echo-only rule and the dry-run rule are both
 # satisfied from one place.
 #
-# Secret rule (Req 3.2): a secret is NEVER passed as a CLI argument. The commands
+# Secret rule: a secret is NEVER passed as a CLI argument. The commands
 # that consume the password do so via a file (@file / --file), so the echoed
 # command line shows only the path, never the value.
 #
@@ -189,7 +189,7 @@ function Docker  { param([Parameter(ValueFromRemainingArguments)][string[]] $A) 
 # they go through Invoke-Planned -Exe 'kubectl' -CmdArgs @(...) directly instead.
 
 # -----------------------------------------------------------------------------
-# Validate the allowed-source set up front (Req 9.3/9.4). A real deploy MUST be
+# Validate the allowed-source set up front. A real deploy MUST be
 # given an explicit, non-world-open set. In -WhatIf we tolerate its absence so a
 # user can inspect the plan without committing to an ingress decision, but we
 # still reject world-open ranges if any were supplied.
@@ -204,7 +204,7 @@ function Assert-AllowedSourceRanges {
             Write-Host "NOTE: -WhatIf dry run; -AllowedSourceRanges not supplied. A real deploy REQUIRES it." -ForegroundColor Yellow
             return @()
         }
-        throw "An allowed source address set is required. Pass -AllowedSourceRanges with your own IP/CIDR (e.g. -AllowedSourceRanges '203.0.113.7/32'). Open-to-world ranges (0.0.0.0/0, ::/0) are forbidden for this deliberately-vulnerable app (Req 9.3/9.4)."
+        throw "An allowed source address set is required. Pass -AllowedSourceRanges with your own IP/CIDR (e.g. -AllowedSourceRanges '203.0.113.7/32'). Open-to-world ranges (0.0.0.0/0, ::/0) are forbidden for this deliberately-vulnerable app."
     }
 
     $clean = New-Object System.Collections.Generic.List[string]
@@ -212,18 +212,18 @@ function Assert-AllowedSourceRanges {
         $t = ([string]$r).Trim()
         if ([string]::IsNullOrWhiteSpace($t)) { continue }
         if ($worldOpen -contains $t) {
-            throw "Source range '$t' opens the app to the entire internet and is forbidden (Req 9.3). Restrict ingress to your own address."
+            throw "Source range '$t' opens the app to the entire internet and is forbidden. Restrict ingress to your own address."
         }
         $clean.Add($t)
     }
     if ($clean.Count -eq 0 -and -not $DryRun) {
-        throw "An allowed source address set is required but only blank/forbidden entries were supplied (Req 9.4)."
+        throw "An allowed source address set is required but only blank/forbidden entries were supplied."
     }
     return $clean.ToArray()
 }
 
 # -----------------------------------------------------------------------------
-# Hardened-only guardrails (Req 2.1/2.2). Abort before any push/deploy if the
+# Hardened-only guardrails. Abort before any push/deploy if the
 # hardened Dockerfile is missing or a non-hardened reference would be used.
 # -----------------------------------------------------------------------------
 function Assert-HardenedBuild {
@@ -231,13 +231,13 @@ function Assert-HardenedBuild {
 
     $dockerfile = Join-Path $RepoRoot 'ops/docker/hardened/Dockerfile'
     if (-not (Test-Path -LiteralPath $dockerfile -PathType Leaf)) {
-        throw "Hardened Dockerfile not found at '$dockerfile'. Refusing to build/push/deploy (Req 2.4)."
+        throw "Hardened Dockerfile not found at '$dockerfile'. Refusing to build/push/deploy."
     }
     if ($ImageTag -ne 'hardened') {
-        throw "Only the hardened variant may be deployed; image tag was '$ImageTag', expected 'hardened' (Req 2.1)."
+        throw "Only the hardened variant may be deployed; image tag was '$ImageTag', expected 'hardened'."
     }
     if ($AppMode -ne 'hardened') {
-        throw "Only the hardened variant may be deployed; APP_MODE was '$AppMode', expected 'hardened' (Req 2.1)."
+        throw "Only the hardened variant may be deployed; APP_MODE was '$AppMode', expected 'hardened'."
     }
     return $dockerfile
 }
@@ -260,7 +260,7 @@ try {
     $dbName   = [string]$common['DbName']
     $dbUser   = [string]$common['DbUser']
     $imageTag = [string]$common['ImageTag']      # must be 'hardened'
-    $appMode  = 'hardened'                        # fixed by this target (Req 2.1)
+    $appMode  = 'hardened'                        # fixed by this target
 
     $location = [string]$azure['Location']
     $rg       = [string]$azure['ResourceGroup']
@@ -268,7 +268,7 @@ try {
     $kvBase   = [string]$azure['KeyVaultBase']
     $aksName  = [string]$azure['AksCluster']
 
-    # Final globally-unique names (Req 7.5): ACR = base + suffix (alnum only);
+    # Final globally-unique names: ACR = base + suffix (alnum only);
     # Key Vault = base + "-" + suffix.
     $acrName   = ($acrBase + $suffix)
     $kvName    = ($kvBase + '-' + $suffix)
@@ -316,7 +316,7 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 1. Authentication check (Req 6.3/6.4). `account show` succeeds only when the
+    # 1. Authentication check. `account show` succeeds only when the
     #    CLI is installed AND a session is active. On failure, print install +
     #    auth guidance and exit non-zero.
     # -------------------------------------------------------------------------
@@ -367,7 +367,7 @@ try {
     Az group create --name $rg --location $location --output none
 
     # -------------------------------------------------------------------------
-    # 3. ACR: describe-then-create (Req 4.1). Reuse if present; create otherwise.
+    # 3. ACR: describe-then-create. Reuse if present; create otherwise.
     # -------------------------------------------------------------------------
     Write-Step "Ensuring Azure Container Registry '$acrName'"
     $acrExists = $false
@@ -389,7 +389,7 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 4. Registry login, build the hardened image, push (Req 2.3/4.5). Build
+    # 4. Registry login, build the hardened image, push. Build
     #    context is the repo root so the Dockerfile's `COPY . .` sees the app.
     # -------------------------------------------------------------------------
     Write-Step "Logging in to ACR and building/pushing the hardened image"
@@ -398,11 +398,11 @@ try {
     Docker push $imageRef
 
     # -------------------------------------------------------------------------
-    # 5. Key Vault: describe-then-create (Req 4.1), then generate + store the DB
-    #    password (Req 4.4) BEFORE provisioning Postgres. The secret VALUE is
+    # 5. Key Vault: describe-then-create, then generate + store the DB
+    #    password BEFORE provisioning Postgres. The secret VALUE is
     #    written to a private temp file and passed with `keyvault secret set
     #    --file`, so the password is never a CLI argument and never appears on an
-    #    echoed line (Req 3.2). The same temp file seeds the Flexible Server admin
+    #    echoed line. The same temp file seeds the Flexible Server admin
     #    password (step 6) and is shredded in the finally block.
     # -------------------------------------------------------------------------
     Write-Step "Ensuring Key Vault '$kvName'"
@@ -422,7 +422,7 @@ try {
     }
 
     Write-Step "Generating and storing the DB password in Key Vault (value never echoed)"
-    # Does the secret already exist? (idempotent: generate only when absent, Req 4.4)
+    # Does the secret already exist? (idempotent: generate only when absent)
     $secretExists = $false
     if (-not $WhatIf) {
         $null = AzTry keyvault secret show --vault-name $kvName --name $kvSecret --output none
@@ -446,7 +446,7 @@ try {
             # file content) is exactly the password.
             $pwFile = [System.IO.Path]::GetTempFileName()
             [System.IO.File]::WriteAllText($pwFile, $dbPassword, $utf8NoBom)
-            # --file keeps the value off the command line (Req 3.2).
+            # --file keeps the value off the command line.
             Az keyvault secret set --vault-name $kvName --name $kvSecret --file $pwFile --output none
             Remove-Variable -Name dbPassword -ErrorAction SilentlyContinue
         }
@@ -468,13 +468,13 @@ try {
         }
 
         # ---------------------------------------------------------------------
-        # 6. Flexible Server: describe-then-create (Req 4.3 - managed service,
+        # 6. Flexible Server: describe-then-create (managed service,
         #    never a container). The admin password is seeded from the Key-Vault
         #    secret already on disk, passed with the `@file` convention so the
         #    value is read from the file and NEVER appears on the echoed command
-        #    line (Req 3.2). --public-access None keeps the server off the public
+        #    line. --public-access None keeps the server off the public
         #    internet; access is granted only by the explicit firewall rule(s)
-        #    added in step 7 (Req 9.5).
+        #    added in step 7.
         # ---------------------------------------------------------------------
         Write-Step "Ensuring Azure DB for PostgreSQL Flexible Server '$pgServer'"
         $pgExists = $false
@@ -514,7 +514,7 @@ try {
         }
 
         # ---------------------------------------------------------------------
-        # 6b. Database: describe-then-create (idempotent, Req 4.1). The database
+        # 6b. Database: describe-then-create (idempotent). The database
         #     can no longer be created inline on the single Flexible Server
         #     create, so it is provisioned here as a separate step: show first
         #     (AllowFail), and create only when absent, matching the
@@ -539,7 +539,7 @@ try {
         # ---------------------------------------------------------------------
         # 7. Firewall rule(s): allow ONLY the explicit source set to reach the
         #    server on 5432; world-open ranges were already rejected. The server
-        #    stays private otherwise (Req 9.5). One rule per source address.
+        #    stays private otherwise. One rule per source address.
         # ---------------------------------------------------------------------
         Write-Step "Adding locked-down PostgreSQL firewall rule(s) (port $dbPort, no public exposure)"
         if ($WhatIf) {
@@ -587,7 +587,7 @@ try {
         }
 
         # ---------------------------------------------------------------------
-        # 9. AKS cluster: describe-then-create (idempotent, Req 4.1). Created with
+        # 9. AKS cluster: describe-then-create (idempotent). Created with
         #    --attach-acr so the kubelet can pull the private image WITHOUT any
         #    registry password (no secret to echo or store), and with the Key
         #    Vault secrets provider addon (azure-keyvault-secrets-provider) so the
@@ -623,15 +623,15 @@ try {
 
         # ---------------------------------------------------------------------
         # 10. Fetch cluster credentials so the cluster CLI targets this AKS
-        #     cluster (Req 4.8). --overwrite-existing keeps re-runs convergent.
+        #     cluster. --overwrite-existing keeps re-runs convergent.
         # ---------------------------------------------------------------------
-        Write-Step "Fetching AKS credentials for the cluster CLI (Req 4.8)"
+        Write-Step "Fetching AKS credentials for the cluster CLI"
         Az aks get-credentials --name $aksName --resource-group $rg --overwrite-existing --output none
 
         # ---------------------------------------------------------------------
         # 11. Render the committed overlay into a THROWAWAY copy, substitute the
         #     placeholders, and apply with the load-restrictor pipe form
-        #     (Req 2.5/3.1/3.3). The committed overlay (and the base manifest) are
+        #. The committed overlay (and the base manifest) are
         #     NEVER rewritten:
         #       * copy every committed overlay file into a temp dir,
         #       * in the temp copy, repoint the base `resources:` reference to the
@@ -649,7 +649,7 @@ try {
         #       __KV_TENANT_ID__         Azure AD tenant id of the Key Vault
         #       __KV_IDENTITY_CLIENTID__ client id of the reader managed identity
         # ---------------------------------------------------------------------
-        Write-Step "Rendering the Azure overlay copy and substituting placeholders (Req 2.5)"
+        Write-Step "Rendering the Azure overlay copy and substituting placeholders"
         $renderedDir = Join-Path ([System.IO.Path]::GetTempPath()) ("sangyshop-azure-overlay-" + [System.Guid]::NewGuid().ToString('N'))
         try {
             if (-not $WhatIf) {
@@ -692,7 +692,7 @@ try {
             # Build the rendered overlay with load restrictions disabled (the base
             # lives outside the overlay dir), then pipe to apply (apply -k cannot
             # pass the flag).
-            Write-Step "Applying the rendered overlay to AKS (Req 3.1, 3.3, 2.5)"
+            Write-Step "Applying the rendered overlay to AKS"
             if ($WhatIf) {
                 # Plan both halves of the pipe without executing anything. The
                 # committed overlay path documents the build source for the plan.
@@ -724,9 +724,9 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 12. Wait for the Deployment rollout to finish (Req 4.8).
+    # 12. Wait for the Deployment rollout to finish.
     # -------------------------------------------------------------------------
-    Write-Step "Waiting for the '$deployName' Deployment rollout in namespace '$k8sNamespace' (Req 4.8)"
+    Write-Step "Waiting for the '$deployName' Deployment rollout in namespace '$k8sNamespace'"
     Invoke-Planned -Exe 'kubectl' -CmdArgs @(
         '-n', $k8sNamespace,
         'rollout', 'status', "deploy/$deployName",
@@ -734,10 +734,10 @@ try {
     ) | Out-Null
 
     # -------------------------------------------------------------------------
-    # 13. Read the LoadBalancer external IP as the service URL (Req 4.7/9.2). On
+    # 13. Read the LoadBalancer external IP as the service URL. On
     #     Azure the Standard LB exposes an external IP.
     # -------------------------------------------------------------------------
-    Write-Step "Reading the LoadBalancer external IP for Service '$svcName' (Req 4.7)"
+    Write-Step "Reading the LoadBalancer external IP for Service '$svcName'"
     $externalIp = Invoke-Planned -Exe 'kubectl' -CmdArgs @(
         '-n', $k8sNamespace,
         'get', 'svc', $svcName,
@@ -745,7 +745,7 @@ try {
     )
 
     # -------------------------------------------------------------------------
-    # Dry run ends here: print the planned command list and exit 0 (Req 6.5).
+    # Dry run ends here: print the planned command list and exit 0.
     # -------------------------------------------------------------------------
     if ($WhatIf) {
         Write-Step "Dry run (-WhatIf): planned command list (no command was executed)"

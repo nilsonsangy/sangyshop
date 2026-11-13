@@ -1,0 +1,7 @@
+// Investigation: control-plane operations from the Activity Log in the last 24 hours.
+// Requires enable-activitylog.ps1 (table AzureActivity). Shows who called what, from which IP.
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where ActivityStatusValue in ("Success", "Succeeded", "Failure", "Failed")
+| summarize calls = count(), first_utc = min(TimeGenerated), last_utc = max(TimeGenerated) by Caller, CallerIpAddress, OperationNameValue, ActivityStatusValue
+| order by first_utc asc

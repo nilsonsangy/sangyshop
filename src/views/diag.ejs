@@ -29,14 +29,14 @@
 <%- include('partials/view-code', { vuln: 'A02' }) %>
 <% if (rpt.meta) { %>
 <p class="hint">
-  Generated at <%= rpt.meta.geradoEm %> | report version <%= rpt.meta.versaoRelatorio %>
+  Generated at <%= rpt.meta.geradoEm %> | report version <%= rpt.meta.reportVersion %>
 </p>
 <% } %>
 
 <!-- Execution identity (R2) -->
 <section class="diag-group">
   <h2>Execution identity</h2>
-  <% var s = rpt.identidadeExecucao || {}; %>
+  <% var s = rpt.executionIdentity || {}; %>
   <% if (s.disponivel) { %>
     <table><tbody>
       <tr>
@@ -68,7 +68,7 @@
       </tr>
       <tr>
         <th>Node process visibility (hostPID)</th>
-        <td><% if (s.hostPidProvavel) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
+        <td><% if (s.likelyHostPid) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
       </tr>
       <% if (s.metodo) { %><tr><th>Method</th><td class="hint"><%= s.metodo %></td></tr><% } %>
     </tbody></table>
@@ -87,7 +87,7 @@
         <th>Read-only rootfs</th>
         <td><% if (s.rootfsSomenteLeitura) { %><%- badge('on', 'read-only (hardened)') %><% } else { %><%- badge('off', 'writable (insecure)') %><% } %></td>
       </tr>
-      <% if (s.caminhoTestado) { %><tr><th>Tested path</th><td><code><%= s.caminhoTestado %></code></td></tr><% } %>
+      <% if (s.testedPath) { %><tr><th>Tested path</th><td><code><%= s.testedPath %></code></td></tr><% } %>
     </tbody></table>
   <% } else { var d = unavailable(s.motivo); %>
     <p><span class="state off">unavailable</span> <span class="hint"><%= d.motivo %></span></p>
@@ -119,7 +119,7 @@
       <tr><th>Hostname</th><td><code><%= s.hostname %></code></td></tr>
       <tr>
         <th>Host network (hostNetwork)</th>
-        <td><% if (s.hostNetworkProvavel) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
+        <td><% if (s.likelyHostNetwork) { %><%- badge('off', 'likely (insecure)') %><% } else { %><%- badge('on', 'unlikely (hardened)') %><% } %></td>
       </tr>
       <tr>
         <th>Node mount (/host)</th>
@@ -135,7 +135,7 @@
 <!-- Pod identity (R7): nested structure -->
 <section class="diag-group">
   <h2>Pod identity</h2>
-  <% var s = rpt.identidadePod || {}; %>
+  <% var s = rpt.podIdentity || {}; %>
   <table><tbody>
     <%
       var campos = [

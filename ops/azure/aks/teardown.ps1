@@ -10,7 +10,7 @@
 .DESCRIPTION
     The destroy half of the Azure Kubernetes (AKS) target in the
     multi-cloud-deploy spec. Resources are removed in REVERSE dependency order
-    (Req 5.2): the in-cluster workload first, then the AKS cluster (compute),
+: the in-cluster workload first, then the AKS cluster (compute),
     then the managed Postgres server, then the stored DB password (secret) and
     its vault, then the Key-Vault reader identity + access policy, then
     (optionally) the registry.
@@ -29,17 +29,17 @@
       6. Removes the Key Vault `get` access policy for the reader identity, then
          deletes the user-assigned identity deploy created so no orphaned
          principal/policy is left behind.
-      7. Deletes the ACR unless -KeepRegistry (Req 5.3).
+      7. Deletes the ACR unless -KeepRegistry.
 
     EVERY external CLI call goes through Invoke-Echoed from lib/Common.ps1
-    (echo-before-exec, Req 1.3). This script never calls `az`/`kubectl` directly.
+    (echo-before-exec). This script never calls `az`/`kubectl` directly.
 
     Every delete is issued with -AllowFail so an already-deleted resource is
     skipped and treated as successfully removed; this makes re-runs converge to
-    "nothing left" and exit success (Req 5.4). The identifier of each removed
-    resource is printed to stdout (Req 5.5). On a REAL removal failure (anything
+    "nothing left" and exit success. The identifier of each removed
+    resource is printed to stdout. On a REAL removal failure (anything
     other than "not found"), teardown keeps going, records the resource, writes an
-    error indication to stderr, and exits non-success (Req 5.6).
+    error indication to stderr, and exits non-success.
 
     As a documented catch-all, `az group delete --name <rg> --yes --no-wait`
     removes everything in the lab resource group in one shot. It is destructive
@@ -49,7 +49,7 @@
     SECURITY NOTE: SangyShop is deliberately vulnerable. Tearing it down promptly
     is mandatory: these resources are billable and must never be left exposed.
 
-    Windows PowerShell 5.1 compatible (Req 6.1). No bash/sh is ever invoked (Req 6.2).
+    Windows PowerShell 5.1 compatible. No bash/sh is ever invoked.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the shared config two levels up.
@@ -61,10 +61,10 @@
 
 .PARAMETER KeepRegistry
     Preserve the Azure Container Registry (and its images). By default the ACR is
-    deleted, since deploy.ps1 created it (Req 5.3).
+    deleted, since deploy.ps1 created it.
 
 .PARAMETER WhatIf
-    Dry run (Req 6.5): prints the full ordered list of external commands that
+    Dry run: prints the full ordered list of external commands that
     WOULD run, executes nothing, and exits 0.
 
 .EXAMPLE
@@ -106,7 +106,7 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
 # =============================================================================
 # -WhatIf planning: in dry-run we only print the command line that WOULD run and
 # execute nothing. Invoke-Planned is the single gate every external call passes
-# through so the echo-only rule (Req 1.3) and the dry-run rule (Req 6.5) are both
+# through so the echo-only rule and the dry-run rule are both
 # satisfied from one place. Mirrors azure/docker/teardown.ps1, with -StdinText
 # added so the rendered overlay can be piped to `kubectl delete -f -` (the body
 # is non-secret and echoed as a redacted note).
@@ -170,7 +170,7 @@ function Invoke-Planned {
 }
 
 # Convenience wrappers so call sites read cleanly. Teardown always tolerates
-# failure (every delete uses -AllowFail, Req 5.4), so AzTry forwards -AllowFail;
+# failure (every delete uses -AllowFail), so AzTry forwards -AllowFail;
 # Az is kept for parity/read-only shape in the plan.
 # kubectl calls use single-dash flags (-n / -o / -f) that collide with the
 # parameter binder through a ValueFromRemainingArguments wrapper, so they go
@@ -180,9 +180,9 @@ function AzTry { param([Parameter(ValueFromRemainingArguments)][string[]] $A) In
 
 # -----------------------------------------------------------------------------
 # Teardown bookkeeping. $removed holds the identifiers of resources we removed
-# (or confirmed already gone) for the stdout summary (Req 5.5); $failed holds any
+# (or confirmed already gone) for the stdout summary; $failed holds any
 # resource whose delete returned a REAL error so we can report to stderr and exit
-# non-success (Req 5.6).
+# non-success.
 # -----------------------------------------------------------------------------
 $script:removed = New-Object System.Collections.Generic.List[string]
 $script:failed  = New-Object System.Collections.Generic.List[string]
@@ -190,8 +190,8 @@ $script:failed  = New-Object System.Collections.Generic.List[string]
 # Classify the outcome of the most recent CLI call for $Id. A zero exit means the
 # resource was removed (or the no-op was accepted). A non-zero exit is inspected:
 # a "not found / does not exist" style failure is an already-deleted resource and
-# counts as success (Req 5.4); any other non-zero is a real failure recorded for
-# stderr + non-success exit (Req 5.6). $Output is the captured command output.
+# counts as success; any other non-zero is a real failure recorded for
+# stderr + non-success exit. $Output is the captured command output.
 function Resolve-RemovalOutcome {
     param(
         [Parameter(Mandatory)][string] $Id,
@@ -330,13 +330,13 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 1. In-cluster workload first (Req 5.1/5.2). Point kubectl at the AKS cluster
+    # 1. In-cluster workload first. Point kubectl at the AKS cluster
     #    (get-credentials is -AllowFail so an already-deleted cluster is tolerated
     #    and teardown continues to the cluster delete). If the cluster is
     #    reachable, render the committed overlay with load restrictions disabled
     #    and pipe it to `kubectl delete -f -`, then delete the whole namespace with
     #    --ignore-not-found as the simplest convergent catch-all (removes anything
-    #    the overlay delete missed; a re-run converges, Req 5.4).
+    #    the overlay delete missed; a re-run converges).
     # -------------------------------------------------------------------------
     Write-Step "Pointing kubectl at AKS cluster '$aksName' (tolerated if already gone)"
     $credOutput = $null
@@ -358,7 +358,7 @@ try {
     else {
         # 1a. Delete the committed overlay (rendered, load-restrictor pipe form).
         if ($null -ne $overlayDir) {
-            Write-Step "Deleting the in-cluster workload from the rendered Azure overlay (Req 5.1/5.2)"
+            Write-Step "Deleting the in-cluster workload from the rendered Azure overlay"
             if ($WhatIf) {
                 # Plan both halves of the pipe without executing anything. The
                 # committed overlay path documents the build source for the plan.
@@ -382,8 +382,8 @@ try {
             Write-Host "  Azure overlay directory not found; relying on the namespace catch-all below." -ForegroundColor DarkGray
         }
 
-        # 1b. Namespace catch-all: simplest convergent approach (Req 5.1/5.4).
-        Write-Step "Deleting the namespace '$k8sNamespace' as a convergent catch-all (Req 5.1/5.4)"
+        # 1b. Namespace catch-all: simplest convergent approach.
+        Write-Step "Deleting the namespace '$k8sNamespace' as a convergent catch-all"
         if ($WhatIf) {
             Invoke-Planned -Exe 'kubectl' -CmdArgs @('delete', 'namespace', $k8sNamespace, '--ignore-not-found') | Out-Null
         }
@@ -394,14 +394,14 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 2. Compute: delete the AKS cluster (Req 5.2). Removed after its workload.
+    # 2. Compute: delete the AKS cluster. Removed after its workload.
     # -------------------------------------------------------------------------
     Write-Step "Deleting the AKS cluster '$aksName'"
     Remove-Resource -Id ("AKS cluster: " + $aksName) `
         -CmdArgs @('aks', 'delete', '--resource-group', $rg, '--name', $aksName, '--yes', '--output', 'none')
 
     # -------------------------------------------------------------------------
-    # 3. Managed Postgres: delete the Flexible Server (Req 5.2). Removing the
+    # 3. Managed Postgres: delete the Flexible Server. Removing the
     #    server also removes its firewall rules, so they need no separate delete.
     # -------------------------------------------------------------------------
     Write-Step "Deleting the PostgreSQL Flexible Server '$pgServer'"
@@ -410,7 +410,7 @@ try {
 
     # -------------------------------------------------------------------------
     # 4. Stored DB password: delete the Key Vault secret, then the vault itself
-    #    (Req 5.2 - the stored DB password comes after compute + DB). Deleting the
+    #    (the stored DB password comes after compute + DB). Deleting the
     #    secret before the vault keeps the removed-id log precise even when the
     #    vault lingers in a soft-deleted state.
     # -------------------------------------------------------------------------
@@ -426,7 +426,7 @@ try {
     #    for the Secrets Store CSI provider; both MUST be removed so no orphaned
     #    principal/policy lingers. The access policy is resolved by the identity's
     #    principalId; if the identity (or the vault) is already gone the lookup
-    #    comes back empty and we treat the policy as already absent (Req 5.4).
+    #    comes back empty and we treat the policy as already absent.
     # -------------------------------------------------------------------------
     Write-Step "Removing the Key Vault access policy and the KV reader identity '$idName'"
     if ($WhatIf) {
@@ -458,7 +458,6 @@ try {
     # -------------------------------------------------------------------------
     # 6. Native registry: delete the ACR unless -KeepRegistry. deploy.ps1 created
     #    it, so by default teardown removes it LAST, after the stored DB password
-    #    (Req 5.3).
     # -------------------------------------------------------------------------
     if ($KeepRegistry) {
         Write-Step "Keeping the Azure Container Registry '$acrName' (-KeepRegistry)"
@@ -508,7 +507,7 @@ try {
     }
 
     if ($script:failed.Count -gt 0) {
-        # Req 5.6: report each resource that could not be removed to stderr and
+        # report each resource that could not be removed to stderr and
         # exit non-success, after having attempted every other delete.
         Write-Error (@(
             "Teardown finished but the following resource(s) could NOT be removed:",

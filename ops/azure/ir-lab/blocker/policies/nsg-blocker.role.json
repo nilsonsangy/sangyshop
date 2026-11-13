@@ -1,0 +1,16 @@
+{
+  "Name": "__ROLE_NAME__",
+  "IsCustom": true,
+  "Description": "IR lab: create, read and delete NSG security rules on the lab NSG only. No other permissions.",
+  "Actions": [
+    "Microsoft.Network/networkSecurityGroups/securityRules/read",
+    "Microsoft.Network/networkSecurityGroups/securityRules/write",
+    "Microsoft.Network/networkSecurityGroups/securityRules/delete"
+  ],
+  "NotActions": [],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "__NSG_RESOURCE_ID__"
+  ]
+}

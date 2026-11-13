@@ -1,7 +1,7 @@
-# AWS EC2 + RDS lab (Deploy_EC2)
+# AWS EC2 + RDS lab (EC2 deployment)
 
 Deploys the **deliberately vulnerable** SangyShop on a single EC2 instance with an
-RDS PostgreSQL database, for the cloud incident-response lab (class 24). Use an
+RDS PostgreSQL database, for the cloud incident-response lab. Use an
 isolated, throwaway AWS account only. Default region: `us-east-1`.
 
 ```text
@@ -21,7 +21,7 @@ before running it, and write all output and errors in English.
 
 | Order | Resource | Notes |
 |---|---|---|
-| 1 | VPC `sangyshop-lab-vpc` (10.20.0.0/16), internet gateway, 1 public + 2 private subnets, public route table | Private subnets host RDS only. |
+| 1 | VPC `sangyshop-lab-vpc` (192.168.81.0/24), internet gateway, 1 public + 2 private subnets, public route table | Private subnets host RDS only. |
 | 1 | Dedicated NACL on the public subnet | Rule 900 allows traffic; rules 1-899 are reserved for DENY entries added later by the lab blocker. |
 | 2 | Security group `sangyshop-lab-app-sg` | Port 3000 from the `-AllowedSourceRanges` /32 only. No SSH port. |
 | 2 | Security group `sangyshop-lab-db-sg` | 5432 from the instance security group only (no CIDR rule). |
@@ -40,7 +40,7 @@ Every taggable resource carries the lab tags `lab`, `run-id` and `component`
 The identities `lab-operator` (the human running these scripts, with MFA) and
 `sangyshop-lab-leaked` (the exposed-credential IAM user) are **not** created by
 these scripts. `sangyshop-ec2-role` is the application identity. The account-wide
-Full_Teardown_AWS removes the leaked user and its access keys.
+full AWS teardown removes the leaked user and its access keys.
 
 ## Configuration
 
@@ -122,14 +122,14 @@ S3 bucket, IAM instance profile and role, CodeCommit repository, log group
 `/sangyshop/app`, then security groups, subnets, NACL, route table, internet gateway
 and VPC.
 
-- Exit 0 only when no Deploy_EC2 resource remains.
+- Exit 0 only when no EC2 deployment resource remains.
 - Re-running after a successful teardown skips what is gone, prints
-  `Teardown complete: no Deploy_EC2 resources remain (nothing to remove).` and exits 0
+  `Teardown complete: no EC2 deployment resources remain (nothing to remove).` and exits 0
   in a few seconds.
 - If a resource cannot be removed, its type and identifier are listed on stderr, the
   other resources are still removed and the exit code is non-zero.
 - The detection stack, evidence snapshots and the exposed credential are outside this
-  script. The account-wide Full_Teardown_AWS prevails and is the recommended command
+  script. The account-wide full AWS teardown prevails and is the recommended command
   to remove the whole lab.
 
 After teardown, check the console in the lab region for leftovers: RDS, EC2, EBS
@@ -148,15 +148,33 @@ accept `-WhatIf` and `-ConfigPath`, and print these warnings before running anyt
 
 - a stopped RDS instance **restarts automatically after 7 days**;
 - EBS and RDS storage (and any Elastic IP) **keep being billed** while stopped;
-- stopping is **not** a teardown. Use `teardown.ps1` or Full_Teardown_AWS to stop all
+- stopping is **not** a teardown. Use `teardown.ps1` or full AWS teardown to stop all
   billing.
 
 The public IP changes on each start because no Elastic IP is used. The container uses
 `--restart unless-stopped`, so the app returns by itself after the instance starts.
 
+## Next: the incident response lab
+
+After the deploy, the detection stack, the readiness check and the response helpers live in
+`ops/aws/ir-lab/` of this repository:
+
+1. `ops/aws/ir-lab/detection/enable-all.ps1` creates CloudTrail, the log metric filter, the
+   brute-force alarm and the e-mail alert. The address comes from `-Email`, `LAB_ALERT_EMAIL` or
+   `ops/.env` (copy `ops/.env.example`). It exits with code 4, naming this `deploy.ps1`, when the
+   application log group `/sangyshop/app` does not exist.
+2. Confirm the subscription e-mail, then run `ops/aws/ir-lab/check-detection-ready.ps1`. It writes
+   the readiness stamp that `attack-simulation/attack.js` requires.
+3. Run the attack, then `ops/aws/ir-lab/print-response-commands.ps1`. The NimbusDFIR checkout is
+   found through `NIMBUSDFIR_PATH` (see `ops/README.md`).
+
+Permissions for these scripts are granted through the lab IAM group; see `ops/aws/iam/README.md`
+and the permission tables in `ops/README.md`. `ops/aws/ir-lab/full-teardown.ps1` removes the whole
+lab.
+
 ## Safety checklist
 
 - Isolated, throwaway AWS account; one region.
 - Ingress limited to your own /32. Never open the app to the internet.
-- Run `stop-lab.ps1` every day and `teardown.ps1` (or Full_Teardown_AWS) when done.
+- Run `stop-lab.ps1` every day and `teardown.ps1` (or full AWS teardown) when done.
 - Never commit `cloud.config.ps1` or any `lab-manifest*.json`.

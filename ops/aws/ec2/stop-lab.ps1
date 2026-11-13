@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Intermediate stop of the EC2 + RDS lab (Parada_Intermediaria). Nothing is deleted.
+    Intermediate stop of the EC2 + RDS lab (intermediate stop). Nothing is deleted.
 
 .DESCRIPTION
     Stops the EC2 instance and then the RDS instance created by deploy.ps1 at the
@@ -9,7 +9,7 @@
     Warnings are printed BEFORE anything runs:
       * A stopped RDS instance is started again automatically by AWS after 7 days.
       * EBS and RDS storage (and any Elastic IP) keep being billed while stopped.
-      * Stopping does not replace teardown.ps1 or the account-wide Full_Teardown_AWS.
+      * Stopping does not replace teardown.ps1 or the account-wide full AWS teardown.
 
     Every external command is echoed before it runs. -WhatIf prints the planned
     commands and stops nothing. Windows PowerShell 5.1 compatible.
@@ -94,7 +94,7 @@ $rg      = @('--region', $region)
 Write-Host ""
 Write-Host "WARNING: RDS instance '$rdsId' restarts automatically after 7 days stopped." -ForegroundColor Yellow
 Write-Host "WARNING: EBS and RDS storage (and any Elastic IP) keep being billed while the lab is stopped." -ForegroundColor Yellow
-Write-Host "WARNING: stopping is NOT a teardown. Run teardown.ps1 or the Full_Teardown_AWS to stop all billing." -ForegroundColor Yellow
+Write-Host "WARNING: stopping is NOT a teardown. Run teardown.ps1 or the full AWS teardown to stop all billing." -ForegroundColor Yellow
 Write-Host "NOTE: the instance public IP changes on the next start (no Elastic IP is used)." -ForegroundColor Yellow
 Write-Host ""
 

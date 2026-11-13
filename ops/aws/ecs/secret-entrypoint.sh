@@ -1,6 +1,6 @@
 #!/bin/sh
-# secret-entrypoint.sh — ECS Fargate secret->file entrypoint wrapper for the
-# HARDENED SangyShop image (multi-cloud-deploy, task 9.1).
+# secret-entrypoint.sh: ECS Fargate secret->file entrypoint wrapper for the
+# HARDENED SangyShop image (multi-cloud deploy).
 #
 # WHY THIS EXISTS
 # ---------------
@@ -16,10 +16,10 @@
 # definition sets its container `command` (or entrypoint) to run this wrapper,
 # which:
 #   1. reads the injected secret env var (DB_PASSWORD_SECRET),
-#   2. writes its value — with ALL leading/trailing whitespace removed — to
-#      /run/secrets/db_password  (Requirement 3.5 / 3.1),
+#   2. writes its value: with ALL leading/trailing whitespace removed, to
+#      /run/secrets/db_password,
 #   3. unsets DB_PASSWORD_SECRET so the secret no longer lives in the app's
-#      environment (Requirement 3.5),
+#      environment,
 #   4. exec's `node src/server.js` so the app becomes PID 1's successor and
 #      receives signals correctly.
 #
@@ -30,7 +30,7 @@
 #
 # This script intentionally uses only POSIX sh features so it runs under the
 # BusyBox `sh` present in the node:20-alpine hardened image. It is referenced by
-# the task definition authored in task 9.2 (aws/ecs/deploy.ps1); it is never
+# the task definition authored by aws/ecs/deploy.ps1; it is never
 # baked into the app image and never changes the image's default CMD.
 #
 # SECURITY NOTES
@@ -46,7 +46,7 @@ set -eu
 
 # Name of the env var ECS injects from Secrets Manager. Overridable so the task
 # definition can pick a different secret key name if ever needed, but defaults
-# to the name used by the deploy script (task 9.2).
+# to the name used by the deploy script.
 SECRET_ENV_NAME="${SECRET_ENV_NAME:-DB_PASSWORD_SECRET}"
 
 # Target file + directory consumed by the hardened app.
@@ -59,7 +59,7 @@ SECRET_FILE="${SECRET_DIR}/db_password"
 secret_value="$(eval "printf '%s' \"\${${SECRET_ENV_NAME}:-}\"")"
 if [ -z "${secret_value}" ]; then
   # No value and no var surface the secret, so emit a non-secret error and stop
-  # before launching the app (Requirement 3.4: fail without leaking the value).
+  # before launching the app (fail without leaking the value).
   echo "secret-entrypoint: ${SECRET_ENV_NAME} is unset or empty; refusing to start (hardened mode needs ${SECRET_FILE})" >&2
   exit 1
 fi

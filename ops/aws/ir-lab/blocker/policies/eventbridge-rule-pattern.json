@@ -1,0 +1,8 @@
+{
+  "source": ["aws.cloudwatch"],
+  "detail-type": ["CloudWatch Alarm State Change"],
+  "detail": {
+    "alarmName": ["${ALARM_NAME}"],
+    "state": { "value": ["ALARM"] }
+  }
+}

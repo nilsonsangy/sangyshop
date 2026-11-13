@@ -1,0 +1,10 @@
+// Investigation: data-plane access to Blob Storage and Key Vault (diagnostic settings).
+// Requires enable-diagnostics.ps1. StorageBlobLogs and AzureDiagnostics (AuditEvent) feed this view.
+union
+    (StorageBlobLogs
+     | where TimeGenerated > ago(24h)
+     | project TimeGenerated, source = "blob", operation = OperationName, caller_ip = CallerIpAddress, status = StatusText, target = Uri),
+    (AzureDiagnostics
+     | where TimeGenerated > ago(24h) and ResourceProvider == "MICROSOFT.KEYVAULT" and Category == "AuditEvent"
+     | project TimeGenerated, source = "keyvault", operation = OperationName, caller_ip = CallerIPAddress, status = ResultSignature, target = id_s)
+| order by TimeGenerated asc

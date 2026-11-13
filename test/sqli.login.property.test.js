@@ -36,9 +36,8 @@ const BYPASS_USERNAME = "admin'--";
 
 afterEach(resetToggles);
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 5: Authentic SQLi on login with the defense off (bypass)
-// Validates: Requirements 3.1, 3.2
-test("Property 5: with A05 OFF, admin'-- + any password authenticates as admin (200)", async () => {
+// Authentic SQLi on login with the defense off (bypass)
+test("with A05 OFF, admin'-- + any password authenticates as admin (200)", async () => {
   const app = await createTestApp();
   setToggle("A05_injection", false);
 

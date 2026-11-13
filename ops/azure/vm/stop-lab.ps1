@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Intermediate stop (Parada_Intermediaria) of the Azure VM lab at the end of a lab day.
+    Intermediate stop (intermediate stop) of the Azure VM lab at the end of a lab day.
 
 .DESCRIPTION
     DEALLOCATES the VM (`az vm deallocate`, the VM is kept) and STOPS the PostgreSQL
@@ -12,7 +12,7 @@
         the current Azure documentation (7 days at the time of writing; confirm the
         value on the execution date).
       * Managed disks and the static public IP keep being billed while stopped.
-      * Stopping does NOT replace teardown.ps1 / the Full_Teardown_Azure.
+      * Stopping does NOT replace teardown.ps1 / the full Azure teardown.
 
     Every external command is echoed before it runs. Windows PowerShell 5.1 compatible.
 
@@ -84,7 +84,7 @@ try {
     Write-Host "  * Azure automatically restarts a stopped PostgreSQL Flexible Server after the period stated in the" -ForegroundColor Yellow
     Write-Host "    current Azure documentation (7 days at the time of writing; confirm it on the execution date)." -ForegroundColor Yellow
     Write-Host "  * Managed disks and the static public IP are STILL billed while the lab is stopped." -ForegroundColor Yellow
-    Write-Host "  * Stopping does NOT replace teardown.ps1 / the Full_Teardown_Azure." -ForegroundColor Yellow
+    Write-Host "  * Stopping does NOT replace teardown.ps1 / the full Azure teardown." -ForegroundColor Yellow
 
     if (-not $WhatIf -and -not $NonInteractive) {
         $answer = Read-Host "Deallocate VM '$($names['VmName'])' and stop PostgreSQL '$($names['PgServer'])'? Type 'yes' to continue"

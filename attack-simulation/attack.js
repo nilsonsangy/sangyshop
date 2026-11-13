@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // attack-simulation/attack.js
-// Script_Ataque: cloud-provider-independent CLI that drives a simulated,
-// controlled attack against a SangyShop Variante_Vulneravel instance for
-// classroom use (Requirement 13).
+// attack script: cloud-provider-independent CLI that drives a simulated,
+// controlled attack against a SangyShop vulnerable variant instance for
+// lab use.
 //
 // Usage:
 //   node attack.js --target http://localhost:3000 [--dry-run]
@@ -10,10 +10,14 @@
 //
 // Exit codes:
 //   0  all steps completed
-//   2  --target missing or empty (Requirement 13.3)
+//   2  --target missing or empty
 //   3  usage error (bad flag value)
-//   4  target did not pass the lab marker gate (Requirement 13.4)
+//   4  target did not pass the lab marker gate
 //   5  unexpected runtime error while running a step
+//   6  no valid detection readiness stamp found and --ack-no-detection was not
+//      passed; run
+//      ops/aws/ir-lab/check-detection-ready.ps1 or the Azure equivalent first,
+//      or pass --ack-no-detection to proceed without detection
 //
 // Only ever point this at a SangyShop instance you started yourself, in
 // your own isolated lab account. See README.md, section "Security".
@@ -25,6 +29,7 @@ const { planSteps } = require("./lib/plan");
 const { isLabMarker } = require("./lib/marker");
 const { formatStep, summarize } = require("./lib/steplog");
 const { request, RateLimiter, sleep } = require("./lib/http");
+const { AWS_LAB, AZURE_LAB, DEFAULT_MAX_AGE_HOURS, checkReadiness } = require("./lib/readiness");
 
 const OUT_DIR = path.join(__dirname, "out");
 const STEP_LOG_PATH = path.join(OUT_DIR, "attack-steps.jsonl");
@@ -44,6 +49,8 @@ function printUsage(stream) {
       "  --rate-rps <n>            Max requests per second (default 5, hard ceiling 10)",
       "  --total-requests <n>      Max total requests across all steps (default 150, hard ceiling 300)",
       "  --username <name>         Username to target in the bruteforce step (default admin)",
+      "  --readiness-max-age-hours <n>  Maximum age of the readiness stamp, in hours (default 24)",
+      "  --ack-no-detection        Run even without a valid readiness stamp (prints a warning)",
       "  --out <dir>               Output directory for logs and artifacts (default ./out)",
       "  -h, --help                Show this help message",
       "",
@@ -53,7 +60,7 @@ function printUsage(stream) {
 
 // Minimal, dependency-free flag parser. Supports --flag value and --flag=value.
 function parseArgs(argv) {
-  const args = { dryRun: false };
+  const args = { dryRun: false, ackNoDetection: false };
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i];
     if (token === "-h" || token === "--help") {
@@ -62,6 +69,10 @@ function parseArgs(argv) {
     }
     if (token === "--dry-run") {
       args.dryRun = true;
+      continue;
+    }
+    if (token === "--ack-no-detection") {
+      args.ackNoDetection = true;
       continue;
     }
     let key = null;
@@ -104,6 +115,9 @@ function parseArgs(argv) {
       case "out":
         args.out = value;
         break;
+      case "readiness-max-age-hours":
+        args.readinessMaxAgeHours = value;
+        break;
       default:
         // Unknown flag: ignored to keep the CLI forgiving for future options.
         break;
@@ -140,7 +154,7 @@ function loadWordlist() {
 }
 
 // Writes the discovered credential to a restricted-permission file and
-// never prints its content (Requirement 13.9, 13.2).
+// never prints its content.
 function writeExposedCredential(credentialPath, credential) {
   fs.writeFileSync(credentialPath, JSON.stringify(credential, null, 2) + "\n", {
     encoding: "utf8",
@@ -308,10 +322,10 @@ async function stepIdor(step, target, limiter) {
   return { outcome: "ok", requestCount, errorCount };
 }
 
-// Requirement 13.2 / 13.9: this step only reads the Placeholder_Credencial
-// exposed by the lab's leaked-config endpoint (src/routes/lab.js, task 6.5).
+// this step only reads the placeholder credential
+// exposed by the lab's leaked-config endpoint (src/routes/lab.js).
 // It never calls a real cloud API; that is the job of a cloud-specific
-// script in aws/ir-lab/ or azure/ir-lab/.
+// script in ops/aws/ir-lab/ or ops/azure/ir-lab/.
 async function stepCredentialDiscovery(step, target, limiter, credentialPath) {
   await limiter.acquire();
   let requestCount = 1;
@@ -342,6 +356,31 @@ async function stepCredentialDiscovery(step, target, limiter, credentialPath) {
   return { outcome, requestCount, errorCount };
 }
 
+// Turns a checkReadiness() failure reason into a short, human-readable
+// clause for the refusal message.
+function readinessReasonMessage(reason) {
+  switch (reason) {
+    case "missing":
+      return "no readiness stamp found";
+    case "unreadable":
+      return "readiness stamp could not be read";
+    case "invalid-json":
+      return "readiness stamp is not valid JSON";
+    case "malformed":
+      return "readiness stamp is missing required fields";
+    case "wrong-lab":
+      return "readiness stamp belongs to a different lab";
+    case "wrong-region":
+      return "readiness stamp belongs to a different region";
+    case "stale":
+      return "readiness stamp is older than the allowed age";
+    case "checks-failed":
+      return "readiness stamp records a failed check";
+    default:
+      return "readiness stamp is not valid";
+  }
+}
+
 async function main(argv) {
   const args = parseArgs(argv);
 
@@ -359,9 +398,11 @@ async function main(argv) {
 
   let rateRps;
   let totalRequests;
+  let readinessMaxAgeHours;
   try {
     rateRps = parsePositiveInt(args.rateRps, "--rate-rps");
     totalRequests = parsePositiveInt(args.totalRequests, "--total-requests");
+    readinessMaxAgeHours = parsePositiveInt(args.readinessMaxAgeHours, "--readiness-max-age-hours");
   } catch (err) {
     if (err instanceof UsageError) {
       process.stderr.write(`Error: ${err.message}\n`);
@@ -386,7 +427,7 @@ async function main(argv) {
   const credentialPath = args.out ? path.join(outDir, "exposed-credential.json") : CREDENTIAL_PATH;
   ensureOutDir(outDir);
 
-  // Requirement 13.4: verify the lab marker BEFORE sending any attack request.
+  // verify the lab marker BEFORE sending any attack request.
   if (!args.dryRun) {
     let markerResponse;
     try {
@@ -406,6 +447,50 @@ async function main(argv) {
     process.stdout.write(`Lab marker confirmed for target ${target}. Proceeding.\n`);
   } else {
     process.stdout.write("Dry run: skipping the lab marker check and all real HTTP calls.\n");
+  }
+
+  // right after the lab marker gate and before
+  // any other request, look for a local detection readiness stamp. This is a
+  // filesystem-only check: no network call, no cloud CLI.
+  if (!args.dryRun) {
+    const maxAgeHours = readinessMaxAgeHours !== undefined ? readinessMaxAgeHours : DEFAULT_MAX_AGE_HOURS;
+    const awsResult = checkReadiness({ lab: AWS_LAB, maxAgeHours });
+    const azureResult = checkReadiness({ lab: AZURE_LAB, maxAgeHours });
+
+    if (!awsResult.valid && !azureResult.valid) {
+      if (args.ackNoDetection) {
+        const warning =
+          "WARNING: no valid detection readiness stamp was found " +
+          `(checked ${awsResult.path} and ${azureResult.path}). ` +
+          "Proceeding with --ack-no-detection: expect no alert and no useful logs.";
+        process.stderr.write(`\n${"*".repeat(warning.length)}\n${warning}\n${"*".repeat(warning.length)}\n\n`);
+        appendStepLine(
+          logPath,
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            step: 0,
+            name: "readiness-ack",
+            target,
+            phase: "warning",
+            outcome: "ack-no-detection",
+            requestCount: 0,
+            errorCount: 0,
+          })
+        );
+      } else {
+        process.stderr.write(
+          "Error: no valid detection readiness stamp was found for this lab.\n" +
+            `  AWS stamp (${awsResult.path}): ${readinessReasonMessage(awsResult.reason)}\n` +
+            `  Azure stamp (${azureResult.path}): ${readinessReasonMessage(azureResult.reason)}\n` +
+            "Run ops/aws/ir-lab/check-detection-ready.ps1 (or ops/azure/ir-lab/check-detection-ready.ps1) " +
+            "before the attack, or pass --ack-no-detection to proceed knowingly without detection.\n"
+        );
+        return 6;
+      }
+    } else {
+      const ready = awsResult.valid ? awsResult : azureResult;
+      process.stdout.write(`Detection readiness confirmed (stamp: ${ready.path}). Proceeding.\n`);
+    }
   }
 
   const username = args.username || "admin";

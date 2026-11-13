@@ -10,40 +10,40 @@
 
       1. Validates config and checks `az` authentication (fail-closed).
       2. Ensures the resource group, ACR, Flexible Server, and Key Vault exist
-         (idempotent create-or-reuse via a describe/show check, Req 4.1/4.2).
+         (idempotent create-or-reuse via a describe/show check).
       3. Builds the hardened image from
          ops/docker/hardened/Dockerfile, tags it `:hardened`,
-         and pushes it to ACR (Req 2.1/2.3/4.5).
+         and pushes it to ACR.
       4. Generates the DB password (New-DbPassword), stores it ONLY in Key Vault
-         (Req 3.2/4.4), and sets the Flexible Server admin password from the
+, and sets the Flexible Server admin password from the
          stored secret.
-      5. Locks down Postgres access to the compute target on 5432 (Req 9.5).
+      5. Locks down Postgres access to the compute target on 5432.
       6. Creates the ACI container group with a SECRET VOLUME that delivers the
-         password to the file /run/secrets/db_password (Req 3.1), with the
-         non-secret connection env only (no DB_PASSWORD env, Req 3.3).
+         password to the file /run/secrets/db_password, with the
+         non-secret connection env only (no DB_PASSWORD env).
       7. Restricts container ingress to an explicit allowed source-address set,
-         rejecting 0.0.0.0/0 and ::/0 (Req 9.3/9.4).
+         rejecting 0.0.0.0/0 and ::/0.
       8. Prints the public URL plus the ingress-lockdown + teardown reminder
-         (Req 4.7/9.2).
+.
 
     EVERY external CLI call (`az`, `docker`) goes through Invoke-Echoed from
-    lib/Common.ps1 (echo-before-exec, Req 1.3). The script never calls az/docker
+    lib/Common.ps1 (echo-before-exec). The script never calls az/docker
     directly. The generated password is NEVER passed as a CLI argument or echoed;
     it is delivered to Key Vault / ACI exclusively by file so the echoed command
-    stream never reveals it (Req 3.2).
+    stream never reveals it.
 
     SECURITY WARNING: SangyShop is deliberately vulnerable. The "hardened" image
     only improves the deployment posture. Deploy ONLY to an isolated, throwaway
     subscription, keep ingress locked to your own address, and run teardown.ps1
     when finished (these resources are billable).
 
-    Windows PowerShell 5.1 compatible (Req 6.1). No bash/sh is ever invoked (Req 6.2).
+    Windows PowerShell 5.1 compatible. No bash/sh is ever invoked.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the shared config two levels up.
 
 .PARAMETER WhatIf
-    Dry run (Req 6.5): prints the full ordered list of external commands that
+    Dry run: prints the full ordered list of external commands that
     WOULD run, executes nothing, and exits 0.
 
 .PARAMETER ReuseExisting
@@ -53,8 +53,8 @@
 
 .PARAMETER AllowedSourceRanges
     REQUIRED for a real deploy. The explicit set of source CIDRs / IPs allowed to
-    reach the app and the database. 0.0.0.0/0 and ::/0 are rejected (Req 9.3/9.4).
-    If omitted on a non-dry-run, the script stops before any change (Req 9.4).
+    reach the app and the database. 0.0.0.0/0 and ::/0 are rejected.
+    If omitted on a non-dry-run, the script stops before any change.
 
 .EXAMPLE
     .\deploy.ps1 -AllowedSourceRanges '203.0.113.7/32'
@@ -89,7 +89,7 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
 # =============================================================================
 # -WhatIf planning: in dry-run we only print the command line that WOULD run and
 # execute nothing. Invoke-Planned is the single gate every external call passes
-# through so the echo-only rule (Req 1.3) and the dry-run rule (Req 6.5) are both
+# through so the echo-only rule and the dry-run rule are both
 # satisfied from one place. Kept simple and self-contained per task guidance.
 # =============================================================================
 $script:PlanOrdinal = 0
@@ -116,7 +116,7 @@ function AzTry  { param([Parameter(ValueFromRemainingArguments)][string[]] $A) I
 function Docker { param([Parameter(ValueFromRemainingArguments)][string[]] $A) Invoke-Planned -Exe 'docker' -CmdArgs $A }
 
 # -----------------------------------------------------------------------------
-# Validate the allowed-source set up front (Req 9.3/9.4). A real deploy MUST be
+# Validate the allowed-source set up front. A real deploy MUST be
 # given an explicit, non-world-open set. In -WhatIf we tolerate its absence so a
 # user can inspect the plan without committing to an ingress decision, but we
 # still reject world-open ranges if any were supplied.
@@ -131,7 +131,7 @@ function Assert-AllowedSourceRanges {
             Write-Host "NOTE: -WhatIf dry run; -AllowedSourceRanges not supplied. A real deploy REQUIRES it." -ForegroundColor Yellow
             return @()
         }
-        throw "An allowed source address set is required. Pass -AllowedSourceRanges with your own IP/CIDR (e.g. -AllowedSourceRanges '203.0.113.7/32'). Open-to-world ranges (0.0.0.0/0, ::/0) are forbidden for this deliberately-vulnerable app (Req 9.3/9.4)."
+        throw "An allowed source address set is required. Pass -AllowedSourceRanges with your own IP/CIDR (e.g. -AllowedSourceRanges '203.0.113.7/32'). Open-to-world ranges (0.0.0.0/0, ::/0) are forbidden for this deliberately-vulnerable app."
     }
 
     $clean = New-Object System.Collections.Generic.List[string]
@@ -139,18 +139,18 @@ function Assert-AllowedSourceRanges {
         $t = ([string]$r).Trim()
         if ([string]::IsNullOrWhiteSpace($t)) { continue }
         if ($worldOpen -contains $t) {
-            throw "Source range '$t' opens the app to the entire internet and is forbidden (Req 9.3). Restrict ingress to your own address."
+            throw "Source range '$t' opens the app to the entire internet and is forbidden. Restrict ingress to your own address."
         }
         $clean.Add($t)
     }
     if ($clean.Count -eq 0 -and -not $DryRun) {
-        throw "An allowed source address set is required but only blank/forbidden entries were supplied (Req 9.4)."
+        throw "An allowed source address set is required but only blank/forbidden entries were supplied."
     }
     return $clean.ToArray()
 }
 
 # -----------------------------------------------------------------------------
-# Hardened-only guardrails (Req 2.1/2.2/2.3/2.4). Abort before any push/deploy if
+# Hardened-only guardrails. Abort before any push/deploy if
 # the hardened Dockerfile is missing or a non-hardened reference would be used.
 # -----------------------------------------------------------------------------
 function Assert-HardenedBuild {
@@ -158,13 +158,13 @@ function Assert-HardenedBuild {
 
     $dockerfile = Join-Path $RepoRoot 'ops\docker\hardened\Dockerfile'
     if (-not (Test-Path -LiteralPath $dockerfile -PathType Leaf)) {
-        throw "Hardened Dockerfile not found at '$dockerfile'. Refusing to build/push/deploy (Req 2.4)."
+        throw "Hardened Dockerfile not found at '$dockerfile'. Refusing to build/push/deploy."
     }
     if ($ImageTag -ne 'hardened') {
-        throw "Only the hardened variant may be deployed; image tag was '$ImageTag', expected 'hardened' (Req 2.2)."
+        throw "Only the hardened variant may be deployed; image tag was '$ImageTag', expected 'hardened'."
     }
     if ($AppMode -ne 'hardened') {
-        throw "Only the hardened variant may be deployed; APP_MODE was '$AppMode', expected 'hardened' (Req 2.2)."
+        throw "Only the hardened variant may be deployed; APP_MODE was '$AppMode', expected 'hardened'."
     }
     return $dockerfile
 }
@@ -187,7 +187,7 @@ try {
     $dbName   = [string]$common['DbName']
     $dbUser   = [string]$common['DbUser']
     $imageTag = [string]$common['ImageTag']      # must be 'hardened'
-    $appMode  = 'hardened'                        # fixed by this target (Req 2.1)
+    $appMode  = 'hardened'                        # fixed by this target
 
     $location = [string]$azure['Location']
     $rg       = [string]$azure['ResourceGroup']
@@ -195,7 +195,7 @@ try {
     $kvBase   = [string]$azure['KeyVaultBase']
     $aciName  = [string]$azure['AciName']
 
-    # Final globally-unique names (Req 7.5): ACR = base + suffix (alnum only);
+    # Final globally-unique names: ACR = base + suffix (alnum only);
     # Key Vault = base + "-" + suffix.
     $acrName   = ($acrBase + $suffix)
     $kvName    = ($kvBase + '-' + $suffix)
@@ -229,7 +229,7 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 1. Authentication check (Req 6.3/6.4). `az account show` succeeds only when
+    # 1. Authentication check. `az account show` succeeds only when
     #    the CLI is installed AND a session is active. On failure, print install +
     #    auth guidance and exit non-zero.
     # -------------------------------------------------------------------------
@@ -265,7 +265,7 @@ try {
     Az group create --name $rg --location $location --output none
 
     # -------------------------------------------------------------------------
-    # 3. ACR: describe-then-create (Req 4.1). Reuse if present; create otherwise.
+    # 3. ACR: describe-then-create. Reuse if present; create otherwise.
     # -------------------------------------------------------------------------
     Write-Step "Ensuring Azure Container Registry '$acrName'"
     $acrExists = $false
@@ -287,7 +287,7 @@ try {
     }
 
     # -------------------------------------------------------------------------
-    # 4. ACR login, build hardened image, push (Req 2.3/4.5). Build context is
+    # 4. ACR login, build hardened image, push. Build context is
     #    the repo root with the hardened Dockerfile.
     # -------------------------------------------------------------------------
     Write-Step "Logging in to ACR and building/pushing the hardened image"
@@ -296,11 +296,11 @@ try {
     Docker push $imageRef
 
     # -------------------------------------------------------------------------
-    # 5. Key Vault: describe-then-create (Req 4.1), then generate + store the DB
-    #    password (Req 4.4) BEFORE provisioning Postgres. The secret VALUE is
+    # 5. Key Vault: describe-then-create, then generate + store the DB
+    #    password BEFORE provisioning Postgres. The secret VALUE is
     #    written to a private temp file and passed to `az keyvault secret set
     #    --file`, so the password is never a CLI argument and never appears on an
-    #    echoed line (Req 3.2). The same temp file is reused to seed the Flexible
+    #    echoed line. The same temp file is reused to seed the Flexible
     #    Server admin password (step 6) and shredded in the finally block.
     # -------------------------------------------------------------------------
     Write-Step "Ensuring Key Vault '$kvName'"
@@ -320,7 +320,7 @@ try {
     }
 
     Write-Step "Generating and storing the DB password in Key Vault (value never echoed)"
-    # Does the secret already exist? (idempotent: generate only when absent, Req 4.4)
+    # Does the secret already exist? (idempotent: generate only when absent)
     $secretExists = $false
     if (-not $WhatIf) {
         $null = AzTry keyvault secret show --vault-name $kvName --name $kvSecret --output none
@@ -344,7 +344,7 @@ try {
             # file content) is exactly the password.
             $pwFile = [System.IO.Path]::GetTempFileName()
             [System.IO.File]::WriteAllText($pwFile, $dbPassword, $utf8NoBom)
-            # --file keeps the value off the command line (Req 3.2).
+            # --file keeps the value off the command line.
             Az keyvault secret set --vault-name $kvName --name $kvSecret --file $pwFile --output none
             Remove-Variable -Name dbPassword -ErrorAction SilentlyContinue
         }
@@ -366,13 +366,13 @@ try {
         }
 
         # ---------------------------------------------------------------------
-        # 6. Flexible Server: describe-then-create (Req 4.3 - managed service,
+        # 6. Flexible Server: describe-then-create (managed service,
         #    never a container). The admin password is seeded from the Key-Vault
         #    secret already on disk, passed with the az CLI `@file` convention so
         #    the value is read from the file and NEVER appears on the echoed
-        #    command line (Req 3.2). --public-access None keeps the server off the
+        #    command line. --public-access None keeps the server off the
         #    public internet; access is granted only by the explicit firewall
-        #    rule(s) added in step 7 (Req 9.5).
+        #    rule(s) added in step 7.
         # ---------------------------------------------------------------------
         Write-Step "Ensuring Azure DB for PostgreSQL Flexible Server '$pgServer'"
         $pgExists = $false
@@ -412,7 +412,7 @@ try {
         }
 
         # ---------------------------------------------------------------------
-        # 6b. Database: describe-then-create (idempotent, Req 4.1). The database
+        # 6b. Database: describe-then-create (idempotent). The database
         #     can no longer be created inline on the single Flexible Server
         #     create, so it is provisioned here as a separate step: show first
         #     (AllowFail), and create only when absent, matching the
@@ -437,7 +437,7 @@ try {
         # ---------------------------------------------------------------------
         # 7. Firewall rule(s): allow ONLY the explicit source set to reach the
         #    server on 5432; world-open ranges were already rejected. The server
-        #    stays private otherwise (Req 9.5). One rule per source address.
+        #    stays private otherwise. One rule per source address.
         # ---------------------------------------------------------------------
         Write-Step "Adding locked-down PostgreSQL firewall rule(s) (port 5432, no public exposure)"
         if ($WhatIf) {
@@ -480,17 +480,17 @@ try {
             $idResourceId  = ([string](Az identity show --name $idName --resource-group $rg --query 'id' --output tsv)).Trim()
             $idPrincipalId = ([string](Az identity show --name $idName --resource-group $rg --query 'principalId' --output tsv)).Trim()
             $acrId         = ([string](Az acr show --name $acrName --resource-group $rg --query 'id' --output tsv)).Trim()
-            # Grant AcrPull; tolerate "already assigned" so re-runs converge (Req 4.1).
+            # Grant AcrPull; tolerate "already assigned" so re-runs converge.
             $null = AzTry role assignment create --assignee-object-id $idPrincipalId --assignee-principal-type ServicePrincipal --role AcrPull --scope $acrId --output none
         }
 
         # ---------------------------------------------------------------------
         # 8. ACI container group with a SECRET VOLUME delivering the password to
-        #    /run/secrets/db_password (Req 3.1), the non-secret env only (no
-        #    DB_PASSWORD, Req 3.3), ingress restricted to the allowed set
-        #    (Req 9.3). The DB password value is injected via a deployment YAML
+        #    /run/secrets/db_password, the non-secret env only (no
+        #    DB_PASSWORD), ingress restricted to the allowed set
+        #. The DB password value is injected via a deployment YAML
         #    passed with `--file`, so it never appears on the echoed command line
-        #    (Req 3.2). ACI writes each secret volume entry to a file named by its
+        #. ACI writes each secret volume entry to a file named by its
         #    key at the mount path, so key `db_password` + mount `/run/secrets`
         #    yields exactly /run/secrets/db_password. The image is pulled using the
         #    user-assigned identity (no registry password anywhere).
@@ -508,11 +508,11 @@ try {
             $yamlFile = [System.IO.Path]::GetTempFileName()
             try {
                 if ($null -eq $pwFile -or -not (Test-Path -LiteralPath $pwFile)) {
-                    throw "Internal error: DB password file is unavailable; cannot deliver the secret to the container (Req 3.4)."
+                    throw "Internal error: DB password file is unavailable; cannot deliver the secret to the container."
                 }
                 $secretPlain = ([System.IO.File]::ReadAllText($pwFile)).Trim()
                 if ([string]::IsNullOrEmpty($secretPlain)) {
-                    throw "DB password could not be resolved from Key Vault; aborting before starting the container (Req 3.4)."
+                    throw "DB password could not be resolved from Key Vault; aborting before starting the container."
                 }
                 $secretB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($secretPlain))
                 Remove-Variable -Name secretPlain -ErrorAction SilentlyContinue
@@ -601,7 +601,6 @@ type: Microsoft.ContainerInstance/containerGroups
 
     # -------------------------------------------------------------------------
     # 10. Fetch the public FQDN and print the URL + lockdown/teardown reminder
-    #     (Req 4.7/9.2).
     # -------------------------------------------------------------------------
     Write-Step "Fetching the deployed URL"
     $fqdn = $null

@@ -73,9 +73,8 @@ const unionSelectPayload = fc
       `${breakout} UNION SELECT ${columns.join(",")} FROM users ${comment}`
   );
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 8: Parameterized search does not leak data with the defense on
-// Validates: Requirements 3.4, 3.6, 3.7
-test("Property 8: with A05 ON, a UNION SELECT search returns 200 and leaks no users data", async () => {
+// Parameterized search does not leak data with the defense on
+test("with A05 ON, a UNION SELECT search returns 200 and leaks no users data", async () => {
   const app = await createTestApp();
   setToggle("A05_injection", true);
 

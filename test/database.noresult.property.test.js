@@ -1,9 +1,8 @@
 // test/database.noresult.property.test.js
 // Property-based test for the Data_Access_Module read-with-no-match behaviour.
 //
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 3
 //
-// Property 3: Read with no match returns empty
+// Read with no match returns empty
 //   For any single-row read whose condition matches no row, get(...) returns an
 //   empty value (absence of a record) WITHOUT throwing.
 //
@@ -35,9 +34,8 @@ before(async () => {
   await db.init();
 });
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 3: Read with no match returns empty
-// Validates: Requirements 2.3
-test("Property 3: get() with no matching row returns empty (undefined) without throwing", async () => {
+// Read with no match returns empty
+test("get() with no matching row returns empty (undefined) without throwing", async () => {
   await fc.assert(
     fc.asyncProperty(
       // ids guaranteed not to exist in any seed table (all seed ids are <= 5).

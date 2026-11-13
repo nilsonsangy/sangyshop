@@ -5,7 +5,7 @@
 // This test exercises how the hardened mode normalizes the PostgreSQL password
 // read from the Docker secret file: leading/trailing whitespace and line
 // endings must be stripped before the value is used as the connection password
-// (Requirements 5.5). The filesystem (fs) is injected, so nothing on the real
+//. The filesystem (fs) is injected, so nothing on the real
 // disk is read or written and there are no temporary files to clean up.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
@@ -43,14 +43,13 @@ const edgeWhitespace = fc
   .array(fc.constantFrom(" ", "\t", "\r", "\n"), { maxLength: 8 })
   .map((chars) => chars.join(""));
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 11: Normalization (trim) of the hardened secret
-// Validates: Requirements 5.5
+// Normalization (trim) of the hardened secret
 //
 // For any non-blank core password surrounded by any combination of
 // spaces and end-of-line characters at the start and end, resolution in
 // `hardened` mode uses as the connection password exactly the core password with
 // the edge whitespace removed.
-test("Property 11: hardened mode trims edge whitespace/newlines to recover the core secret", async () => {
+test("hardened mode trims edge whitespace/newlines to recover the core secret", async () => {
   await fc.assert(
     fc.asyncProperty(
       corePassword,

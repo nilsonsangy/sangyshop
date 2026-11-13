@@ -4,8 +4,8 @@ This folder holds the thin **entrypoint wrapper** that lets the unmodified
 **hardened** SangyShop image run on **AWS ECS Fargate** while still honoring the
 fail-closed secret-file contract in `src/db/credentials.js`.
 
-- `secret-entrypoint.sh` — the wrapper (task 9.1).
-- `deploy.ps1` / `teardown.ps1` — the ECS Fargate deploy/teardown scripts (task
+- `secret-entrypoint.sh`: the wrapper.
+- `deploy.ps1` / `teardown.ps1`, the ECS Fargate deploy/teardown scripts (task
   9.2 / 9.3) that wire the wrapper into the task definition.
 
 ## Why a wrapper is needed on Fargate (and nowhere else)
@@ -27,15 +27,15 @@ instead of the image's default `CMD ["node","src/server.js"]`. The wrapper:
 
 1. reads the injected env var `DB_PASSWORD_SECRET`,
 2. writes its value to `/run/secrets/db_password` with **all leading/trailing
-   whitespace removed** (Requirement 3.1 / 3.5),
+   whitespace removed**,
 3. **unsets** `DB_PASSWORD_SECRET` so the secret no longer lives in the app's
-   environment (Requirement 3.5),
+   environment,
 4. `exec`s `node src/server.js`.
 
 It fail-closes (non-zero exit, non-secret error, no file written) when the env
 var is unset, empty, or whitespace-only, and it never prints the secret value.
 
-## Required task-definition wiring (for `deploy.ps1`, task 9.2)
+## Required task-definition wiring (for `deploy.ps1`)
 
 The deploy script's `aws ecs register-task-definition` call MUST set the
 following on the single app container.
@@ -87,7 +87,7 @@ canonical one for this task** (it embeds the whole wrapper inline so the running
 image needs no extra file); Form B is available if the wrapper file is baked
 into / mounted onto the image.
 
-#### Form A — inline wrapper (recommended, self-contained)
+#### Form A: inline wrapper (recommended, self-contained)
 
 The wrapper reduced to a single POSIX `sh -c` program. `command` is the exact
 three-element array below. The deploy script builds the inner program string
@@ -106,7 +106,7 @@ This matches the design's starting point
 but additionally **trims whitespace**, **unsets the env var**, creates the dir,
 restricts the file mode, and fail-closes.
 
-#### Form B — reference the committed wrapper file
+#### Form B: reference the committed wrapper file
 
 If `secret-entrypoint.sh` is present inside the container (e.g. copied in by a
 derived image or supplied via a mount), the `command` is simply:
@@ -121,7 +121,7 @@ derived image or supplied via a mount), the `command` is simply:
 > **Form A** (inline) unless a path that mounts the script is explicitly
 > arranged. Either way the app image's default `CMD` is left untouched.
 
-## Secret safety (Requirement 3.2)
+## Secret safety
 
 - The password value is never written to a config file, a committed file, an
   echoed command line, or a log. The deploy script passes it to Secrets Manager

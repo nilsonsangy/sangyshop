@@ -1,6 +1,6 @@
 // src/lib/posture.js
 // Feature: sangyshop-diagnostico-postura
-// Posture diagnostic collectors for the /_diag endpoint (Aula 17).
+// Posture diagnostic collectors for the /_diag endpoint.
 //
 // Each collector observes a single posture signal from inside the container
 // (execution identity, privilege, filesystem, ServiceAccount token, network/host,
@@ -27,16 +27,16 @@ const realOs = require("os");
 const path = require("path");
 
 // Version of the report schema. Bump when the top-level shape changes.
-const VERSAO_RELATORIO = 1;
+const REPORT_VERSION = 1;
 
 // Fixed set of top-level signal keys, in a stable order (R1.2, R12.2).
-const CHAVES_SINAIS = [
-  "identidadeExecucao",
+const SIGNAL_KEYS = [
+  "executionIdentity",
   "privilegio",
   "sistemaArquivos",
   "tokenServiceAccount",
   "redeHost",
-  "identidadePod",
+  "podIdentity",
   "variaveisSensiveis",
 ];
 
@@ -63,7 +63,7 @@ function resolveDeps(deps) {
  * @param {string} motivo
  * @returns {{ disponivel: false, motivo: string }}
  */
-function indisponivel(motivo) {
+function unavailable(motivo) {
   return { disponivel: false, motivo: String(motivo) };
 }
 
@@ -76,13 +76,13 @@ function indisponivel(motivo) {
  * Execution identity signal: uid/gid, isRoot, papel. (R2)
  * @param {object} [deps]
  */
-function coletarIdentidadeExecucao(deps) {
+function collectExecutionIdentity(deps) {
   const { process: proc } = resolveDeps(deps);
 
   // getuid/getgid only exist on POSIX platforms. On Windows (e.g. the instructor's
   // npm start) they are absent and the signal is unavailable. (R2.4)
   if (typeof proc.getuid !== "function" || typeof proc.getgid !== "function") {
-    return indisponivel("getuid unavailable on this platform");
+    return unavailable("getuid unavailable on this platform");
   }
 
   const uid = proc.getuid();
@@ -101,7 +101,7 @@ function coletarIdentidadeExecucao(deps) {
  *   unavailable (empty string) without throwing. (R3.1, R3.4)
  * - `montagemNoPresente = fs.existsSync("/host")`: presence only, no content listing.
  *   (R3.2, R12.3)
- * - `hostPidProvavel` is a HEURISTIC: it counts numeric entries in `/proc` (visible PIDs)
+ * - `likelyHostPid` is a HEURISTIC: it counts numeric entries in `/proc` (visible PIDs)
  *   and sets `true` above a threshold (> 50). The `metodo` field states that this is an
  *   inference, not proof. (R3.3)
  *
@@ -110,10 +110,10 @@ function coletarIdentidadeExecucao(deps) {
 function coletarPrivilegio(deps) {
   const { fs } = resolveDeps(deps);
 
-  const CAMINHO_STATUS = "/proc/self/status";
-  const CAMINHO_PROC = "/proc";
-  const CAMINHO_HOST = "/host";
-  const LIMIAR_HOST_PID = 50;
+  const STATUS_PATH = "/proc/self/status";
+  const PROC_PATH = "/proc";
+  const HOST_PATH = "/host";
+  const HOST_PID_THRESHOLD = 50;
 
   // --- Capabilities (CapEff / CapPrm) ---------------------------------------
   // Resilient extraction: per-line regex. A missing file or malformed lines
@@ -121,7 +121,7 @@ function coletarPrivilegio(deps) {
   let capEff = "";
   let capPrm = "";
   try {
-    const conteudo = fs.readFileSync(CAMINHO_STATUS, "utf8");
+    const conteudo = fs.readFileSync(STATUS_PATH, "utf8");
     if (typeof conteudo === "string") {
       for (const linha of conteudo.split(/\r?\n/)) {
         const mEff = /^CapEff:\s*([0-9a-fA-F]+)\s*$/.exec(linha);
@@ -145,7 +145,7 @@ function coletarPrivilegio(deps) {
   // Presence only, never lists content. (R3.2, R12.3)
   let montagemNoPresente = false;
   try {
-    montagemNoPresente = Boolean(fs.existsSync(CAMINHO_HOST));
+    montagemNoPresente = Boolean(fs.existsSync(HOST_PATH));
   } catch (_err) {
     montagemNoPresente = false;
   }
@@ -153,16 +153,16 @@ function coletarPrivilegio(deps) {
   // --- hostPID heuristic ----------------------------------------------------
   // Counts numeric entries (PIDs) in /proc. With hostPID:true the container sees
   // many node processes; without it, few. Inference, not proof. (R3.3)
-  let hostPidProvavel = false;
+  let likelyHostPid = false;
   try {
-    const entradas = fs.readdirSync(CAMINHO_PROC);
+    const entradas = fs.readdirSync(PROC_PATH);
     const pids = (Array.isArray(entradas) ? entradas : []).filter((nome) =>
       /^\d+$/.test(String(nome))
     );
-    hostPidProvavel = pids.length > LIMIAR_HOST_PID;
+    likelyHostPid = pids.length > HOST_PID_THRESHOLD;
   } catch (_err) {
     // /proc unreadable/missing => cannot infer; keep false.
-    hostPidProvavel = false;
+    likelyHostPid = false;
   }
 
   return {
@@ -170,9 +170,9 @@ function coletarPrivilegio(deps) {
     capEff,
     capPrm,
     montagemNoPresente,
-    hostPidProvavel,
+    likelyHostPid,
     metodo:
-      "heuristic: CapEff/CapPrm from /proc/self/status; hostPidProvavel by " +
+      "heuristic: CapEff/CapPrm from /proc/self/status; likelyHostPid by " +
       "counting PIDs in /proc (threshold > 50); inference, not proof",
   };
 }
@@ -200,7 +200,7 @@ function coletarSistemaArquivos(deps) {
   } catch (_err) {
     diretorioBase = undefined;
   }
-  const caminhoTestado =
+  const testedPath =
     typeof diretorioBase === "string" && diretorioBase.length > 0
       ? path.join(diretorioBase, nomeArquivo)
       : path.join("/etc", nomeArquivo);
@@ -214,20 +214,20 @@ function coletarSistemaArquivos(deps) {
     // Attempt to write to the rootfs. `wx` fails if the file already exists and,
     // crucially, throws `EROFS` when the filesystem is read-only
     // (readOnlyRootFilesystem:true in hardened). (R4.1, R4.3)
-    fs.writeFileSync(caminhoTestado, "", { flag: "wx" });
+    fs.writeFileSync(testedPath, "", { flag: "wx" });
     arquivoCriado = true;
 
     // Successful write => writable rootfs. (R4.2)
-    return { disponivel: true, rootfsSomenteLeitura: false, caminhoTestado };
+    return { disponivel: true, rootfsSomenteLeitura: false, testedPath };
   } catch (err) {
     // EROFS => read-only rootfs: this is the "hardened" signal. (R4.3)
     if (err && err.code === "EROFS") {
-      return { disponivel: true, rootfsSomenteLeitura: true, caminhoTestado };
+      return { disponivel: true, rootfsSomenteLeitura: true, testedPath };
     }
 
     // Any other error (e.g. EACCES, ENOENT) => cannot classify; report the
     // signal as unavailable with the reason. (R4.5)
-    return indisponivel(
+    return unavailable(
       err && err.message ? err.message : "failed to probe rootfs"
     );
   } finally {
@@ -236,7 +236,7 @@ function coletarSistemaArquivos(deps) {
     // the collector down, so it is protected by its own try/catch. (R4.4)
     if (arquivoCriado) {
       try {
-        fs.unlinkSync(caminhoTestado);
+        fs.unlinkSync(testedPath);
       } catch (_cleanupErr) {
         // A removal failure does not change the classification already decided; we
         // ignore it so as not to mask the result or throw from `finally`.
@@ -254,16 +254,16 @@ function coletarTokenServiceAccount(deps) {
 
   // Default path where the kubelet mounts the ServiceAccount token when
   // automountServiceAccountToken is not disabled. (R5.1)
-  const CAMINHO_TOKEN =
+  const TOKEN_PATH =
     "/var/run/secrets/kubernetes.io/serviceaccount/token";
 
   // Presence only: we never read the token content. (R5.2, R12.1)
   let tokenMontado;
   try {
-    tokenMontado = fs.existsSync(CAMINHO_TOKEN);
+    tokenMontado = fs.existsSync(TOKEN_PATH);
   } catch (err) {
     // A failure to check existence becomes an unavailable signal. (R5.3)
-    return indisponivel(
+    return unavailable(
       err && err.message ? err.message : "failed to check token"
     );
   }
@@ -275,7 +275,7 @@ function coletarTokenServiceAccount(deps) {
  * Network/host signal: hostname, node mount presence, hostNetwork heuristic. (R6)
  *
  * - `hostname` via `os.hostname()`. (R6.1)
- * - `hostNetworkProvavel` is a HEURISTIC: with `hostNetwork:true` the Pod hostname tends
+ * - `likelyHostNetwork` is a HEURISTIC: with `hostNetwork:true` the Pod hostname tends
  *   to be the NODE name (e.g. `desktop-worker`) instead of the Pod name. The collector sets
  *   `true` when `hostname` differs from `POD_NAME` and looks like a node name (does not match
  *   the random Pod suffix pattern). The `metodo` field states the inference. (R6.2)
@@ -286,14 +286,14 @@ function coletarTokenServiceAccount(deps) {
 function coletarRedeHost(deps) {
   const { fs, os, process: proc } = resolveDeps(deps);
 
-  const CAMINHO_HOST = "/host";
+  const HOST_PATH = "/host";
 
   // --- Hostname -------------------------------------------------------------
   let hostname;
   try {
     hostname = os.hostname();
   } catch (err) {
-    return indisponivel(
+    return unavailable(
       err && err.message ? err.message : "failed to get hostname"
     );
   }
@@ -301,7 +301,7 @@ function coletarRedeHost(deps) {
   // --- Node mount (reuses /host, presence only) -----------------------------
   let montagemNoPresente = false;
   try {
-    montagemNoPresente = Boolean(fs.existsSync(CAMINHO_HOST));
+    montagemNoPresente = Boolean(fs.existsSync(HOST_PATH));
   } catch (_err) {
     montagemNoPresente = false;
   }
@@ -324,13 +324,13 @@ function coletarRedeHost(deps) {
   const divergeDoPodName =
     typeof podName === "string" && podName.length > 0 && podName !== hostname;
 
-  const hostNetworkProvavel = divergeDoPodName && !pareceNomeDePod;
+  const likelyHostNetwork = divergeDoPodName && !pareceNomeDePod;
 
   return {
     disponivel: true,
     hostname,
     montagemNoPresente,
-    hostNetworkProvavel,
+    likelyHostNetwork,
     metodo:
       "heuristic: hostname differs from POD_NAME and looks like a node name; " +
       "inference, not proof",
@@ -349,10 +349,10 @@ function coletarRedeHost(deps) {
  * environment or `app.locals`. (R13.1, R13.2)
  * @param {object} [deps]
  */
-function coletarIdentidadePod(deps) {
+function collectPodIdentity(deps) {
   const { process: proc } = resolveDeps(deps);
 
-  const MOTIVO_AUSENTE = "not injected via Downward API";
+  const MISSING_REASON = "not injected via Downward API";
 
   // Reads an env field defensively: present (string) => available with a
   // value; absent or unexpected type => unavailable with the default reason.
@@ -361,7 +361,7 @@ function coletarIdentidadePod(deps) {
     if (typeof valor === "string") {
       return { disponivel: true, valor };
     }
-    return indisponivel(MOTIVO_AUSENTE);
+    return unavailable(MISSING_REASON);
   };
 
   return {
@@ -385,7 +385,7 @@ function coletarVariaveisSensiveis(deps) {
     dbPasswordPresente = typeof proc.env.DB_PASSWORD === "string";
   } catch (err) {
     // A failure to inspect the environment becomes an unavailable signal.
-    return indisponivel(
+    return unavailable(
       err && err.message ? err.message : "failed to check DB_PASSWORD"
     );
   }
@@ -395,12 +395,12 @@ function coletarVariaveisSensiveis(deps) {
 
 // Ordered map of top-level key -> collector, used by the aggregator.
 const COLETORES = {
-  identidadeExecucao: coletarIdentidadeExecucao,
+  executionIdentity: collectExecutionIdentity,
   privilegio: coletarPrivilegio,
   sistemaArquivos: coletarSistemaArquivos,
   tokenServiceAccount: coletarTokenServiceAccount,
   redeHost: coletarRedeHost,
-  identidadePod: coletarIdentidadePod,
+  podIdentity: collectPodIdentity,
   variaveisSensiveis: coletarVariaveisSensiveis,
 };
 
@@ -410,7 +410,7 @@ const COLETORES = {
  * for its signal and the others still run. This function NEVER throws (R9).
  *
  * The returned object always carries the fixed set of top-level signal keys plus a
- * `meta` block ({ geradoEm, versaoRelatorio }).
+ * `meta` block ({ geradoEm, reportVersion }).
  *
  * @param {{ fs?: object, os?: object, process?: object }} [deps]
  * @returns {object} PostureReport
@@ -421,16 +421,16 @@ function buildPostureReport(deps) {
   const report = {
     meta: {
       geradoEm: new Date().toISOString(),
-      versaoRelatorio: VERSAO_RELATORIO,
+      reportVersion: REPORT_VERSION,
     },
   };
 
-  for (const chave of CHAVES_SINAIS) {
+  for (const chave of SIGNAL_KEYS) {
     const coletor = COLETORES[chave];
     try {
       report[chave] = coletor(resolvidas);
     } catch (err) {
-      report[chave] = indisponivel(err && err.message ? err.message : err);
+      report[chave] = unavailable(err && err.message ? err.message : err);
     }
   }
 
@@ -441,16 +441,16 @@ module.exports = {
   // Aggregator
   buildPostureReport,
   // Collectors
-  coletarIdentidadeExecucao,
+  collectExecutionIdentity,
   coletarPrivilegio,
   coletarSistemaArquivos,
   coletarTokenServiceAccount,
   coletarRedeHost,
-  coletarIdentidadePod,
+  collectPodIdentity,
   coletarVariaveisSensiveis,
   // Helpers / constants (exported for reuse and testing)
   resolveDeps,
-  indisponivel,
-  CHAVES_SINAIS,
-  VERSAO_RELATORIO,
+  unavailable,
+  SIGNAL_KEYS,
+  REPORT_VERSION,
 };

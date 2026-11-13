@@ -145,7 +145,7 @@ async function createTestApp() {
   app.use("/api", require(path.join(SRC, "routes", "api.js")));
   app.use("/", require(path.join(SRC, "routes", "admin.js")));
 
-  // Orders page route is added later in the feature (task 4). Mount it when it
+  // Orders page route is added later in the feature. Mount it when it
   // exists so this helper keeps working as the feature grows.
   try {
     const ordersRoute = require.resolve(path.join(SRC, "routes", "orders.js"));

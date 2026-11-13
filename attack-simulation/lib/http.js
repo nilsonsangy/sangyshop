@@ -2,8 +2,7 @@
 // Side-effecting I/O wrapper, kept deliberately isolated so lib/plan.js,
 // lib/marker.js and lib/steplog.js stay pure and easy to test.
 //
-// Uses Node 20's built-in global fetch (no extra runtime dependency, per
-// design decision D-15). Provides:
+// Uses Node 20's built-in global fetch (no extra runtime dependency, as a deliberate design choice). Provides:
 //   - request(): a single HTTP call normalized into { status, headers, body }
 //     for lib/marker.js to inspect.
 //   - RateLimiter: a tiny token-bucket limiter that enforces a max requests

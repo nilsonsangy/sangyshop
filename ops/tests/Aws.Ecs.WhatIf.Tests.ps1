@@ -4,7 +4,7 @@
     (aws/ecs/deploy.ps1 and aws/ecs/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 9.4 of the multi-cloud-deploy plan. Each script is executed in a
+    Covers the dry run of the deploy and teardown scripts. Each script is executed in a
     fresh child PowerShell with -WhatIf against a well-formed temporary AWS config
     written under $TestDrive. Nothing here touches a real cloud: under -WhatIf the
     scripts record and print their planned command list and execute NO external
@@ -29,7 +29,7 @@
       Each assertion below notes which half (dry-run output vs static source) it
       relies on.
 
-    deploy.ps1 (Req 6.5, 3.1, 3.3, 3.5):
+    deploy.ps1:
       * Runs with -WhatIf and a safe -AllowedSourceRanges ('203.0.113.7/32');
         exits 0.
       * Prints the full ordered planned command list (DRY RUN) and executes NO
@@ -40,15 +40,15 @@
       * No DB_PASSWORD env token appears anywhere in the planned set. The check is
         CASE-SENSITIVE (-CNotMatch): the lowercase /run/secrets/db_password file
         path and the lowercase Secrets Manager id are correct and allowed; only the
-        uppercase env-var form DB_PASSWORD is forbidden (Req 3.1).
+        uppercase env-var form DB_PASSWORD is forbidden.
       * The secret lands at /app/secrets/db_password: the planned
         `aws ecs register-task-definition --cli-input-json file://...` step is
         present (DRY RUN), and the STATIC source confirms the Form A wrapper writes
         /app/secrets/db_password, a DB_PASSWORD_FILE env names that path,
         DB_PASSWORD_SECRET uses a valueFrom ARN, and no bare DB_PASSWORD env entry
-        exists (Req 3.3/3.5).
+        exists.
 
-    teardown.ps1 (Req 6.5):
+    teardown.ps1:
       * Runs with -WhatIf; exits 0.
       * Prints the full ordered planned command list (reverse-order deletes) and
         executes NO external command.
@@ -144,7 +144,7 @@ BeforeAll {
     }
 }
 
-Describe 'AWS Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3, 3.5)' {
+Describe 'AWS Docker-only deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         # deploy REQUIRES -AllowedSourceRanges; pass a safe non-open CIDR.
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
@@ -194,11 +194,11 @@ Describe 'AWS Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3, 3.5)' {
         }
     }
 
-    It 'sets NO DB_PASSWORD env anywhere in the planned command set (Req 3.1) (DRY RUN)' {
+    It 'sets NO DB_PASSWORD env anywhere in the planned command set (DRY RUN)' {
         # Match is CASE-SENSITIVE (-CNotMatch) on purpose: the lowercase
         # /run/secrets/db_password file path and the lowercase Secrets Manager id
         # (sangyshop/db_password) are both correct and required; only the uppercase
-        # env-var form DB_PASSWORD is forbidden (Req 3.1). Note the task-def JSON
+        # env-var form DB_PASSWORD is forbidden. Note the task-def JSON
         # (where a DB_PASSWORD env entry could otherwise hide) is built via a
         # file:// temp placeholder under -WhatIf, so the STATIC assertion below also
         # guards the serialized definition.
@@ -226,7 +226,7 @@ Describe 'AWS Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3, 3.5)' {
         $script:Deploy.Text | Should -Match '<temp-file: db password \(redacted\)>'
     }
 
-    Context 'STATIC source assertions: ECS task def lands the secret at /app/secrets/db_password (Req 3.3, 3.5)' {
+    Context 'STATIC source assertions: ECS task def lands the secret at /app/secrets/db_password' {
         # These complement the DRY-RUN step above. The task definition is serialized
         # to JSON and handed to the CLI via file://, so its environment/secrets
         # never appear in the -WhatIf OUTPUT. We read deploy.ps1 to confirm the
@@ -265,7 +265,7 @@ Describe 'AWS Docker-only deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3, 3.5)' {
     }
 }
 
-Describe 'AWS Docker-only teardown.ps1 -WhatIf dry run (Req 6.5)' {
+Describe 'AWS Docker-only teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines

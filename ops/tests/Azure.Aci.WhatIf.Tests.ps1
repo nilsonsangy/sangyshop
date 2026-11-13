@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
     -WhatIf (dry-run) assertions for the Azure Docker-only (ACI) scripts
-    azure/aci/deploy.ps1 and azure/aci/teardown.ps1 (Task 11.3).
+    azure/aci/deploy.ps1 and azure/aci/teardown.ps1.
 
 .DESCRIPTION
     Exercises each script with -WhatIf and asserts the dry-run contract
-    (Requirements 6.5 and 3.1) WITHOUT touching any cloud:
+ WITHOUT touching any cloud:
 
       * Running each script with -WhatIf prints the full ordered command list
         and executes NO external command. We run in a child powershell process
@@ -32,7 +32,7 @@
         confirms the secret volume maps key `db_password` at mountPath
         `/run/secrets` (yielding /run/secrets/db_password). We prefer asserting
         on the dry-run OUTPUT where possible and supplement with this static
-        source assertion for the YAML-built secret mount (Req 3.1).
+        source assertion for the YAML-built secret mount.
 
     Requires Pester 5.x or 6.x (6.2 is installed). Run:
         Invoke-Pester -Path ops/tests/Azure.Aci.WhatIf.Tests.ps1
@@ -75,7 +75,7 @@ BeforeAll {
     # So the dry-run run is doubly protected: the real CLIs are unreachable, and
     # any accidental external call to a stubbed name would surface the marker in
     # output (which we assert is ABSENT). This directly verifies "executes NO
-    # external command" (Req 6.5).
+    # external command".
     $script:StubDir = Join-Path $TestDrive 'stubbin'
     New-Item -ItemType Directory -Path $script:StubDir -Force | Out-Null
     $script:PoisonMarker = 'EXTERNAL_CLI_WAS_INVOKED_UNEXPECTEDLY'
@@ -129,7 +129,7 @@ BeforeAll {
     }
 }
 
-Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
+Describe 'Azure Docker-only -WhatIf dry run' {
 
     Context 'preconditions' {
         It 'the deploy script exists' {
@@ -156,7 +156,7 @@ Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
         It 'executes NO external cloud CLI (no poisoned-stub marker in output)' {
             # If the script had actually shelled out to az/docker/kubectl, the
             # poisoned stub would have printed the marker. Its absence proves the
-            # dry run executed nothing external (Req 6.5).
+            # dry run executed nothing external.
             $script:Deploy.Output | Should -Not -Match $script:PoisonMarker
         }
 
@@ -204,7 +204,7 @@ Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
             $script:Deploy.Output | Should -Match 'container create .*--file'
         }
 
-        It 'never leaks the DB_PASSWORD env token anywhere in the dry-run output (Req 3.3)' {
+        It 'never leaks the DB_PASSWORD env token anywhere in the dry-run output' {
             # No DB_PASSWORD env is set, and the secret YAML (the only place a
             # password value would live) is NOT built under -WhatIf. So the
             # uppercase env-var token must not appear anywhere in the planned
@@ -212,7 +212,7 @@ Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
             #
             # IMPORTANT: this is a CASE-SENSITIVE check (-CNotMatch). The secret is
             # delivered as the FILE /run/secrets/db_password (lowercase key/path),
-            # which is exactly the intended delivery (Req 3.1) and legitimately
+            # which is exactly the intended delivery and legitimately
             # appears in a step banner. A case-insensitive match would wrongly
             # flag that lowercase file path. The forbidden thing is the uppercase
             # env-var form `DB_PASSWORD` (an environmentVariables entry), which
@@ -221,8 +221,8 @@ Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
         }
 
         It 'contains the intended lowercase /run/secrets/db_password file reference, not an env var' {
-            # Positive sanity check distinguishing the file path (wanted, Req 3.1)
-            # from the env var (forbidden, Req 3.3): the lowercase db_password file
+            # Positive sanity check distinguishing the file path (wanted)
+            # from the env var (forbidden): the lowercase db_password file
             # reference is present while the uppercase env token is not.
             $script:Deploy.Output | Should -CMatch '/run/secrets/db_password'
         }
@@ -273,12 +273,12 @@ Describe 'Azure Docker-only -WhatIf dry run (Req 6.5, 3.1)' {
         }
     }
 
-    Context 'static source assertion: ACI secret volume maps /run/secrets/db_password (Req 3.1)' {
+    Context 'static source assertion: ACI secret volume maps /run/secrets/db_password' {
         # The ACI secret YAML is built ONLY in the real (non-WhatIf) branch, so it
         # cannot appear in the dry-run OUTPUT. We supplement the output assertions
         # above with a static read of deploy.ps1 to confirm the secret volume maps
         # key `db_password` at mountPath `/run/secrets`, which ACI renders as the
-        # file /run/secrets/db_password (Req 3.1). This documents intent that the
+        # file /run/secrets/db_password. This documents intent that the
         # dry run cannot surface.
         BeforeAll {
             $script:DeploySource = Get-Content -LiteralPath $script:DeployPath -Raw

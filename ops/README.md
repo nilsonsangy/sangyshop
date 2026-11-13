@@ -4,12 +4,12 @@ SangyShop teaches the OWASP Top 10 at the **application** layer. This folder add
 **deployment** layer: the same application, shipped two ways, so you can *see* what
 container and orchestration hardening actually changes.
 
-The idea mirrors the app's Defenses panel — **run it insecure, then run it hardened,
-and compare** — but applied to how the app is packaged and run:
+The idea mirrors the app's Defenses panel, **run it insecure, then run it hardened,
+and compare**, but applied to how the app is packaged and run:
 
-- **`docker/`** — the same image run **insecure** (the repo's default build, `sangyshop:insecure`)
+- **`docker/`**: the same image run **insecure** (the repo's default build, `sangyshop:insecure`)
   vs a **hardened** one (`docker/hardened/`).
-- **`kubernetes/`** — the same app deployed with an **insecure** manifest set vs a
+- **`kubernetes/`**: the same app deployed with an **insecure** manifest set vs a
   **hardened** one (RBAC, Network Policies, Pod Security Standards, managed secrets, limits).
 
 > **Warning.** SangyShop is deliberately vulnerable. Run everything here **only in an
@@ -20,7 +20,7 @@ and compare** — but applied to how the app is packaged and run:
 
 The application code is **identical** on both sides. The only thing that changes is the
 *deployment posture*. So any difference a scanner, a benchmark or a runtime monitor reports
-comes purely from how the app was built and run — which makes the effect of each hardening
+comes purely from how the app was built and run, which makes the effect of each hardening
 measure measurable instead of abstract.
 
 ## What you can try
@@ -59,7 +59,7 @@ Build the insecure baseline from the root, then move to `docker/hardened/` and `
 SangyShop keeps its data in an in-memory SQLite database (via `sql.js`), so it writes no
 database file. It does, however, write two paths at runtime: the Defenses-panel state in `config/defenses.json`
 and a `logs/` directory. The hardened examples mount **only those two paths** as writable and
-keep the rest of the root filesystem read-only — a realistic "least writable surface" setup.
+keep the rest of the root filesystem read-only, a realistic "least writable surface" setup.
 
 ## Environment variables for the cloud incident-response labs
 
@@ -78,6 +78,130 @@ role or managed identity over static access keys.
 | `LAB_MODE` | unset | `1` enables the lab routes. Ignored when `APP_MODE=hardened`, so the hardened image never exposes them. |
 | `LAB_CLOUD` | unset | Cloud label shown by `/.well-known/sangyshop-lab`. |
 | `LAB_LEAKED_FILE` | `/lab/leaked.json` | File returned by `/debug/config` in the lab. |
+
+## Incident response labs (AWS and Azure)
+
+The incident response lab scripts live in this repository, next to the deploy scripts:
+
+```
+ops/aws/ir-lab/       # AWS: detection stack, blocker, leaked credential, readiness check, teardown
+ops/azure/ir-lab/     # Azure: the same flow for Azure
+ops/aws/iam/          # lab IAM group and least-privilege policy templates
+```
+
+Generic incident response tools (evidence collection, containment, instance isolation) are not
+part of this repository. They live in NimbusDFIR, a separate project.
+
+### The four steps
+
+1. **Deploy** the vulnerable lab: `ops/aws/ec2/deploy.ps1` or `ops/azure/vm/deploy.ps1`.
+2. **Enable detection**: `ops/aws/ir-lab/detection/enable-all.ps1` (Azure: `ops/azure/ir-lab/detection/enable-all.ps1`).
+   Confirm the e-mail subscription that AWS or Azure sends to the alert address.
+3. **Check readiness**: `check-detection-ready.ps1`. It writes the readiness stamp that
+   `attack-simulation/attack.js` requires (see `attack-simulation/README.md`).
+4. **Attack, then respond**: run `attack-simulation/attack.js`, then `print-response-commands.ps1`
+   to print the NimbusDFIR commands for the response.
+
+`verify-lab-state.ps1` (AWS) is a read-only report of which detection components exist.
+`full-teardown.ps1` and `verify-zero-cost.ps1` remove the whole lab and confirm nothing billable remains.
+See `ops/aws/ir-lab/README.md` and `ops/azure/ir-lab/README.md` for the full walk-through.
+
+### Alert e-mail (`ops/.env`)
+
+The detection scripts need an address for the alerts. It is never stored in the repository.
+
+```powershell
+Copy-Item ops/.env.example ops/.env
+# edit ops/.env and set: LAB_ALERT_EMAIL=you@example.com
+```
+
+`ops/.env` is ignored by Git. The address is resolved in this order: the `-Email` parameter, the
+`LAB_ALERT_EMAIL` environment variable, then `ops/.env`. Values already present in the environment are
+not overridden by the file. An invalid or missing address stops the script before anything is created.
+
+### Finding NimbusDFIR (`NIMBUSDFIR_PATH`)
+
+The checkout is never guessed and sibling folders are never searched. The path comes from one of
+these, in this order:
+
+1. the `-NimbusDfirPath` parameter of the script
+2. the `NIMBUSDFIR_PATH` environment variable
+3. `Common.NimbusDfirPath` in `ops/cloud.config.ps1`
+
+```powershell
+$env:NIMBUSDFIR_PATH = 'C:\path\to\NimbusDFIR'
+```
+
+A folder counts as a checkout only if it contains `ir_lab_core\__init__.py` and
+`aws\ec2_evidence_preservation.py`. Without a valid path, `print-response-commands.ps1` still prints
+the commands, with a placeholder for the checkout folder.
+
+### AWS permissions: the lab IAM group
+
+An IAM user can have at most 10 managed policies attached directly, and the lab services need more
+than that. Attach the policies to the lab group `sangyshop-lab-group` instead (quota of 10 per group)
+and add your user to it:
+
+```powershell
+./ops/aws/iam/ensure-lab-group.ps1 -WhatIf          # review
+./ops/aws/iam/ensure-lab-group.ps1                  # create or update the group and 3 minimal policies
+./ops/aws/iam/ensure-lab-group.ps1 -AddUser <your-iam-user>
+```
+
+Details and the safety properties of the templates are in `ops/aws/iam/README.md`. The scripts never
+grant themselves permissions. When a call is denied, they stop with exit code 3 and name the exact
+policy or role to ask for. The tables below are the same ones the scripts print.
+
+| AWS service | Managed policy | Used for |
+|---|---|---|
+| EC2 | `AmazonEC2FullAccess` | network, AMI, flow logs |
+| S3 | `AmazonS3FullAccess` | application and trail buckets |
+| RDS | `AmazonRDSFullAccess` | lab database |
+| CloudWatch Logs | `CloudWatchLogsFullAccess` | log groups, metric filter |
+| CloudWatch | `CloudWatchFullAccessV2` | alarms |
+| SNS | `AmazonSNSFullAccess` | alert topic and subscription |
+| CloudTrail | `AWSCloudTrail_FullAccess` | trail |
+| GuardDuty | `AmazonGuardDutyFullAccess_v2` | detector |
+| EventBridge | `AmazonEventBridgeFullAccess` | blocker rule |
+| Lambda | `AWSLambda_FullAccess` | blocker function |
+| Systems Manager | `AmazonSSMReadOnlyAccess` (reads), `AmazonSSMFullAccess` (SendCommand) | reads need the read only policy; SendCommand needs `lab-core.json` (preferred) or the full policy; an AMI fallback exists |
+| Secrets Manager | `SecretsManagerReadWrite` | database secret |
+| KMS | `AWSKeyManagementServicePowerUser` | keys for RDS and secrets |
+| IAM | none fits; use `lab-iam-scoped.json` | roles and profiles named `sangyshop-*` |
+
+| Azure area | Built-in role | Scope |
+|---|---|---|
+| Resource groups, PostgreSQL, ACR, AKS, ACI | `Contributor` | lab resource group |
+| Virtual machines | `Virtual Machine Contributor` | lab resource group |
+| Networking | `Network Contributor` | lab resource group |
+| Storage | `Storage Account Contributor` | lab resource group |
+| Key Vault | `Key Vault Contributor`, `Key Vault Secrets Officer` | lab resource group |
+| Managed identity | `Managed Identity Contributor` | lab resource group |
+| Monitor, alerts, diagnostics | `Monitoring Contributor` | lab resource group |
+| Log Analytics | `Log Analytics Contributor` | lab resource group |
+| Sentinel | `Microsoft Sentinel Contributor` | lab resource group |
+| Logic App (blocker) | `Logic App Contributor` | lab resource group |
+| Azure Policy | `Resource Policy Contributor` | lab resource group |
+| Role assignments (blocker) | `Role Based Access Control Administrator` or `User Access Administrator` | lab resource group, never the subscription |
+| Defender for Cloud | `Security Admin` | subscription |
+| Subscription reads | `Reader` | subscription |
+
+### Exit codes of the lab scripts
+
+| Code | Meaning | What to do |
+|---|---|---|
+| 0 | Done (for `check-detection-ready.ps1`: ready, stamp written) | Continue with the next step. |
+| 1 | A component is missing or not usable (AWS; on Azure this case is code 4) | Run the script it names, then run the check again. |
+| 2 | Configuration problem (no region, bad config, invalid e-mail) | Fix `ops/cloud.config.ps1` or `ops/.env`. |
+| 3 | Permission missing | Attach the policy or role named in the message, then run the same script again. |
+| 4 | A precondition is blocked (e-mail not confirmed, detection not ready on Azure, attack evidence not found, application log group missing) | Do the step the message names, then run the script again. |
+
+### Preflight and existing infrastructure
+
+Before creating anything, the detection scripts read the account (read-only) and classify each
+resource type. Anything that already exists and was not created by the lab, such as a multi-region
+management trail, is reused and never modified. Teardown removes only what the lab created and lists
+the rest as `kept (not created by the lab)`.
 
 ---
 
@@ -108,7 +232,7 @@ Every target:
 - Deploys **only** the hardened SangyShop image (`:hardened`, `APP_MODE=hardened`), built from
   `ops/docker/hardened/Dockerfile`. The intentionally insecure variant is never
   built, pushed, or deployed.
-- Provisions the cloud's **managed** PostgreSQL (Cloud SQL / RDS / Flexible Server) — never a
+- Provisions the cloud's **managed** PostgreSQL (Cloud SQL / RDS / Flexible Server), never a
   Postgres container.
 - Generates a DB password at deploy time, stores it only in the cloud's secret manager, and delivers
   it to the container as the file `/run/secrets/db_password` (never a `DB_PASSWORD` env var).
@@ -209,18 +333,18 @@ Edit it and set the values for the cloud(s) you will use:
 
 **Globally-unique suffix (required):**
 
-- `UniqueSuffix` — 3–24 **lowercase letters/digits only**. Appended to names that must be unique
+- `UniqueSuffix`: 3-24 **lowercase letters/digits only**. Appended to names that must be unique
   across the entire cloud (Azure Container Registry, Azure Key Vault, GCP bucket-like names). Pick
   something unlikely to collide, e.g. your initials plus a few digits.
 
 **Common (shared, safe defaults):**
 
-- `AppName`, `DbName`, `DbUser`, `ImageTag` — usually left as-is. `ImageTag` is `hardened`; only the
+- `AppName`, `DbName`, `DbUser`, `ImageTag`, usually left as-is. `ImageTag` is `hardened`; only the
   hardened variant is ever deployed.
 
 **GCP:**
 
-- `Gcp.ProjectId` — your GCP project id
+- `Gcp.ProjectId`: your GCP project id
 - `Gcp.Region`, `Gcp.ArRepo`, `Gcp.CloudRunName`, `Gcp.GkeCluster`
 
 **AWS:**
@@ -244,7 +368,7 @@ is a hard rule the loader enforces.
 - The DB password is **generated at deploy time** (random, ≥24 chars, mixed character classes).
 - It is stored **only** in the cloud's secret manager (GCP Secret Manager / AWS Secrets Manager /
   Azure Key Vault).
-- It is delivered to the running container as the file **`/run/secrets/db_password`** — never as a
+- It is delivered to the running container as the file **`/run/secrets/db_password`**, never as a
   `DB_PASSWORD` environment variable, never written to a committed file, an echoed command line, or a
   log.
 - Cloud CLI credentials come from your authenticated CLI session, not from the config file.
@@ -276,7 +400,7 @@ Set it to your own public IP, e.g. `@('203.0.113.4/32')`.
 `-ConfigPath` defaults to `ops/cloud.config.ps1`, so you can usually omit it.
 
 When you are done, run the matching `teardown.ps1` so no billable resource is left behind.
-`teardown.ps1` is convergent — re-running it is safe and skips anything already gone. `-KeepRegistry`
+`teardown.ps1` is convergent, re-running it is safe and skips anything already gone. `-KeepRegistry`
 preserves the image registry; `-Force` skips the interactive confirmation.
 
 #### GCP
@@ -340,12 +464,18 @@ ops/
 ├── cloud.config.ps1                # your git-ignored config (you create it)
 ├── lib/
 │   └── Common.ps1                  # Invoke-Echoed, Write-Step, Get-CloudConfig, New-DbPassword
+├── .env.example                    # template for ops/.env (alert e-mail), copy it
 ├── aws/
+│   ├── ec2/                        # EC2 + RDS vulnerable lab
 │   ├── ecs/                        # ECS Fargate deploy.ps1 + teardown.ps1 (+ secret entrypoint)
-│   └── eks/                        # EKS deploy.ps1 + teardown.ps1 + overlays/ (Kustomize)
+│   ├── eks/                        # EKS deploy.ps1 + teardown.ps1 + overlays/ (Kustomize)
+│   ├── iam/                        # lab IAM group and policy templates
+│   └── ir-lab/                     # AWS incident response lab (detection, blocker, readiness, teardown)
 ├── azure/
 │   ├── aci/                        # ACI deploy.ps1 + teardown.ps1
-│   └── aks/                        # AKS deploy.ps1 + teardown.ps1 + overlays/ (Kustomize)
+│   ├── aks/                        # AKS deploy.ps1 + teardown.ps1 + overlays/ (Kustomize)
+│   ├── vm/                         # Azure VM vulnerable lab
+│   └── ir-lab/                     # Azure incident response lab
 ├── gcp/
 │   ├── docker/                     # Cloud Run deploy.ps1 + teardown.ps1
 │   └── kubernetes/                 # GKE deploy.ps1 + teardown.ps1 + overlays/ (Kustomize)
@@ -358,32 +488,32 @@ source), `azure/aks/overlays/` (ACR image, LoadBalancer, managed-csi, Key Vault 
 `gcp/kubernetes/overlays/` (AR image, LoadBalancer, standard-rwo, Secret Manager CSI).
 
 <!-- =========================================================================
-     Cost & teaching-lab safety (task 14.2) goes below this line.
+     Cost & teaching-lab safety goes below this line.
      ========================================================================= -->
 
 ### Cost & teaching-lab safety
 
 Read this section before you deploy anything. Every target provisions **billable managed cloud
-resources**, and SangyShop is a **deliberately vulnerable** teaching app — the two facts together mean
+resources**, and SangyShop is a **deliberately vulnerable** teaching app, the two facts together mean
 a forgotten deployment is both a running bill and an exposed known-vulnerable target.
 
-#### ⚠️ Cost warning — these targets cost real money
+#### ⚠️ Cost warning: these targets cost real money
 
 Each deploy creates managed resources that bill **for as long as they exist**, whether or not anyone is
 using them:
 
-- **Managed PostgreSQL** — Cloud SQL (GCP), RDS (AWS), Azure DB for PostgreSQL Flexible Server. This is
+- **Managed PostgreSQL**: Cloud SQL (GCP), RDS (AWS), Azure DB for PostgreSQL Flexible Server. This is
   the big one: a managed database instance bills **per hour the moment it is created and keeps billing
   until you delete it**, idle or not.
-- **Container runtime** — Cloud Run (GCP), ECS Fargate (AWS), Azure Container Instances (Azure).
-- **Managed Kubernetes control plane** — GKE / EKS / AKS each bill a **per-cluster-hour** control-plane
+- **Container runtime**: Cloud Run (GCP), ECS Fargate (AWS), Azure Container Instances (Azure).
+- **Managed Kubernetes control plane**: GKE / EKS / AKS each bill a **per-cluster-hour** control-plane
   fee on top of the worker nodes, for the Kubernetes targets.
-- **Load balancer** — the public ingress each target provisions bills per hour plus traffic.
-- **Container registry** — ECR / ACR / Artifact Registry charge for stored image layers.
-- **Secret storage** — Secrets Manager / Key Vault / Secret Manager charge per secret and per access.
+- **Load balancer**: the public ingress each target provisions bills per hour plus traffic.
+- **Container registry**: ECR / ACR / Artifact Registry charge for stored image layers.
+- **Secret storage**: Secrets Manager / Key Vault / Secret Manager charge per secret and per access.
 
 Leaving any of these running **accrues real charges around the clock**. Skipping teardown does not pause
-billing — the resources keep costing money until they are removed.
+billing, the resources keep costing money until they are removed.
 
 #### Teardown is mandatory
 
@@ -395,14 +525,14 @@ cleanup; it is the step that stops the bill.
 - It is **convergent**: re-running it is always safe. Anything already deleted is skipped and treated as
   success, so a second run exits clean.
 - It **reports what it removed**, and if something could not be removed it writes that resource to
-  stderr and exits non-zero — so a non-zero teardown means "check these by hand," not "try again blindly."
+  stderr and exits non-zero, so a non-zero teardown means "check these by hand," not "try again blindly."
 
 Useful switches:
 
-- `-WhatIf` — dry-run the teardown first; prints the ordered command list and deletes nothing.
-- `-Force` — skip the interactive confirmation. On **Azure**, `-Force` also enables the resource-group
+- `-WhatIf`: dry-run the teardown first; prints the ordered command list and deletes nothing.
+- `-Force`: skip the interactive confirmation. On **Azure**, `-Force` also enables the resource-group
   catch-all (`az group delete`) that sweeps the whole group as a backstop.
-- `-KeepRegistry` — keep the image registry (and its pushed layers) so a later redeploy can reuse the
+- `-KeepRegistry`: keep the image registry (and its pushed layers) so a later redeploy can reuse the
   image instead of rebuilding and repushing.
 
 ```powershell
@@ -413,7 +543,7 @@ Useful switches:
 ./azure/docker/teardown.ps1 -Force
 ```
 
-After teardown, **open the cloud console and confirm nothing remains** — especially the managed
+After teardown, **open the cloud console and confirm nothing remains**, especially the managed
 PostgreSQL instance and the load balancer, the two most expensive leftovers. Teardown reports what it
 did, but a quick console check is the only way to be certain the account is empty.
 
@@ -430,7 +560,7 @@ intentional flaws. Treat every deployment as a live, exploitable target:
   (e.g. `@('203.0.113.4/32')`). The wildcard ranges `0.0.0.0/0` and `::/0` are **rejected**, and
   omitting the set entirely stops the deploy before it touches ingress. Never expose this app to the
   public internet.
-- **No real data.** Do not store real, personal, or sensitive data in a SangyShop deployment — assume
+- **No real data.** Do not store real, personal, or sensitive data in a SangyShop deployment, assume
   anything you put in it can be read by an attacker.
 - **Tear it down promptly.** The shorter it lives, the smaller both the bill and the exposure window.
 
@@ -442,7 +572,7 @@ intentional flaws. Treat every deployment as a live, exploitable target:
 4. **Deploy** for real with `-AllowedSourceRanges @('<your-ip>/32')` locked to your own IP.
 5. **Use** the deployment briefly, with no real data in it.
 6. **Tear down** with the matching `teardown.ps1` the moment you are done.
-7. **Verify** in the cloud console that the account is empty — no managed PostgreSQL, no load balancer,
+7. **Verify** in the cloud console that the account is empty, no managed PostgreSQL, no load balancer,
    nothing left billing.
 
 _Requirements: 8.5, 8.6, 9.1, 9.2, 9.3 (teaching-lab cost/safety guidance)._

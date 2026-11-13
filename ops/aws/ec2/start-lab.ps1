@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Resume the EC2 + RDS lab after stop-lab.ps1 (Parada_Intermediaria).
+    Resume the EC2 + RDS lab after stop-lab.ps1 (intermediate stop).
 
 .DESCRIPTION
     Starts the RDS instance, waits until it is available, then starts the EC2
@@ -11,7 +11,7 @@
       * A stopped RDS instance is started again automatically by AWS after 7 days.
       * EBS and RDS storage (and any Elastic IP) are billed while stopped, and
         the lab is billed again as soon as it runs.
-      * Starting/stopping does not replace teardown.ps1 or the Full_Teardown_AWS.
+      * Starting/stopping does not replace teardown.ps1 or the full AWS teardown.
 
     Every external command is echoed before it runs. -WhatIf prints the planned
     commands and starts nothing. Windows PowerShell 5.1 compatible.
@@ -95,7 +95,7 @@ $rg      = @('--region', $region)
 Write-Host ""
 Write-Host "WARNING: RDS instance '$rdsId' restarts automatically after 7 days stopped." -ForegroundColor Yellow
 Write-Host "WARNING: EBS and RDS storage (and any Elastic IP) are billed while stopped; compute is billed again from now on." -ForegroundColor Yellow
-Write-Host "WARNING: stopping/starting is NOT a teardown. Run teardown.ps1 or the Full_Teardown_AWS when the lab is finished." -ForegroundColor Yellow
+Write-Host "WARNING: stopping/starting is NOT a teardown. Run teardown.ps1 or the full AWS teardown when the lab is finished." -ForegroundColor Yellow
 Write-Host ""
 
 if ($WhatIf) { Write-Step "DRY RUN (-WhatIf): the ordered command list below WOULD run; nothing is executed." }

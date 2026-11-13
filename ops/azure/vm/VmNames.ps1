@@ -7,7 +7,7 @@
 
 Set-StrictMode -Version Latest
 
-# Lab identifier used by the Tag_Lab (tag lab=...) and the Manifesto_Lab file name.
+# Lab identifier used by the lab_tag (tag lab=...) and the lab manifest file name.
 $script:VmLabName = 'sangyshop-lab-azure'
 
 function Get-BoundedName {

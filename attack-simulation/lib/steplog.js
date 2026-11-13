@@ -9,7 +9,7 @@
 // Record shape (one JSON object per line):
 // {
 //   ts: "2026-11-11T12:00:00.000Z",  // ISO 8601 UTC timestamp of this event
-//   step: 2,                         // step number, 1..N (Requirement 13.6)
+//   step: 2,                         // step number, 1..N
 //   name: "bruteforce",              // step name
 //   target: "http://10.0.1.5:3000",  // base target URL
 //   phase: "start" | "end",          // one "start" and one "end" line per step

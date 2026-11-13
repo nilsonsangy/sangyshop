@@ -1,0 +1,324 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "Automatic IP blocker for the IR lab: Action Group -> Logic App (system-assigned managed identity) -> NSG Deny inbound rule. Also creates a metric alert that notifies the same Action Group when a run fails."
+  },
+  "parameters": {
+    "logicAppName": {
+      "type": "string",
+      "metadata": { "description": "Name of the Logic App (Consumption plan)." }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "nsgResourceId": {
+      "type": "string",
+      "metadata": { "description": "Full resource ID of the lab NSG that receives the Deny rules." }
+    },
+    "actionGroupResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": { "description": "Action Group notified when the Logic App fails. Empty = no failure alert is created." }
+    },
+    "minPriority": {
+      "type": "int",
+      "defaultValue": 100,
+      "minValue": 100,
+      "maxValue": 199
+    },
+    "maxPriority": {
+      "type": "int",
+      "defaultValue": 199,
+      "minValue": 100,
+      "maxValue": 199
+    },
+    "labTag": {
+      "type": "string"
+    },
+    "blockRulePrefix": {
+      "type": "string",
+      "metadata": { "description": "Name prefix of the NSG Deny rules created for blocked source IPs." }
+    },
+    "runId": {
+      "type": "string",
+      "defaultValue": "manual"
+    }
+  },
+  "variables": {
+    "failureAlertName": "[concat(parameters('logicAppName'), '-run-failed')]",
+    "tags": {
+      "lab": "[parameters('labTag')]",
+      "run-id": "[parameters('runId')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('logicAppName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "identity": { "type": "SystemAssigned" },
+      "properties": {
+        "state": "Enabled",
+        "parameters": {
+          "nsgResourceId": { "value": "[parameters('nsgResourceId')]" },
+          "minPriority": { "value": "[parameters('minPriority')]" },
+          "maxPriority": { "value": "[parameters('maxPriority')]" }
+        },
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "nsgResourceId": { "type": "string" },
+            "minPriority": { "type": "int" },
+            "maxPriority": { "type": "int" }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": { "schema": {} }
+            }
+          },
+          "actions": {
+            "Get_Client_Ip_Dimension": {
+              "type": "Query",
+              "description": "Alert dimension client_ip from the common alert schema.",
+              "runAfter": {},
+              "inputs": {
+                "from": "@coalesce(triggerBody()?['data']?['alertContext']?['condition']?['allOf']?[0]?['dimensions'], createArray())",
+                "where": "@equals(item()?['name'], 'client_ip')"
+              }
+            },
+            "Client_Ip": {
+              "type": "Compose",
+              "runAfter": { "Get_Client_Ip_Dimension": [ "Succeeded" ] },
+              "inputs": "@trim(string(coalesce(first(body('Get_Client_Ip_Dimension'))?['value'], '')))"
+            },
+            "Is_Fired_With_Ip": {
+              "type": "If",
+              "description": "Ignore Resolved notifications and alerts without a client_ip dimension.",
+              "runAfter": { "Client_Ip": [ "Succeeded" ] },
+              "expression": {
+                "and": [
+                  { "equals": [ "@toLower(string(coalesce(triggerBody()?['data']?['essentials']?['monitorCondition'], 'Fired')))", "fired" ] },
+                  { "not": { "equals": [ "@outputs('Client_Ip')", "" ] } }
+                ]
+              },
+              "actions": {
+                "Octets": {
+                  "type": "Select",
+                  "description": "Fails the run (and notifies the Action Group) when the value is not numeric.",
+                  "runAfter": {},
+                  "inputs": {
+                    "from": "@split(outputs('Client_Ip'), '.')",
+                    "select": "@int(item())"
+                  }
+                },
+                "Out_Of_Range_Octets": {
+                  "type": "Query",
+                  "runAfter": { "Octets": [ "Succeeded" ] },
+                  "inputs": {
+                    "from": "@body('Octets')",
+                    "where": "@or(less(item(), 0), greater(item(), 255))"
+                  }
+                },
+                "Is_Well_Formed_Ipv4": {
+                  "type": "If",
+                  "runAfter": { "Out_Of_Range_Octets": [ "Succeeded" ] },
+                  "expression": {
+                    "and": [
+                      { "equals": [ "@length(body('Octets'))", 4 ] },
+                      { "equals": [ "@length(body('Out_Of_Range_Octets'))", 0 ] }
+                    ]
+                  },
+                  "actions": {
+                    "Is_Public_Address": {
+                      "type": "If",
+                      "description": "Never block 0/8, 10/8, 127/8, 169.254/16, 172.16/12, 192.168/16 or multicast and above.",
+                      "runAfter": {},
+                      "expression": {
+                        "not": {
+                          "or": [
+                            { "equals": [ "@body('Octets')[0]", 0 ] },
+                            { "equals": [ "@body('Octets')[0]", 10 ] },
+                            { "equals": [ "@body('Octets')[0]", 127 ] },
+                            { "greaterOrEquals": [ "@body('Octets')[0]", 224 ] },
+                            { "and": [ { "equals": [ "@body('Octets')[0]", 169 ] }, { "equals": [ "@body('Octets')[1]", 254 ] } ] },
+                            { "and": [ { "equals": [ "@body('Octets')[0]", 192 ] }, { "equals": [ "@body('Octets')[1]", 168 ] } ] },
+                            { "and": [ { "equals": [ "@body('Octets')[0]", 172 ] }, { "greaterOrEquals": [ "@body('Octets')[1]", 16 ] }, { "lessOrEquals": [ "@body('Octets')[1]", 31 ] } ] }
+                          ]
+                        }
+                      },
+                      "actions": {
+                        "Rule_Name": {
+                          "type": "Compose",
+                          "runAfter": {},
+                          "inputs": "[concat('@concat(''', parameters('blockRulePrefix'), ''', replace(outputs(''Client_Ip''), ''.'', ''-''))')]"
+                        },
+                        "List_Rules": {
+                          "type": "Http",
+                          "runAfter": { "Rule_Name": [ "Succeeded" ] },
+                          "inputs": {
+                            "method": "GET",
+                            "uri": "@{concat('https://management.azure.com', parameters('nsgResourceId'), '/securityRules?api-version=2023-11-01')}",
+                            "authentication": { "type": "ManagedServiceIdentity", "audience": "https://management.azure.com/" }
+                          }
+                        },
+                        "Existing_Rule_For_Ip": {
+                          "type": "Query",
+                          "runAfter": { "List_Rules": [ "Succeeded" ] },
+                          "inputs": {
+                            "from": "@coalesce(body('List_Rules')?['value'], createArray())",
+                            "where": "@equals(item()?['name'], outputs('Rule_Name'))"
+                          }
+                        },
+                        "Already_Blocked": {
+                          "type": "If",
+                          "description": "Idempotent: one rule per IP.",
+                          "runAfter": { "Existing_Rule_For_Ip": [ "Succeeded" ] },
+                          "expression": { "greater": [ "@length(body('Existing_Rule_For_Ip'))", 0 ] },
+                          "actions": {},
+                          "else": {
+                            "actions": {
+                              "Used_Priorities": {
+                                "type": "Select",
+                                "runAfter": {},
+                                "inputs": {
+                                  "from": "@coalesce(body('List_Rules')?['value'], createArray())",
+                                  "select": "@item()?['properties']?['priority']"
+                                }
+                              },
+                              "Free_Priorities": {
+                                "type": "Query",
+                                "runAfter": { "Used_Priorities": [ "Succeeded" ] },
+                                "inputs": {
+                                  "from": "@range(parameters('minPriority'), add(sub(parameters('maxPriority'), parameters('minPriority')), 1))",
+                                  "where": "@not(contains(body('Used_Priorities'), item()))"
+                                }
+                              },
+                              "Has_Free_Priority": {
+                                "type": "If",
+                                "runAfter": { "Free_Priorities": [ "Succeeded" ] },
+                                "expression": { "greater": [ "@length(body('Free_Priorities'))", 0 ] },
+                                "actions": {
+                                  "Create_Deny_Rule": {
+                                    "type": "Http",
+                                    "runAfter": {},
+                                    "inputs": {
+                                      "method": "PUT",
+                                      "uri": "@{concat('https://management.azure.com', parameters('nsgResourceId'), '/securityRules/', outputs('Rule_Name'), '?api-version=2023-11-01')}",
+                                      "headers": { "Content-Type": "application/json" },
+                                      "body": {
+                                        "properties": {
+                                          "description": "Automatic block of brute force source (IR lab Logic App)",
+                                          "protocol": "*",
+                                          "sourcePortRange": "*",
+                                          "destinationPortRange": "*",
+                                          "sourceAddressPrefix": "@{outputs('Client_Ip')}",
+                                          "destinationAddressPrefix": "*",
+                                          "access": "Deny",
+                                          "direction": "Inbound",
+                                          "priority": "@first(body('Free_Priorities'))"
+                                        }
+                                      },
+                                      "authentication": { "type": "ManagedServiceIdentity", "audience": "https://management.azure.com/" }
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "actions": {
+                                    "Fail_No_Free_Priority": {
+                                      "type": "Terminate",
+                                      "runAfter": {},
+                                      "inputs": {
+                                        "runStatus": "Failed",
+                                        "runError": { "code": "NoFreePriority", "message": "No free NSG rule priority left in the configured block range." }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "else": { "actions": {} }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Fail_Invalid_Ip": {
+                        "type": "Terminate",
+                        "runAfter": {},
+                        "inputs": {
+                          "runStatus": "Failed",
+                          "runError": { "code": "InvalidIp", "message": "client_ip dimension is not a valid IPv4 address." }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else": { "actions": {} }
+            }
+          },
+          "outputs": {}
+        }
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('actionGroupResourceId')))]",
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[variables('failureAlertName')]",
+      "location": "global",
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/workflows', parameters('logicAppName'))]"
+      ],
+      "properties": {
+        "description": "The automatic NSG blocker failed. Run the manual containment (NSG deny rule) instead.",
+        "severity": 1,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Logic/workflows', parameters('logicAppName'))]"
+        ],
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "targetResourceType": "Microsoft.Logic/workflows",
+        "targetResourceRegion": "[parameters('location')]",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "RunsFailed",
+              "metricNamespace": "Microsoft.Logic/workflows",
+              "metricName": "RunsFailed",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "timeAggregation": "Total",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": [
+          { "actionGroupId": "[parameters('actionGroupResourceId')]" }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "principalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Logic/workflows', parameters('logicAppName')), '2019-05-01', 'Full').identity.principalId]"
+    },
+    "logicAppResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Logic/workflows', parameters('logicAppName'))]"
+    }
+  }
+}

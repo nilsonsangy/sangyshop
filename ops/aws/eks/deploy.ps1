@@ -15,36 +15,36 @@
     Pipeline (every external CLI call is echoed before it runs, via the shared
     Invoke-Echoed helper in lib/Common.ps1):
 
-        1. Caller-identity auth check                     (Req 6.3/6.4)
-        2. ECR describe-or-create                         (Req 4.1)
+        1. Caller-identity auth check
+        2. ECR describe-or-create
         3. ECR Docker login
-        4. Build the hardened image                       (Req 2.1/2.3/4.5)
-        5. Push the hardened image                        (Req 4.5)
-        6. Secrets Manager: generate + store password     (Req 3.2/4.4) -- BEFORE
+        4. Build the hardened image
+        5. Push the hardened image
+        6. Secrets Manager: generate + store password -- BEFORE
            provisioning, stdin only, never an echoed CLI arg
-        7. RDS describe-or-create + set master password   (Req 4.1/4.3/9.5)
-        8. EKS describe-or-create + kubeconfig update      (Req 4.1/9.2)
+        7. RDS describe-or-create + set master password
+        8. EKS describe-or-create + kubeconfig update
         9. Render overlay copy, substitute placeholders,
-           apply with the load-restrictor pipe form        (Req 3.1/3.3/2.5)
-       10. Wait for rollout                                (Req 4.8)
-       11. Read the LoadBalancer DNS hostname as the URL    (Req 4.7)
-       12. Print lockdown + teardown reminder              (Req 9.2)
+           apply with the load-restrictor pipe form
+       10. Wait for rollout
+       11. Read the LoadBalancer DNS hostname as the URL
+       12. Print lockdown + teardown reminder
 
     Safety:
-      * Only the hardened variant is ever built/pushed/deployed (Req 2.1/2.2).
+      * Only the hardened variant is ever built/pushed/deployed.
       * Aborts before any push/deploy if the hardened Dockerfile is missing
-        (Req 2.4) or a non-:hardened image / non-hardened APP_MODE is referenced
-        (Req 2.2).
+ or a non-:hardened image / non-hardened APP_MODE is referenced
+.
       * Ingress is restricted to an explicitly provided source-address set and
-        0.0.0.0/0 and ::/0 are rejected (Req 9.3/9.4).
-      * RDS is reachable by the EKS workload on 5432 only, not public (Req 9.5).
+        0.0.0.0/0 and ::/0 are rejected.
+      * RDS is reachable by the EKS workload on 5432 only, not public.
       * The committed overlay is NEVER rewritten; placeholders are substituted in
-        a throwaway rendered copy only (Req 2.5).
+        a throwaway rendered copy only.
       * -WhatIf prints the full ordered command list and executes NO external
-        command, exiting 0 (Req 6.5).
+        command, exiting 0.
 
-    Windows PowerShell 5.1 compatible (Req 6.1). Every external CLI call routes
-    through Invoke-Echoed (Req 1.3), enforced by tests/EchoOnly.Guard.Tests.ps1.
+    Windows PowerShell 5.1 compatible. Every external CLI call routes
+    through Invoke-Echoed, enforced by tests/EchoOnly.Guard.Tests.ps1.
 
 .PARAMETER ConfigPath
     Path to cloud.config.ps1. Defaults to the git-ignored config two folders up
@@ -52,7 +52,7 @@
 
 .PARAMETER WhatIf
     Dry run: print the full ordered command list without executing any external
-    command, then exit 0 (Req 6.5).
+    command, then exit 0.
 
 .PARAMETER ReuseExisting
     Reuse an already-present ECR repo / RDS instance / EKS cluster / secret rather
@@ -62,8 +62,8 @@
 .PARAMETER AllowedSourceRanges
     REQUIRED allowed-ingress source set. Each entry is a source address/CIDR that
     may reach the LoadBalancer Service. 0.0.0.0/0 and ::/0 are rejected
-    (Req 9.3/9.4). If omitted/empty the script stops before any ingress change
-    (Req 9.4).
+. If omitted/empty the script stops before any ingress change
+.
 #>
 [CmdletBinding()]
 param(
@@ -84,12 +84,12 @@ $ErrorActionPreference = 'Stop'
 # WhatIf-aware command runner.
 #
 # Every external CLI call in this script goes through Invoke-Cli, never through
-# a bare CLI token (Req 1.3). When -WhatIf is set, Invoke-Cli records and prints
-# the planned command line WITHOUT executing anything (Req 6.5); otherwise it
-# delegates to the shared Invoke-Echoed helper (Req 1.1/1.4/1.5), which echoes
+# a bare CLI token. When -WhatIf is set, Invoke-Cli records and prints
+# the planned command line WITHOUT executing anything; otherwise it
+# delegates to the shared Invoke-Echoed helper, which echoes
 # the exact command and then runs it.
 #
-# Secret rule (Req 3.2): a secret is NEVER passed as a CLI argument. Commands
+# Secret rule: a secret is NEVER passed as a CLI argument. Commands
 # that consume the password do so via stdin; the -StdinSecret switch marks those
 # so the planned/echoed line shows a redacted "<stdin: db password>" note
 # instead of the value.
@@ -134,7 +134,7 @@ function Invoke-Cli {
     $display = $displayParts -join ' '
 
     if ($WhatIf) {
-        # Req 6.5: record + print the planned command; execute NOTHING. Model a
+        # record + print the planned command; execute NOTHING. Model a
         # "would succeed" exit so describe-or-create logic picks a deterministic
         # branch for the planned list (we plan the CREATE branch under -WhatIf).
         $script:PlannedCommands.Add($display)
@@ -143,11 +143,11 @@ function Invoke-Cli {
         return $null
     }
 
-    # Real execution path: route through the shared, echoing helper (Req 1.3).
+    # Real execution path: route through the shared, echoing helper.
     $result = $null
     if ($PSBoundParameters.ContainsKey('StdinSecret')) {
         # Feed the secret through stdin so it never becomes an echoed CLI arg
-        # (Req 3.2). Invoke-Echoed echoes only $Exe + $CmdArgs, so the password
+        #. Invoke-Echoed echoes only $Exe + $CmdArgs, so the password
         # stays off the command line and out of logs.
         if ($AllowFail) {
             $result = ($StdinSecret | Invoke-Echoed -Exe $Exe -CmdArgs $CmdArgs -AllowFail)
@@ -177,7 +177,7 @@ function Invoke-Cli {
 }
 
 # ---------------------------------------------------------------------------
-# 0. Load + validate config (fail-closed BEFORE any external command, Req 7.1).
+# 0. Load + validate config (fail-closed BEFORE any external command).
 # ---------------------------------------------------------------------------
 Write-Step "Loading configuration (cloud: Aws)"
 $cfg = Get-CloudConfig -ConfigPath $ConfigPath -Cloud 'Aws'
@@ -205,21 +205,21 @@ $ecrImageName = "$ecrRegistry/$ecrRepo"               # repo path, NO tag (overl
 $imageUri     = $ecrImageName + ":" + $imageTag       # full build/push ref
 
 # ---------------------------------------------------------------------------
-# Req 2.2 / 2.4: hardened-only pre-flight. Abort BEFORE any push or deploy if the
+# hardened-only pre-flight. Abort BEFORE any push or deploy if the
 # hardened Dockerfile is missing, the image tag is not :hardened, or APP_MODE is
 # not hardened. Nothing external has run yet at this point.
 # ---------------------------------------------------------------------------
 $appMode = 'hardened'
-Write-Step "Verifying hardened-only invariants (Req 2.2, 2.4)"
+Write-Step "Verifying hardened-only invariants"
 
 if ($imageTag -ne 'hardened') {
-    throw "Refusing to deploy: image tag is '$imageTag', but only the hardened variant (tag ':hardened') may be deployed (Req 2.2). Fix Common.ImageTag in the config."
+    throw "Refusing to deploy: image tag is '$imageTag', but only the hardened variant (tag ':hardened') may be deployed. Fix Common.ImageTag in the config."
 }
 if ($imageUri -notmatch ':hardened$') {
-    throw "Refusing to deploy: image reference '$imageUri' is not a ':hardened' image; only the hardened variant may be deployed (Req 2.2)."
+    throw "Refusing to deploy: image reference '$imageUri' is not a ':hardened' image; only the hardened variant may be deployed."
 }
 if ($appMode -ne 'hardened') {
-    throw "Refusing to deploy: APP_MODE is '$appMode', but only 'hardened' may be deployed (Req 2.2)."
+    throw "Refusing to deploy: APP_MODE is '$appMode', but only 'hardened' may be deployed."
 }
 
 # Repo root is three folders up from this script
@@ -228,7 +228,7 @@ $repoRoot       = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $dockerfileRel  = 'ops/docker/hardened/Dockerfile'
 $dockerfilePath = Join-Path $repoRoot $dockerfileRel
 if (-not (Test-Path -LiteralPath $dockerfilePath -PathType Leaf)) {
-    throw "Refusing to build: hardened Dockerfile not found at '$dockerfilePath' (expected '$dockerfileRel'). Aborting before any push or deploy (Req 2.4)."
+    throw "Refusing to build: hardened Dockerfile not found at '$dockerfilePath' (expected '$dockerfileRel'). Aborting before any push or deploy."
 }
 
 # The committed overlay directory for this provider (relative to this script:
@@ -241,30 +241,30 @@ if (-not (Test-Path -LiteralPath (Join-Path $overlayDir 'kustomization.yaml') -P
 $baseManifest = (Resolve-Path (Join-Path $repoRoot 'ops/kubernetes/hardened/sangyshop-hardened.yaml')).Path
 
 # ---------------------------------------------------------------------------
-# Req 9.3 / 9.4: an explicit allowed-ingress source set is REQUIRED, and the
+# an explicit allowed-ingress source set is REQUIRED, and the
 # open ranges 0.0.0.0/0 and ::/0 are prohibited. Validate before any ingress
 # change (indeed before any external command).
 # ---------------------------------------------------------------------------
-Write-Step "Validating allowed ingress source set (Req 9.3, 9.4)"
+Write-Step "Validating allowed ingress source set"
 $ranges = @()
 if ($AllowedSourceRanges) {
     $ranges = @($AllowedSourceRanges | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() })
 }
 if ($ranges.Count -eq 0) {
-    throw "An allowed source-address set is required (-AllowedSourceRanges). Refusing to deploy without locked-down ingress; the app must never be exposed to 0.0.0.0/0 (Req 9.4)."
+    throw "An allowed source-address set is required (-AllowedSourceRanges). Refusing to deploy without locked-down ingress; the app must never be exposed to 0.0.0.0/0."
 }
 $openRanges = @('0.0.0.0/0', '::/0')
 foreach ($r in $ranges) {
     if ($openRanges -contains $r) {
-        throw "Disallowed ingress source '$r'. The open ranges 0.0.0.0/0 and ::/0 are prohibited; restrict ingress to your own address (Req 9.3)."
+        throw "Disallowed ingress source '$r'. The open ranges 0.0.0.0/0 and ::/0 are prohibited; restrict ingress to your own address."
     }
 }
 
 # ---------------------------------------------------------------------------
-# 1. Auth check BEFORE any create/modify (Req 6.3). On failure, stop with
-#    install + auth guidance and a non-zero exit (Req 6.4).
+# 1. Auth check BEFORE any create/modify. On failure, stop with
+#    install + auth guidance and a non-zero exit.
 # ---------------------------------------------------------------------------
-Write-Step "Checking AWS authentication via the caller-identity probe (Req 6.3)"
+Write-Step "Checking AWS authentication via the caller-identity probe"
 $cli = 'aws'
 try {
     # Identify the caller; fails when there are no valid credentials.
@@ -285,10 +285,10 @@ catch {
 }
 
 # ---------------------------------------------------------------------------
-# 2. ECR repository: describe-or-create (idempotent, Req 4.1). The describe is
+# 2. ECR repository: describe-or-create (idempotent). The describe is
 #    -AllowFail so a missing repo (its only expected failure) triggers a create.
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring ECR repository '$ecrRepo' exists (Req 4.1)"
+Write-Step "Ensuring ECR repository '$ecrRepo' exists"
 $ecrDescribe = @('ecr', 'describe-repositories', '--repository-names', $ecrRepo, '--region', $region)
 Invoke-Cli -Exe "aws" -CmdArgs $ecrDescribe -AllowFail | Out-Null
 $ecrExists = ($script:LastCliExit -eq 0)
@@ -305,18 +305,18 @@ if ($WhatIf -or -not $ecrExists) {
 # ---------------------------------------------------------------------------
 # 3. Configure Docker to authenticate to ECR. The login password is fetched via
 #    `aws ecr get-login-password` and piped to `docker login` on stdin so it is
-#    never an echoed CLI argument (Req 3.2 spirit: no secret on a command line).
+#    never an echoed CLI argument (no secret on a command line).
 #
-#    Both command names are echoed before the pipe runs (echo-before-exec,
-#    Req 1.3), but WITHOUT the token. The single planned/echoed line documents the
+#    Both command names are echoed before the pipe runs (echo-before-exec),
+#    but WITHOUT the token. The single planned/echoed line documents the
 #    exact two-process pipeline; the login password flows ONLY through the native
 #    pipe between the two processes, never captured into a variable that gets
-#    echoed, never a CLI argument, never printed (Req 3.2).
+#    echoed, never a CLI argument, never printed.
 # ---------------------------------------------------------------------------
 Write-Step "Logging Docker in to ECR registry $ecrRegistry"
 $ecrLoginPlanned = "aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $ecrRegistry"
 if ($WhatIf) {
-    # Req 6.5: record + print the planned pipe; execute nothing.
+    # record + print the planned pipe; execute nothing.
     $script:PlannedCommands.Add($ecrLoginPlanned)
     Write-Host "> $ecrLoginPlanned" -ForegroundColor DarkCyan
 }
@@ -340,10 +340,10 @@ else {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Build the hardened image from the hardened Dockerfile (Req 2.1/2.3/4.5).
+# 4. Build the hardened image from the hardened Dockerfile.
 #    Build context is the repo root so the Dockerfile's `COPY . .` sees the app.
 # ---------------------------------------------------------------------------
-Write-Step "Building the hardened image '$imageUri' (Req 2.1, 2.3)"
+Write-Step "Building the hardened image '$imageUri'"
 Invoke-Cli -Exe "docker" -CmdArgs @(
     'build',
     '-t', $imageUri,
@@ -352,20 +352,20 @@ Invoke-Cli -Exe "docker" -CmdArgs @(
 ) | Out-Null
 
 # ---------------------------------------------------------------------------
-# 5. Push the hardened image (Req 4.5). On a real build/push failure Invoke-Echoed
-#    throws, halting before any EKS deploy (Req 4.6).
+# 5. Push the hardened image. On a real build/push failure Invoke-Echoed
+#    throws, halting before any EKS deploy.
 # ---------------------------------------------------------------------------
-Write-Step "Pushing the hardened image to ECR (Req 4.5)"
+Write-Step "Pushing the hardened image to ECR"
 Invoke-Cli -Exe "docker" -CmdArgs @('push', $imageUri) | Out-Null
 
 # ---------------------------------------------------------------------------
 # 6. Generate + store the DB password in Secrets Manager BEFORE provisioning RDS
-#    (Req 4.4). The value is piped via stdin (--secret-string file:///dev/stdin),
-#    never an echoed CLI arg (Req 3.2). Secrets Manager is the single source of
+#. The value is piped via stdin (--secret-string file:///dev/stdin),
+#    never an echoed CLI arg. Secrets Manager is the single source of
 #    truth; the same secret later syncs into the pod as the file at
 #    /run/secrets/db_password via the SecretsStore CSI provider.
 # ---------------------------------------------------------------------------
-Write-Step "Generating and storing the DB password in Secrets Manager (Req 3.2, 4.4)"
+Write-Step "Generating and storing the DB password in Secrets Manager"
 $dbPassword = $null
 if (-not $WhatIf) {
     $dbPassword = New-DbPassword   # >=24 chars, 4 character classes; never logged
@@ -412,13 +412,13 @@ if ($secretArn -is [System.Array]) { $secretArn = ($secretArn | Where-Object { $
 $secretArn = [string]$secretArn
 
 # ---------------------------------------------------------------------------
-# 7. RDS for PostgreSQL: describe-or-create (idempotent, Req 4.1/4.3). Never a
-#    container (Req 4.3). Not publicly accessible so the instance is reachable by
-#    the EKS workload on 5432 only, not the open internet (Req 9.5). The master
+# 7. RDS for PostgreSQL: describe-or-create (idempotent). Never a
+#    container. Not publicly accessible so the instance is reachable by
+#    the EKS workload on 5432 only, not the open internet. The master
 #    password is read FROM the stored secret via stdin so it is never an echoed
-#    CLI arg (Req 3.2).
+#    CLI arg.
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring RDS for PostgreSQL instance '$rdsInstance' exists (Req 4.1, 4.3, 9.5)"
+Write-Step "Ensuring RDS for PostgreSQL instance '$rdsInstance' exists"
 $rdsDescribe = @('rds', 'describe-db-instances', '--db-instance-identifier', $rdsInstance, '--region', $region)
 Invoke-Cli -Exe "aws" -CmdArgs $rdsDescribe -AllowFail | Out-Null
 $rdsExists = ($script:LastCliExit -eq 0)
@@ -434,7 +434,7 @@ if ($WhatIf -or -not $rdsExists) {
         '--db-name', $dbName,
         '--master-username', $dbUser,
         '--master-user-password', 'file:///dev/stdin',
-        '--no-publicly-accessible',                 # not publicly reachable (Req 9.5)
+        '--no-publicly-accessible',                 # not publicly reachable
         '--region', $region
     ) -StdinSecret $dbPassword | Out-Null
 }
@@ -466,10 +466,10 @@ if ($rdsHost -is [System.Array]) { $rdsHost = ($rdsHost | Where-Object { $_ } | 
 $rdsHost = [string]$rdsHost
 
 # ---------------------------------------------------------------------------
-# 8. EKS cluster: describe-or-create (idempotent, Req 4.1), then write kubeconfig
-#    so kubectl targets it (Req 9.2).
+# 8. EKS cluster: describe-or-create (idempotent), then write kubeconfig
+#    so kubectl targets it.
 # ---------------------------------------------------------------------------
-Write-Step "Ensuring EKS cluster '$eksCluster' exists (Req 4.1)"
+Write-Step "Ensuring EKS cluster '$eksCluster' exists"
 $eksDescribe = @('eks', 'describe-cluster', '--name', $eksCluster, '--region', $region)
 Invoke-Cli -Exe "aws" -CmdArgs $eksDescribe -AllowFail | Out-Null
 $eksExists = ($script:LastCliExit -eq 0)
@@ -484,12 +484,12 @@ if ($WhatIf -or -not $eksExists) {
     ) | Out-Null
 }
 
-Write-Step "Updating kubeconfig for EKS cluster '$eksCluster' (Req 9.2)"
+Write-Step "Updating kubeconfig for EKS cluster '$eksCluster'"
 Invoke-Cli -Exe "aws" -CmdArgs @('eks', 'update-kubeconfig', '--name', $eksCluster, '--region', $region) | Out-Null
 
 # ---------------------------------------------------------------------------
 # 9. Render the overlay into a THROWAWAY copy, substitute placeholders, and apply
-#    with the load-restrictor pipe form (Req 2.5/3.1/3.3). The committed overlay
+#    with the load-restrictor pipe form. The committed overlay
 #    (and the base manifest) are NEVER rewritten:
 #      * copy every committed overlay file into a temp dir,
 #      * in the temp copy, rewrite the base `resources:` reference to the base's
@@ -498,7 +498,7 @@ Invoke-Cli -Exe "aws" -CmdArgs @('eks', 'update-kubeconfig', '--name', $eksClust
 #      * `kubectl kustomize --load-restrictor LoadRestrictionsNone <tmp>` piped to
 #        `kubectl apply -f -` (apply -k cannot pass the load-restrictor flag).
 # ---------------------------------------------------------------------------
-Write-Step "Rendering the AWS overlay copy and substituting placeholders (Req 2.5)"
+Write-Step "Rendering the AWS overlay copy and substituting placeholders"
 
 $renderedDir = Join-Path ([System.IO.Path]::GetTempPath()) ("sangyshop-aws-overlay-" + [System.Guid]::NewGuid().ToString('N'))
 $appliedManifest = $null
@@ -540,7 +540,7 @@ try {
 
     # Build the rendered overlay with load restrictions disabled (the base lives
     # outside the overlay dir), then pipe to apply (apply -k cannot pass the flag).
-    Write-Step "Applying the rendered overlay to EKS (Req 3.1, 3.3, 2.5)"
+    Write-Step "Applying the rendered overlay to EKS"
     if ($WhatIf) {
         # Plan both halves of the pipe without executing anything.
         Invoke-Cli -Exe "kubectl" -CmdArgs @('kustomize', '--load-restrictor', 'LoadRestrictionsNone', $renderedDir) | Out-Null
@@ -560,9 +560,9 @@ finally {
 }
 
 # ---------------------------------------------------------------------------
-# 10. Wait for the Deployment rollout to finish (Req 4.8).
+# 10. Wait for the Deployment rollout to finish.
 # ---------------------------------------------------------------------------
-Write-Step "Waiting for the '$deployment' rollout in namespace '$namespace' (Req 4.8)"
+Write-Step "Waiting for the '$deployment' rollout in namespace '$namespace'"
 Invoke-Cli -Exe "kubectl" -CmdArgs @(
     'rollout', 'status', "deployment/$deployment",
     '--namespace', $namespace,
@@ -570,10 +570,10 @@ Invoke-Cli -Exe "kubectl" -CmdArgs @(
 ) | Out-Null
 
 # ---------------------------------------------------------------------------
-# 11. Read the LoadBalancer DNS hostname as the URL (Req 4.7). On AWS the ELB
+# 11. Read the LoadBalancer DNS hostname as the URL. On AWS the ELB
 #     exposes a DNS name (not an IP), so read .status.loadBalancer.ingress[0].hostname.
 # ---------------------------------------------------------------------------
-Write-Step "Reading the LoadBalancer DNS hostname for Service '$webService' (Req 4.7)"
+Write-Step "Reading the LoadBalancer DNS hostname for Service '$webService'"
 $lbArgs = @(
     'get', 'service', $webService,
     '--namespace', $namespace,
@@ -582,7 +582,7 @@ $lbArgs = @(
 $lbHost = Invoke-Cli -Exe "kubectl" -CmdArgs $lbArgs
 
 # ---------------------------------------------------------------------------
-# Dry run ends here: print the planned command list and exit 0 (Req 6.5).
+# Dry run ends here: print the planned command list and exit 0.
 # ---------------------------------------------------------------------------
 if ($WhatIf) {
     Write-Step "Dry run (-WhatIf): planned command list (no command was executed)"

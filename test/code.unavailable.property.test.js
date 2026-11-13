@@ -2,9 +2,7 @@
 // Property-based test for the SangyShop "View Code" feature, the
 // resilience of GET /code/:vuln when the backing source file cannot be loaded.
 //
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 15
-// Property 15: Snippet unavailability does not bring the application down
-// Validates: Requirements 7.7
+// Snippet unavailability does not bring the application down
 //
 // R7.7 (design "navigable fail-open"): IF the source file that backs a
 // Code_Snippet cannot be loaded when the View_Code_Control is triggered, THEN
@@ -71,8 +69,8 @@ function makeFailingFs(kind) {
 //
 // For any catalog vulnerability and any forced read failure, getSnippet must
 // reject (throw) rather than return a partial/empty snippet. This is the
-// contract the route relies on to render the unavailability message (R7.7).
-test("Property 15 (unit): getSnippet throws for every catalog vuln when fs read fails", async () => {
+// contract the route relies on to render the unavailability message.
+test("unit: getSnippet throws for every catalog vuln when fs read fails", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom(...CATALOG_VULNS),
@@ -108,7 +106,7 @@ test("Property 15 (unit): getSnippet throws for every catalog vuln when fs read 
 // repointing the catalog entry's mapped `file` at a path that cannot be read.
 // The same CATALOG instance backs both the route and getSnippet, so the live
 // read genuinely fails. We restore the original file in finally on every run.
-test("Property 15 (route): GET /code/:vuln answers 200 with unavailability and stays navigable when the source is unreadable", async () => {
+test("route: GET /code/:vuln answers 200 with unavailability and stays navigable when the source is unreadable", async () => {
   // Build the app once and reuse it across every run (performance). The catalog
   // is mutated per run and always restored, so reuse is safe.
   const app = await createTestApp();

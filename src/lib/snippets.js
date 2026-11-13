@@ -4,7 +4,7 @@
 // Each vulnerability maps to a real source file. The snippet shown to the
 // instructor is read LIVE from that file (via fs.promises.readFile) and sliced
 // by textual anchors, so the "View Code" panel always reflects the code that
-// is actually running (R7.2, design Property 13: the returned code is a literal
+// is actually running (R7.2, design the returned code is a literal
 // substring of the live file).
 //
 // Anchor convention (comment markers placed in the mapped source files):
@@ -19,9 +19,9 @@
 //
 // getSnippet(vuln, deps) reads the mapped file live, locates the anchors and
 // returns { file, code, vulnRange, secureRange }. `deps.fs` is injectable
-// (defaults to fs.promises) so tests can force a read failure (Property 15).
+// (defaults to fs.promises) so tests can force a read failure.
 // If the source file cannot be loaded, getSnippet throws; the caller (the
-// /code/:vuln route) converts that into an "unavailable" message (R7.7).
+// /code/:vuln route) converts that into an "unavailable" message.
 
 "use strict";
 
@@ -162,10 +162,10 @@ async function readAndSlice(entry, relFile, readFile) {
 // Reads the mapped source file LIVE and returns the catalog entry's snippet.
 // `code` is the full file content (so vulnRange/secureRange offsets index into
 // it), and both ranges carry the literal sliced `code` text. Throws when the
-// vulnerability is unknown or the source file cannot be loaded (R7.7).
+// vulnerability is unknown or the source file cannot be loaded.
 //
 // deps.fs defaults to fs.promises; pass a stub to force a read failure in tests
-// (Property 15).
+//.
 async function getSnippet(vuln, deps = {}) {
   const entry = CATALOG[vuln];
   if (!entry) {

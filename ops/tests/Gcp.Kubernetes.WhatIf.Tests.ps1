@@ -4,7 +4,7 @@
     (gcp/kubernetes/deploy.ps1 and gcp/kubernetes/teardown.ps1).
 
 .DESCRIPTION
-    Covers task 7.4 of the multi-cloud-deploy plan. Each script is executed in a
+    Covers the dry run of the deploy and teardown scripts. Each script is executed in a
     fresh child PowerShell with -WhatIf against a well-formed temporary GCP config
     written under $TestDrive. Nothing here touches a real cloud: under -WhatIf the
     scripts record and print their planned command list and execute NO external
@@ -14,7 +14,7 @@
     -WhatIf invocation, a $TestDrive config .ps1, and a Get-PlannedCommands
     transcript parser).
 
-    deploy.ps1 (Req 6.5, 3.1, 3.3):
+    deploy.ps1:
       * Runs with -WhatIf and a safe -AllowedSourceRanges ('203.0.113.7/32');
         exits 0.
       * Prints the full ordered planned command list and executes NO external
@@ -38,11 +38,11 @@
         CASE-SENSITIVE (-CNotMatch): the lowercase /run/secrets/db_password file
         path and the lowercase Secret Manager id (db_password) are both correct
         and allowed; only the uppercase env-var form DB_PASSWORD is forbidden
-        (Req 3.1). The GKE overlay carries the secret-file contract (the app reads
+. The GKE overlay carries the secret-file contract (the app reads
         /run/secrets/db_password via the CSI driver), so the only secret-related
         assertion needed here is "no DB_PASSWORD" plus "kubectl apply is planned".
 
-    teardown.ps1 (Req 6.5):
+    teardown.ps1:
       * Runs with -WhatIf; exits 0.
       * Prints the full ordered planned command list (reverse-order deletes) and
         executes NO external command: kubectl delete (overlay + namespace),
@@ -143,7 +143,7 @@ BeforeAll {
     }
 }
 
-Describe 'GCP Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
+Describe 'GCP Kubernetes deploy.ps1 -WhatIf dry run' {
     BeforeAll {
         # deploy REQUIRES -AllowedSourceRanges; pass a safe non-open CIDR.
         $script:Deploy = Invoke-WhatIfScript -ScriptPath $script:DeployScript -ExtraArgs @(
@@ -200,7 +200,7 @@ Describe 'GCP Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
             Select-Object -First 1
         $createLine | Should -Not -BeNullOrEmpty
         $createLine | Should -Match '--database-version=POSTGRES'
-        # --no-assign-ip => no public IPv4 => not publicly reachable (Req 9.5).
+        # --no-assign-ip => no public IPv4 => not publicly reachable.
         $createLine | Should -Match '--no-assign-ip'
     }
 
@@ -255,16 +255,16 @@ Describe 'GCP Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
         $credIdx    | Should -BeLessThan $applyIdx
     }
 
-    It 'sets NO DB_PASSWORD env anywhere in the planned command set (Req 3.1)' {
+    It 'sets NO DB_PASSWORD env anywhere in the planned command set' {
         # Match is CASE-SENSITIVE (-CNotMatch) on purpose: the lowercase Secret
         # Manager id (db_password) and the lowercase /run/secrets/db_password file
         # path are both correct and required; only the uppercase env-var form
-        # DB_PASSWORD is forbidden (Req 3.1).
+        # DB_PASSWORD is forbidden.
         $script:Deploy.Text | Should -Not -CMatch 'DB_PASSWORD'
         ($script:DeployPlanned -join "`n") | Should -Not -CMatch 'DB_PASSWORD'
     }
 
-    It 'applies the overlay via kubectl (secret-file contract carried by the overlay, Req 3.3)' {
+    It 'applies the overlay via kubectl (secret-file contract carried by the overlay)' {
         # The GKE overlay delivers the secret as the file /run/secrets/db_password
         # (CSI driver); here we only need to confirm the overlay apply is planned.
         ($script:DeployPlanned -join "`n") | Should -Match 'kubectl apply -f -'
@@ -277,7 +277,7 @@ Describe 'GCP Kubernetes deploy.ps1 -WhatIf dry run (Req 6.5, 3.1, 3.3)' {
     }
 }
 
-Describe 'GCP Kubernetes teardown.ps1 -WhatIf dry run (Req 6.5)' {
+Describe 'GCP Kubernetes teardown.ps1 -WhatIf dry run' {
     BeforeAll {
         $script:Teardown = Invoke-WhatIfScript -ScriptPath $script:TeardownScript -ExtraArgs @('-WhatIf')
         $script:TeardownPlanned = Get-PlannedCommands -Lines $script:Teardown.Lines
@@ -317,7 +317,7 @@ Describe 'GCP Kubernetes teardown.ps1 -WhatIf dry run (Req 6.5)' {
         $nsIdx      | Should -BeLessThan $clusterIdx
         $clusterIdx | Should -BeLessThan $sqlIdx
         $clusterIdx | Should -BeLessThan $secretIdx
-        # The native registry is removed LAST (Req 5.3).
+        # The native registry is removed LAST.
         $sqlIdx     | Should -BeLessThan $registryIdx
         $secretIdx  | Should -BeLessThan $registryIdx
     }

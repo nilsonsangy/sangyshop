@@ -17,7 +17,6 @@
 //   (c) when DB_PASSWORD_FILE is absent / empty / whitespace-only, hardened falls
 //       back to the default /run/secrets/db_password.
 //
-// Validates: Requirements 5.1, 5.2, 5.5, 5.6
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fc = require("fast-check");

@@ -1,5 +1,5 @@
 // src/routes/lab.js
-// Opt-in laboratory routes (design D-12):
+// Opt-in laboratory routes (design decision):
 //   GET /.well-known/sangyshop-lab   lab marker (JSON + X-SangyShop-Lab header)
 //   GET /debug/config                returns the "forgotten" LAB_LEAKED_FILE
 //

@@ -1,6 +1,6 @@
 // test/database.invalid.property.test.js
 // Property-based test for the Data_Access_Module (src/db/database.js), memory
-// backend, Property 4: an invalid SQL statement submitted to get/all/run/exec
+// backend, an invalid SQL statement submitted to get/all/run/exec
 // rejects/propagates an error to the caller and yields NO partial result.
 //
 // This file exercises the contract directly (no HTTP layer): it requires
@@ -66,9 +66,8 @@ const invalidSql = fc.oneof(
     .filter((s) => s.trim().length > 0)
 );
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 4: Invalid operation propagates an error with no partial result
-// Validates: Requirements 2.5
-test("Property 4: invalid SQL in get/all/run/exec rejects/propagates an error with no partial result", async () => {
+// Invalid operation propagates an error with no partial result
+test("invalid SQL in get/all/run/exec rejects/propagates an error with no partial result", async () => {
   await fc.assert(
     fc.asyncProperty(invalidSql, async (sql) => {
       const stmt = db.prepare(sql);

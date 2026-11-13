@@ -23,7 +23,7 @@ overlay drops the in-cluster Postgres **StatefulSet**, its **PVC**, the
 Left intact: pod/container `securityContext`, RBAC
 (`ServiceAccount`/`Role`/`RoleBinding`), and all three `NetworkPolicies`.
 
-## Placeholders (substituted by `gcp/kubernetes/deploy.ps1`, task 7.2)
+## Placeholders (substituted by `gcp/kubernetes/deploy.ps1`)
 
 The overlay keeps literal `__TOKEN__` placeholders so it stays kustomize-
 buildable for review. The deploy script renders the overlay, replaces the

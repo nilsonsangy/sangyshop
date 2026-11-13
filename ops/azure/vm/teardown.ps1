@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Removes the Azure VM lab (Deploy_VM_Azure) created by deploy.ps1.
+    Removes the Azure VM lab (Azure VM deployment) created by deploy.ps1.
 
 .DESCRIPTION
-    Lower-level teardown invoked by the Full_Teardown_Azure. Order:
+    Lower-level teardown invoked by the full Azure teardown. Order:
 
       1. Checks `az account show` (fail-closed).
-      2. Refuses to touch a resource group that does not carry the Tag_Lab
+      2. Refuses to touch a resource group that does not carry the lab tag
          lab=sangyshop-lab-azure (and, when -RunId is given, the matching run-id tag).
       3. Removes Microsoft Sentinel (if the IR lab enabled it) from the Log
          Analytics workspace, then force-deletes the workspace permanently.
@@ -20,8 +20,8 @@
       7. Confirms removal: exits 0 ONLY when `az group exists` returns false and
          nothing failed.
 
-    The Evidence resource group (Grupo_Recursos_Evidencias) is NOT removed here; it
-    is handled by the Full_Teardown_Azure, which owns the preservation decision.
+    The Evidence resource group (evidence resource group) is NOT removed here; it
+    is handled by the full Azure teardown, which owns the preservation decision.
 
     Idempotent: a re-run after success skips what is already gone, prints
     "Nothing to remove", and exits 0 quickly. Every external command is echoed
@@ -147,7 +147,7 @@ try {
     Write-Host ("  Lab resource group : {0} ({1})" -f $rg, $location)
     Write-Host ("  Key Vault          : {0}" -f $names['KeyVault'])
     Write-Host ("  Service principal  : {0}" -f $spName)
-    Write-Host ("  Evidence group     : {0} (NOT removed here; owned by the Full_Teardown_Azure)" -f $names['EvidenceGroup'])
+    Write-Host ("  Evidence group     : {0} (NOT removed here; owned by the full Azure teardown)" -f $names['EvidenceGroup'])
     if ($WhatIf) { Write-Step "DRY RUN (-WhatIf): the ordered command list below WOULD run; nothing is executed." }
 
     # --- Auth check. ---
@@ -182,12 +182,12 @@ try {
     $vaultCandidates.Add($names['KeyVault'])
 
     if ($groupExists) {
-        # --- Tag_Lab guard: never delete a group that is not marked as ours. ---
-        Write-Step "Verifying the Tag_Lab on '$rg' before removing anything"
+        # --- lab tag guard: never delete a group that is not marked as ours. ---
+        Write-Step "Verifying the lab tag on '$rg' before removing anything"
         $labTag = @(Get-AzLines -CmdArgs @('group', 'show', '--name', $rg, '--query', 'tags.lab', '--output', 'tsv') -Placeholder @($script:VmLabName))
         if ($labTag.Count -eq 0 -or $labTag[$labTag.Count - 1] -ne $script:VmLabName) {
             $found = if ($labTag.Count -gt 0) { $labTag[$labTag.Count - 1] } else { '<none>' }
-            throw "Resource group '$rg' is not marked lab=$($script:VmLabName) (found tag value: $found). Refusing to remove an unmarked resource group (Recurso_Nao_Marcado)."
+            throw "Resource group '$rg' is not marked lab=$($script:VmLabName) (found tag value: $found). Refusing to remove an unmarked resource group (untagged resource)."
         }
         if (-not [string]::IsNullOrWhiteSpace($RunId)) {
             $runTag = @(Get-AzLines -CmdArgs @('group', 'show', '--name', $rg, '--query', 'tags."run-id"', '--output', 'tsv') -Placeholder @($RunId))

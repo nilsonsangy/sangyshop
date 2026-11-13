@@ -30,7 +30,7 @@
 # unchanged.
 #
 # ---------------------------------------------------------------------------
-# SUBSTITUTION (performed by aws/eks/deploy.ps1, task 10.2)
+# SUBSTITUTION (performed by aws/eks/deploy.ps1)
 # ---------------------------------------------------------------------------
 # This overlay carries PLACEHOLDERS so it is committable with no account data.
 # Before `kubectl apply -k`, deploy.ps1 replaces them from cloud.config.ps1:

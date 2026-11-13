@@ -1,10 +1,9 @@
 <#
 .SYNOPSIS
-    Pester 5.x tests for Assert-AllowedSource32 (lib/Common.ps1, task 9.2).
+    Pester 5.x tests for Assert-AllowedSource32 (lib/Common.ps1).
 
 .DESCRIPTION
-    Property 1: Validacao de origem permitida.
-    **Validates: Requirements 10.12, 10.13, 20.7, 30.4, 30.5, 32.3, 41.3**
+    Validacao de origem permitida.
 
     There is no mature property-based testing library for PowerShell, so the
     property is exercised with generated cases (>= 100 per group) drawn from a
@@ -26,7 +25,7 @@ BeforeAll {
     $script:Cases = 200
 }
 
-Describe 'Assert-AllowedSource32 (Property 1: Validacao de origem permitida)' {
+Describe 'Assert-AllowedSource32 (Validacao de origem permitida)' {
 
     Context 'valid single-host IPv4 /32 (generated)' {
         It 'accepts every generated a.b.c.d/32 (octets 0-255)' {

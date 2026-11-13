@@ -85,9 +85,8 @@ function assertNoSecrets(record, line) {
   assert.ok(!line.includes(SECRET), "smuggled secret leaked into output");
 }
 
-// Feature: aulas-24-25-resposta-incidentes-nuvem, Property 11: Registro estruturado
-// Validates: Requirements 12.6, 12.7, 30.13
-test("Property 11: auth records are valid JSON with required fields and no secrets", () => {
+// Registro estruturado
+test("auth records are valid JSON with required fields and no secrets", () => {
   fc.assert(
     fc.property(authInput, (input) => {
       const { result, lines } = withCapture("on", () => logAuth(input));
@@ -108,7 +107,7 @@ test("Property 11: auth records are valid JSON with required fields and no secre
   );
 });
 
-test("Property 11: http_request records are valid JSON with required fields and no secrets", () => {
+test("http_request records are valid JSON with required fields and no secrets", () => {
   fc.assert(
     fc.property(httpInput, (input) => {
       const record = buildRecord("http_request", input);
@@ -125,7 +124,7 @@ test("Property 11: http_request records are valid JSON with required fields and 
   );
 });
 
-test("Property 11: middleware output never contains cookies or Authorization header", () => {
+test("middleware output never contains cookies or Authorization header", () => {
   fc.assert(
     fc.property(fc.string({ maxLength: 100 }), (path) => {
       const handlers = {};
@@ -149,7 +148,7 @@ test("Property 11: middleware output never contains cookies or Authorization hea
   );
 });
 
-test("Property 11: record structure is independent of the A09 defense toggle", () => {
+test("record structure is independent of the A09 defense toggle", () => {
   fc.assert(
     fc.property(authInput, (input) => {
       const run = (on) =>
@@ -169,7 +168,7 @@ test("Property 11: record structure is independent of the A09 defense toggle", (
   );
 });
 
-test("Property 11: STRUCTURED_LOGS=off disables output", () => {
+test("STRUCTURED_LOGS=off disables output", () => {
   fc.assert(
     fc.property(
       authInput,

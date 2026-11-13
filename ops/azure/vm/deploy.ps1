@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-    Deploys the VULNERABLE SangyShop variant to an Azure VM (Deploy_VM_Azure) for the
+    Deploys the VULNERABLE SangyShop variant to an Azure VM (Azure VM deployment) for the
     Azure incident-response lab.
 
 .DESCRIPTION
-    Creates, inside the lab resource group (Grupo_Recursos_Lab), in this order:
+    Creates, inside the lab resource group (lab resource group), in this order:
 
       1. Validates -AllowedSourceRanges (single IPv4 /32 only) BEFORE anything else.
       2. Checks `az account show` (fail-closed) and prints the active subscription.
-      3. Lab and Evidence resource groups (both carry the Tag_Lab).
+      3. Lab and Evidence resource groups (both carry the lab tag).
       4. Virtual network, subnet, Network Security Group (app port + SSH only from
          the allowed /32 ranges) and a static public IP.
       5. User-assigned managed identity for the VM.
@@ -29,8 +29,8 @@
     travels to Key Vault / PostgreSQL by file (`--file`, `@file`) and the VM reads it
     from Key Vault at boot with its managed identity.
 
-    Every resource that accepts tags gets the Tag_Lab (lab, run-id, component) and
-    EVERY resource is also recorded in the Manifesto_Lab (Add-LabManifestEntry).
+    Every resource that accepts tags gets the lab_tag (lab, run-id, component) and
+    EVERY resource is also recorded in the lab_manifest (Add-LabManifestEntry).
 
     On failure the script exits non-zero, writes (to stderr, in English) the name of
     the resource that failed plus the list of resources already created, and tells
@@ -162,7 +162,7 @@ function Test-AzExists {
 function Write-StdErr { param([string] $Message) [Console]::Error.WriteLine($Message) }
 
 # =============================================================================
-# Failure bookkeeping (Req 30.6) and Manifesto_Lab registration (Req 48.2).
+# Failure bookkeeping and lab manifest registration.
 # =============================================================================
 $script:Current = $null
 $script:Created = New-Object System.Collections.Generic.List[string]
@@ -210,7 +210,7 @@ function Wait-Seconds {
 # =============================================================================
 $tempFiles = New-Object System.Collections.Generic.List[string]
 try {
-    # --- 1. Validate the allowed sources BEFORE anything else (Req 30.4 / 30.5). ---
+    # --- 1. Validate the allowed sources BEFORE anything else. ---
     Write-Step "Validating -AllowedSourceRanges (single IPv4 /32 only)"
     # Explicit guard for a missing value: Assert-AllowedSource32 fails with an opaque
     # strict-mode error on $null under Windows PowerShell 5.1.
@@ -281,7 +281,7 @@ try {
     }
 
     # --- 3. Resource groups. ---
-    Write-Step "Ensuring resource groups (Grupo_Recursos_Lab and Grupo_Recursos_Evidencias)"
+    Write-Step "Ensuring resource groups (lab resource group and evidence resource group)"
     $labExists = $false
     if (-not $WhatIf) {
         $labExists = ((Get-AzValue -CmdArgs @('group', 'exists', '--name', $rg) -Placeholder 'false') -eq 'true')
@@ -309,11 +309,11 @@ try {
 
     Start-Resource "network security group $($names['Nsg'])"
     Az network nsg create --name $names['Nsg'] --resource-group $rg --location $location --tags @tagDeploy --output none
-    Az network nsg rule create --nsg-name $names['Nsg'] --resource-group $rg --name allow-app-from-student `
+    Az network nsg rule create --nsg-name $names['Nsg'] --resource-group $rg --name allow-app-from-user `
         --priority 100 --direction Inbound --access Allow --protocol Tcp `
         --source-address-prefixes @allowed --source-port-ranges '*' `
         --destination-address-prefixes '*' --destination-port-ranges $appPort --output none
-    Az network nsg rule create --nsg-name $names['Nsg'] --resource-group $rg --name allow-ssh-from-student `
+    Az network nsg rule create --nsg-name $names['Nsg'] --resource-group $rg --name allow-ssh-from-user `
         --priority 110 --direction Inbound --access Allow --protocol Tcp `
         --source-address-prefixes @allowed --source-port-ranges '*' `
         --destination-address-prefixes '*' --destination-port-ranges 22 --output none
@@ -419,7 +419,7 @@ try {
         if (-not $dbExists) {
             Az postgres flexible-server db create --resource-group $rg --server-name $names['PgServer'] --database-name $dbName --output none
         }
-        # Port 5432 reachable ONLY from the VM public IP (Req 32.4).
+        # Port 5432 reachable ONLY from the VM public IP.
         Az postgres flexible-server firewall-rule create --resource-group $rg --name $names['PgServer'] `
             --rule-name allow-lab-vm --start-ip-address $vmIp --end-ip-address $vmIp --output none
         Complete-Resource -Type 'azure:postgres-flexible-server' -Id ("$rg/" + $names['PgServer'])

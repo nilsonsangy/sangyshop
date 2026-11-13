@@ -5,7 +5,7 @@
 // at /run/secrets/db_password. The resolution must be fail-closed: if the file
 // content is composed only of whitespace/newlines (empty after trim), OR the
 // file is absent (fs.readFileSync throws ENOENT), resolve('hardened', ...) must
-// throw an Error and MUST NOT return any credentials object (Requirements 5.6).
+// throw an Error and MUST NOT return any credentials object.
 //
 // fs is injected so the test never touches the real filesystem; there are no
 // temporary files to clean up.
@@ -70,9 +70,8 @@ function assertFailClosed(fsStub, env) {
   assert.equal(result, undefined, "no credentials object may be returned when failing closed");
 }
 
-// Feature: sangyshop-postgres-secret-ver-codigo, Property 12: Fail-closed do segredo robustecido
-// Validates: Requirements 5.6
-test("Property 12: hardened mode fails closed for whitespace-only or missing secret", async () => {
+// Fail-closed do segredo robustecido
+test("hardened mode fails closed for whitespace-only or missing secret", async () => {
   await fc.assert(
     fc.asyncProperty(envArb, whitespaceArb, async (env, whitespace) => {
       // Case (a): file content is only whitespace/newlines -> empty after trim.
