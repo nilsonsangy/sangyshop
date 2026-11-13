@@ -59,7 +59,6 @@ BeforeDiscovery {
                 Index = $i; Region = $regions[$rng.Next($regions.Count)]
                 Evidence = ($i % 2 -eq 0); WithSub = ($rng.Next(2) -eq 1)
                 VmState = @('ok', 'missing', 'denied')[$rng.Next(3)]
-                Nimbus = ($rng.Next(2) -eq 1)
                 Email = ('user{0}@example.com' -f $rng.Next(100000))
             })
     }
@@ -70,7 +69,7 @@ BeforeAll {
     $script:LabDir = (Resolve-Path (Join-Path $PSScriptRoot '..\azure\ir-lab')).Path
     $script:SubId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
     $script:SavedEnv = @{}
-    foreach ($n in 'LAB_CLOUD_CONFIG_PATH', 'LAB_MANIFEST_PATH', 'LAB_ALERT_EMAIL', 'NIMBUSDFIR_PATH') {
+    foreach ($n in 'LAB_CLOUD_CONFIG_PATH', 'LAB_MANIFEST_PATH', 'LAB_ALERT_EMAIL') {
         $script:SavedEnv[$n] = [Environment]::GetEnvironmentVariable($n, 'Process')
     }
     $script:Work = Join-Path ([System.IO.Path]::GetTempPath()) ('azlab-ro-' + [guid]::NewGuid().ToString('N'))
@@ -89,7 +88,6 @@ BeforeAll {
 }
 '@
     $env:LAB_CLOUD_CONFIG_PATH = $script:ConfigFile
-    $env:NIMBUSDFIR_PATH = $null
 
     $script:AgId = "/subscriptions/$($script:SubId)/resourceGroups/sangyshop-lab-abc12345/providers/microsoft.insights/actionGroups/ag-sangyshop-lab"
     $global:LabTestSubId = $script:SubId
@@ -155,7 +153,8 @@ BeforeAll {
     function script:Invoke-Tool {
         param([string]$Script, [hashtable]$Params)
         $global:LASTEXITCODE = $null
-        $text = (& (Join-Path $script:LabDir $Script) @Params *>&1 | Out-String)
+        # A fixed width keeps long command lines unwrapped whatever the host console width is.
+        $text = (& (Join-Path $script:LabDir $Script) @Params *>&1 | Out-String -Width 4096)
         return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Text = $text }
     }
 
@@ -229,37 +228,23 @@ Describe 'check-detection-ready.ps1 (fixed seed, 60 cases)' {
 
 Describe 'print-response-commands.ps1 (fixed seed, 20 cases)' {
 
-    It 'case <Index>: runs nothing, exit 4 without attack evidence, reads only the VM disk' -ForEach $script:PrintCases {
+    It 'case <Index>: prints only native az commands, exit 4 without attack evidence, reads only the VM disk' -ForEach $script:PrintCases {
         $dir = Initialize-Case -State @{ Deny = $null; Vm = $VmState } -Email $Email -Name "print-$Index"
         $evidence = Join-Path $dir 'attack-steps.jsonl'
         if ($Evidence) { Set-Content -LiteralPath $evidence -Value '{"step":1}' -Encoding UTF8 }
 
-        $marker = Join-Path $dir 'executed.marker'
-        $nimbus = Join-Path $dir 'nimbus'
         $p = @{ Region = $Region; AttackEvidencePath = $evidence }
         if ($WithSub) { $p['Subscription'] = $script:SubId }
-        if ($Nimbus) {
-            New-Item -ItemType Directory -Path (Join-Path $nimbus 'ir_lab_core') -Force | Out-Null
-            New-Item -ItemType Directory -Path (Join-Path $nimbus 'aws') -Force | Out-Null
-            New-Item -ItemType Directory -Path (Join-Path $nimbus 'azure') -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $nimbus 'ir_lab_core\__init__.py') -Value ''
-            Set-Content -LiteralPath (Join-Path $nimbus 'aws\ec2_evidence_preservation.py') -Value ''
-            foreach ($t in 'vm_isolate', 'disk_snapshot_hash', 'azure_activity_collect') {
-                Set-Content -LiteralPath (Join-Path $nimbus "azure\$t.ps1") -Value "Set-Content -LiteralPath '$marker' -Value ran"
-            }
-            $p['NimbusDfirPath'] = $nimbus
-        }
 
         $r = Invoke-Tool -Script 'print-response-commands.ps1' -Params $p
 
         Assert-ReadOnlyCalls
-        Test-Path -LiteralPath $marker | Should -BeFalse
         $r.Text | Should -Not -Match ([regex]::Escape($Email))
 
         if (-not $Evidence) {
             $r.ExitCode | Should -Be 4
             $global:LabReadCalls.Count | Should -Be 0
-            $r.Text | Should -Not -Match 'vm_isolate'
+            $r.Text | Should -Not -Match '(?m)^az\s'
             return
         }
         if (-not $WithSub) {
@@ -276,12 +261,18 @@ Describe 'print-response-commands.ps1 (fixed seed, 20 cases)' {
         }
         $r.ExitCode | Should -Be 0
         $r.Text | Should -Match 'Nothing was executed'
-        $commandLines = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^&\s' })
-        $commandLines.Count | Should -Be 3
-        @($commandLines | Where-Object { $_ -match '-Execute' }).Count | Should -Be 0
+        $commandLines = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^az\s' })
+        $commandLines.Count | Should -Be 8
+        # Every printed command is a native az command, with no other tool or path.
+        @($commandLines | Where-Object { $_ -notmatch '^az (monitor|security|snapshot|vm|network|ad) ' }).Count | Should -Be 0
+        $r.Text | Should -Not -Match '-Execute'
+        $r.Text | Should -Not -Match '(?m)^&\s'
+        foreach ($needle in 'monitor activity-log list', 'security alert list', 'snapshot create',
+            'network nic update', 'ad sp credential delete') {
+            $r.Text | Should -Match ([regex]::Escape($needle))
+        }
         if ($WithSub -and $VmState -eq 'ok') { $r.Text | Should -Match 'sangyshop-vm-osdisk' }
         if ($WithSub -and $VmState -eq 'missing') { $r.Text | Should -Match '<os-disk-name>' }
-        if ($Nimbus) { $r.Text | Should -Match ([regex]::Escape($nimbus)) } else { $r.Text | Should -Match '<NimbusDFIR>' }
     }
 }
 

@@ -19,7 +19,6 @@ BeforeAll {
         LAB_CONFIG_PATH   = $env:LAB_CONFIG_PATH
         LAB_MANIFEST_PATH = $env:LAB_MANIFEST_PATH
         LAB_RUN_ID        = $env:LAB_RUN_ID
-        NIMBUSDFIR_PATH   = $env:NIMBUSDFIR_PATH
     }
     $script:ConfigFile = Join-Path $script:Work 'cloud.config.ps1'
     Set-Content -LiteralPath $script:ConfigFile -Encoding UTF8 -Value @'
@@ -35,7 +34,6 @@ BeforeAll {
     $env:LAB_CONFIG_PATH = $script:ConfigFile
     $env:LAB_MANIFEST_PATH = Join-Path $script:Work 'manifest.json'
     $env:LAB_RUN_ID = $null
-    $env:NIMBUSDFIR_PATH = $null
     $global:LabCliHandler = $null
 
     # Dot-source in the test scope so the helpers and $script: variables are visible.

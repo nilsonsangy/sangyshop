@@ -98,8 +98,8 @@ this repository:
 2. Run `ops/azure/ir-lab/check-detection-ready.ps1`. It is read-only and writes the readiness stamp
    that `attack-simulation/attack.js` requires. Exit code 4 means something is not ready and the
    message names the script that creates it.
-3. Run the attack, then `ops/azure/ir-lab/print-response-commands.ps1`. The NimbusDFIR checkout is
-   found through `NIMBUSDFIR_PATH` (see `ops/README.md`).
+3. Run the attack, then `ops/azure/ir-lab/print-response-commands.ps1`. It prints native
+   `az` commands for evidence collection and containment and runs none of them.
 
 The built-in roles each script needs are listed in `ops/README.md`. A denied call ends with exit
 code 3 and names the role to assign. `ops/azure/ir-lab/full-teardown.ps1` removes the whole lab.

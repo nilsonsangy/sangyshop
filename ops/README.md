@@ -89,8 +89,9 @@ ops/azure/ir-lab/     # Azure: the same flow for Azure
 ops/aws/iam/          # lab IAM group and least-privilege policy templates
 ```
 
-Generic incident response tools (evidence collection, containment, instance isolation) are not
-part of this repository. They live in NimbusDFIR, a separate project.
+The response step is covered by `print-response-commands.ps1` in each `ir-lab` folder. It prints native
+`aws` or `az` commands for evidence collection and containment. It never runs them and makes no cloud call
+(the Azure script makes one read-only `az vm show` call only when `-Subscription` is given).
 
 ### The four steps
 
@@ -100,7 +101,7 @@ part of this repository. They live in NimbusDFIR, a separate project.
 3. **Check readiness**: `check-detection-ready.ps1`. It writes the readiness stamp that
    `attack-simulation/attack.js` requires (see `attack-simulation/README.md`).
 4. **Attack, then respond**: run `attack-simulation/attack.js`, then `print-response-commands.ps1`
-   to print the NimbusDFIR commands for the response.
+   to print the native cloud CLI commands for the response (exit code 4 if the attack evidence file is missing, 2 on a configuration problem).
 
 `verify-lab-state.ps1` (AWS) is a read-only report of which detection components exist.
 `full-teardown.ps1` and `verify-zero-cost.ps1` remove the whole lab and confirm nothing billable remains.
@@ -118,23 +119,6 @@ Copy-Item ops/.env.example ops/.env
 `ops/.env` is ignored by Git. The address is resolved in this order: the `-Email` parameter, the
 `LAB_ALERT_EMAIL` environment variable, then `ops/.env`. Values already present in the environment are
 not overridden by the file. An invalid or missing address stops the script before anything is created.
-
-### Finding NimbusDFIR (`NIMBUSDFIR_PATH`)
-
-The checkout is never guessed and sibling folders are never searched. The path comes from one of
-these, in this order:
-
-1. the `-NimbusDfirPath` parameter of the script
-2. the `NIMBUSDFIR_PATH` environment variable
-3. `Common.NimbusDfirPath` in `ops/cloud.config.ps1`
-
-```powershell
-$env:NIMBUSDFIR_PATH = 'C:\path\to\NimbusDFIR'
-```
-
-A folder counts as a checkout only if it contains `ir_lab_core\__init__.py` and
-`aws\ec2_evidence_preservation.py`. Without a valid path, `print-response-commands.ps1` still prints
-the commands, with a placeholder for the checkout folder.
 
 ### AWS permissions: the lab IAM group
 

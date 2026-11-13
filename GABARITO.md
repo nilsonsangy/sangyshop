@@ -8,7 +8,7 @@ been validated. Base URL: `http://localhost:7000` (the vulnerable variant; the h
 
 The app now runs on a real **PostgreSQL 16** backend (driver `pg`), not an in-memory store.
 Data lives in a named Docker volume (`db-data`), so the `users`, `products` and `orders`
-rows created during class **survive a container restart**. The schema and seed are created
+rows created while using the app **survive a container restart**. The schema and seed are created
 only once: a second boot over the same volume reuses the existing data without duplicating
 the seed. This makes SQLi and IDOR impact concrete against a realistic, persistent database.
 
@@ -192,7 +192,7 @@ curl http://localhost:7000/debug/boom    # "Internal error. Please try again lat
 
 ## Exercise 5 - A09:2025 Security Logging & Alerting Failures
 
-**Target:** login under brute force. (Ties back to lesson 12 - Wazuh/SIEM.)
+**Target:** login under brute force. (Detection of this pattern is a typical SIEM use case, for example with Wazuh.)
 
 ### Attack (defense OFF)
 Repeat several login attempts with the wrong password for `alice`:

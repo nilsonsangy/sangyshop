@@ -21,11 +21,10 @@
     Compatible with Windows PowerShell 5.1 and PowerShell 7+.
 #>
 
-# Shared libraries: config loading, naming, e-mail resolution, secret masking, NimbusDFIR lookup.
+# Shared libraries: config loading, naming, e-mail resolution, secret masking.
 # The lab manifest helpers defined further down intentionally replace the ones in Common.ps1
 # (this stack records settings that cannot carry tags, with its own entry shape).
 . (Join-Path $PSScriptRoot '..\..\..\lib\Common.ps1')
-. (Join-Path $PSScriptRoot '..\..\..\lib\NimbusDfir.ps1')
 . (Join-Path $PSScriptRoot '..\..\vm\VmNames.ps1')
 # Permission hints (exact built-in roles) and the read-only account discovery.
 . (Join-Path $PSScriptRoot '..\..\..\lib\LabPermissions.ps1')
@@ -100,18 +99,10 @@ function Initialize-LabNames {
     $script:LabBlockRulePrefix = "$app-lab-block-"
 }
 
-# Optional redaction of echoed command lines (secrets must never reach the console).
-# The full redaction library is used when a NimbusDFIR checkout is configured;
-# otherwise Hide-LabSecrets from Common.ps1 masks the echoed line.
+# Echoed command lines are masked with Hide-LabSecrets from Common.ps1 (secrets must never reach the console).
 $script:LabConfigError = $null
 $script:LabConfig = $null
 Initialize-LabNames
-$script:LabNimbusPath = $null
-if (-not $script:LabConfigError) { $script:LabNimbusPath = Resolve-NimbusDfirPath -Config $script:LabConfig -Optional }
-if ($script:LabNimbusPath) {
-    $redactPath = Join-Path $script:LabNimbusPath 'ir_lab_core\Redact-Secrets.ps1'
-    if (Test-Path -LiteralPath $redactPath) { . $redactPath }
-}
 Set-StrictMode -Off
 function Write-LabInfo {
     param([string]$Message)
@@ -179,7 +170,7 @@ function Invoke-LabAz {
     if (-not $NoSubscription) { $full += @('--subscription', $script:LabSubscription) }
     $full += '--only-show-errors'
     $shown = 'az ' + ($full -join ' ')
-    if (Get-Command Redact-Secrets -ErrorAction SilentlyContinue) { $shown = Redact-Secrets -InputObject $shown } else { $shown = Hide-LabSecrets -Text $shown }
+    $shown = Hide-LabSecrets -Text $shown
     foreach ($m in @($script:LabMaskedValues)) { if ($m) { $shown = $shown.Replace("$m", '[masked]') } }
     if ($shown.Length -gt 400) { $shown = $shown.Substring(0, 400) + ' ...' }
 

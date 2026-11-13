@@ -139,8 +139,6 @@ IAM lab group and permissions:
 - `LabPermissions.Docs.Tests.ps1`: the permission tables in `lib/LabPermissions.ps1` match the README tables
 - `LabPreflight.Tests.ps1`
 
-External tool resolution:
-- `NimbusDfir.Resolve.Tests.ps1`
 
 Python (run with pytest, see above):
 - `ops/aws/ir-lab/tests/test_blocker_properties.py`

@@ -40,10 +40,6 @@
         DbName   = "sangyshop"   # database name created on the managed Postgres instance
         DbUser   = "sangyshop"   # database admin/login username (NOT a secret)
         ImageTag = "hardened"    # only the hardened variant is ever deployed
-
-        # Optional: path to a local NimbusDFIR checkout, used only by the incident
-        # response helper scripts. NIMBUSDFIR_PATH (environment) is checked first.
-        # NimbusDfirPath = "<path-to-your-NimbusDFIR-checkout>"
     }
 
     # -------------------------------------------------------------------------

@@ -19,7 +19,7 @@
 //     async run(...params): Promise<{ changes: number }>,
 //   }
 //
-// Placeholder semantics (critical for the A05 SQLi lesson): when get/all/run
+// Placeholder semantics (critical for the A05 SQL injection exercise): when get/all/run
 // are called WITH params the statement is parameterized (the payload is a data
 // literal, never executed as SQL); when called WITHOUT params the RAW sql
 // string (already carrying concatenated user input in the vulnerable path) is
@@ -63,7 +63,7 @@ const SEED_ORDERS = [
 // Backend: memory (sql.js encapsulated behind the contract).
 //
 // Design option (a): keep sql.js (already a dependency) behind the contract.
-// This reproduces sql.js semantics faithfully, which the A05 lesson relies on
+// This reproduces sql.js semantics faithfully, which the A05 SQL injection exercise relies on
 // (UNION SELECT exfiltration and `admin'--` bypass travel through real SQL).
 // The facade makes the synchronous sql.js API async by wrapping each call in a
 // resolved Promise, so the test backend honours the same async contract the

@@ -83,7 +83,7 @@ BeforeAll {
     $script:AwsDir = (Resolve-Path (Join-Path $PSScriptRoot '..\aws\ir-lab')).Path
     $script:AzDir = (Resolve-Path (Join-Path $PSScriptRoot '..\azure\ir-lab')).Path
     $script:Saved = @{}
-    foreach ($n in 'LAB_MANIFEST_PATH', 'LAB_CONFIG_PATH', 'LAB_CLOUD_CONFIG_PATH', 'NIMBUSDFIR_PATH', 'LAB_ALERT_EMAIL') {
+    foreach ($n in 'LAB_MANIFEST_PATH', 'LAB_CONFIG_PATH', 'LAB_CLOUD_CONFIG_PATH', 'LAB_ALERT_EMAIL') {
         $script:Saved[$n] = [Environment]::GetEnvironmentVariable($n, 'Process')
     }
     $script:Work = Join-Path ([System.IO.Path]::GetTempPath()) ('lab-gates-' + [guid]::NewGuid().ToString('N'))
@@ -113,7 +113,6 @@ BeforeAll {
 '@
     $env:LAB_CONFIG_PATH = $script:AwsConfig
     $env:LAB_CLOUD_CONFIG_PATH = $script:AzConfig
-    $env:NIMBUSDFIR_PATH = $null
     $env:LAB_ALERT_EMAIL = $null
     $script:AzSubId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
     $script:AzAgId = '/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg/providers/microsoft.insights/actionGroups/ag-sangyshop-lab'
@@ -208,7 +207,7 @@ BeforeAll {
         $oldErr = [Console]::Error
         $errWriter = New-Object System.IO.StringWriter
         [Console]::SetError($errWriter)
-        try { $text = (& $Path @Params *>&1 | Out-String) } finally { [Console]::SetError($oldErr) }
+        try { $text = (& $Path @Params *>&1 | Out-String -Width 4096) } finally { [Console]::SetError($oldErr) }
         return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Text = ($text + $errWriter.ToString()) }
     }
 
@@ -303,7 +302,7 @@ Describe 'print-response-commands.ps1 attack evidence gate (fixed seed, 8 cases)
 
         $r.ExitCode | Should -Be 4
         $r.Text | Should -Match 'attack simulation'
-        $r.Text | Should -Not -Match 'cloudtrail_collect'
+        $r.Text | Should -Not -Match '(?m)^\s+aws\s'
         $global:GateState.Calls.Count | Should -Be 0
 
         # With the evidence file the same call succeeds, so the file is the only gate.

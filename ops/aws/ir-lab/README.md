@@ -28,7 +28,6 @@ Names come from `ops/aws/AwsLabNames.ps1`, derived from `cloud.config.ps1`, so t
 - `ops/cloud.config.ps1` copied from `ops/cloud.config.example.ps1`, with `Aws.Region` and `Aws.AccountId` set. Every script also accepts `-Region`.
 - The application deployed with `ops/aws/ec2/deploy.ps1`. It creates the application log group the alarm watches.
 - Permissions listed in [Permissions needed before you start](#permissions-needed-before-you-start).
-- Optional: a local checkout of NimbusDFIR for the response step (see [NimbusDFIR path](#nimbusdfir-path)).
 
 ## The four steps
 
@@ -111,17 +110,7 @@ Both scripts accept `-LabBucket <app-bucket>` and `plant-leaked-credential.ps1` 
 ./ops/aws/ir-lab/print-response-commands.ps1 -Region us-east-1 -InstanceId <instance-id>
 ```
 
-It prints ready-to-copy NimbusDFIR commands: collect CloudTrail events, export GuardDuty findings, contain the leaked IAM user, isolate the instance and preserve its volumes. It never runs them, and it makes no AWS call. The printed isolation command carries `--tag lab=sangyshop-lab-aws` so the quarantine group is marked as part of this lab. NimbusDFIR tools are dry-run until you add the execute switch. Without the attack evidence file (`attack-simulation/out/attack-steps.jsonl`) the script exits with 4 and names the attack step.
-
-## NimbusDFIR path
-
-The response step needs a local NimbusDFIR checkout. The location is never guessed and neighbouring folders are never probed. The first valid source wins:
-
-1. the `-NimbusDfirPath` parameter
-2. the `NIMBUSDFIR_PATH` environment variable
-3. `Common.NimbusDfirPath` in `ops/cloud.config.ps1`
-
-A folder is valid only if it contains `ir_lab_core/__init__.py` and `aws/ec2_evidence_preservation.py`. When no valid checkout is found, `print-response-commands.ps1` still prints the commands with a `<NimbusDFIR>` placeholder and a warning.
+It prints ready-to-copy native `aws` commands: query CloudTrail events, list and read GuardDuty findings, snapshot the instance volume as evidence, move the instance to a quarantine security group, and contain the leaked IAM user (deactivate its access key and attach a deny-all inline policy). It never runs them, and it makes no AWS call. Values that depend on the live account (volume id, quarantine group id, access key id, time range) are printed as placeholders. The snapshot, the group change and the IAM changes modify the account, so review each command before running it. Exit codes: 0 commands printed, 2 configuration problem, 4 the attack evidence file (`attack-simulation/out/attack-steps.jsonl`) is missing, in which case the script names the attack step.
 
 ## Alert e-mail
 
@@ -218,4 +207,4 @@ The detection components are billable: CloudTrail data events, CloudWatch Logs i
 - The scripts never attach policies, create IAM policies or add users to groups. Only `ops/aws/iam/ensure-lab-group.ps1` touches the lab group, and only on request.
 - A resource without the lab tag is never modified or deleted.
 - The leaked credential is a separate low-privilege identity, never your own. Use it only in an isolated lab account.
-- Secrets are never printed; when NimbusDFIR is available its redaction is used, otherwise a built-in masker.
+- Secrets are never printed; the built-in masker hides them.

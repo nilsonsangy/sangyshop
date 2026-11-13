@@ -13,8 +13,7 @@ your own IP.** Running `attack.js` against any target outside the lab,
 including production systems, third-party systems, or any SangyShop instance
 that is not yours, is prohibited. Before running the simulated attack, consult
 the AWS acceptable use policy and the AWS penetration testing policy (or the
-equivalent Azure policies) currently in force, as instructed in the course's
-IR lab session.
+equivalent Azure policies) currently in force, as instructed in the lab documentation.
 
 Before sending any attack request, `attack.js` calls the target's lab marker
 endpoint and refuses to continue if the marker does not match (see "The lab
@@ -189,7 +188,7 @@ search results. With SangyShop's A05 defense OFF, the vulnerable
 parameterless query concatenates `q` directly into SQL; with the defense ON,
 the parameterized query treats the payload as a literal string and returns
 no matches. This is the step users replay with the defense toggled to see
-the before/after contrast the course methodology is built around.
+the before/after contrast this lab is built around.
 
 ### 4. `idor`, insecure direct object reference (budget: 30 requests, OWASP A01)
 
@@ -312,9 +311,9 @@ start time, end time) built by `lib/steplog.js`'s `summarize()` (Requirement
    the cloud detection stack (CloudTrail / CloudWatch Logs / VPC Flow Logs /
    GuardDuty on AWS, or Activity Log / Log Analytics / Defender for Cloud /
    Sentinel on Azure). Run `ops/aws/ir-lab/print-response-commands.ps1` (or the
-   Azure equivalent in `ops/azure/ir-lab/`) to print the matching NimbusDFIR
-   collection and containment commands. The NimbusDFIR checkout is found through
-   `NIMBUSDFIR_PATH` (see `ops/README.md`).
+   Azure equivalent in `ops/azure/ir-lab/`) to print the matching
+   native cloud CLI commands for evidence collection and containment. The commands are only
+   printed, never run.
 
 If the `credential-discovery` step finds a credential, `out/exposed-credential.json`
 will contain something shaped like the lab's leaked-config file, for example:
@@ -328,7 +327,7 @@ will contain something shaped like the lab's leaked-config file, for example:
 ```
 
 `AKIAIOSFODNN7EXAMPLE` is the placeholder credential convention used
-throughout this course; it is never a real cloud credential.
+throughout this documentation; it is never a real cloud credential.
 
 ## Output files
 

@@ -27,7 +27,6 @@ Names (resource group, workspace, the `SangyShopApp_CL` table, VM) are derived f
 - The application deployed with `ops/azure/vm/deploy.ps1`.
 - `-Subscription` on every script. No default subscription is used, so the lab never touches the wrong one.
 - Permissions listed in [Permissions needed before you start](#permissions-needed-before-you-start).
-- Optional: a local checkout of NimbusDFIR for the response step (see [NimbusDFIR path](#nimbusdfir-path)).
 
 ## The four steps
 
@@ -98,17 +97,7 @@ To plant and use the leaked credential:
 ./ops/azure/ir-lab/print-response-commands.ps1 -Subscription <id>
 ```
 
-It prints ready-to-copy NimbusDFIR commands for VM isolation, disk snapshot and Activity Log collection, with the real lab values filled in (VM, resource group, subscription, region and, when `-Subscription` is given, the OS disk name from `az vm show`). It never runs them. Without `-Subscription` no Azure call is made and placeholders are printed. NimbusDFIR tools are dry-run until you add `-Execute`. Without the attack evidence file (`attack-simulation/out/attack-steps.jsonl`) the script exits with 4.
-
-## NimbusDFIR path
-
-The response step needs a local NimbusDFIR checkout. The location is never guessed and neighbouring folders are never probed. The first valid source wins:
-
-1. the `-NimbusDfirPath` parameter
-2. the `NIMBUSDFIR_PATH` environment variable
-3. `Common.NimbusDfirPath` in `ops/cloud.config.ps1`
-
-A folder is valid only if it contains `ir_lab_core/__init__.py` and `aws/ec2_evidence_preservation.py`. When no valid checkout is found, the commands are still printed with a `<NimbusDFIR>` placeholder.
+It prints ready-to-copy native `az` commands for Activity Log collection, Defender for Cloud alerts, an OS disk snapshot, VM network interface isolation and removal of the leaked service principal credential, with the real lab values filled in (VM, resource group, subscription, region and, when `-Subscription` is given, the OS disk name from `az vm show`). It never runs them. Without `-Subscription` no Azure call is made and placeholders are printed. The snapshot, the network interface change and the credential removal modify the subscription, so review each command before running it. Exit codes: 0 commands printed, 2 configuration problem, 3 a read was denied, 4 the attack evidence file (`attack-simulation/out/attack-steps.jsonl`) is missing.
 
 ## Alert e-mail
 
@@ -191,4 +180,4 @@ All detection components are billable beyond free tiers and trials: Log Analytic
 - The scripts never assign roles to the operator. The only role assignments they make are for identities they create.
 - A resource without the lab tag is never modified or deleted.
 - The leaked credential is a separate read-only identity. Use it only in an isolated lab subscription.
-- Secrets are never printed; when NimbusDFIR is available its redaction is used, otherwise a built-in masker.
+- Secrets are never printed; the built-in masker hides them.

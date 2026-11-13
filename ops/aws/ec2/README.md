@@ -165,8 +165,8 @@ After the deploy, the detection stack, the readiness check and the response help
    application log group `/sangyshop/app` does not exist.
 2. Confirm the subscription e-mail, then run `ops/aws/ir-lab/check-detection-ready.ps1`. It writes
    the readiness stamp that `attack-simulation/attack.js` requires.
-3. Run the attack, then `ops/aws/ir-lab/print-response-commands.ps1`. The NimbusDFIR checkout is
-   found through `NIMBUSDFIR_PATH` (see `ops/README.md`).
+3. Run the attack, then `ops/aws/ir-lab/print-response-commands.ps1`. It prints native
+   `aws` commands for evidence collection and containment and runs none of them.
 
 Permissions for these scripts are granted through the lab IAM group; see `ops/aws/iam/README.md`
 and the permission tables in `ops/README.md`. `ops/aws/ir-lab/full-teardown.ps1` removes the whole

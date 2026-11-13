@@ -4,7 +4,7 @@
 .DESCRIPTION
     Covers the shared naming (every name comes from Get-VmLabNames through the cloud
     config), the optional alert e-mail (-Email, LAB_ALERT_EMAIL, format check, address
-    never printed), the blocker defaults and the absence of leftover course or
+    never printed), the blocker defaults and the absence of leftover spec or
     hard-coded names. The Azure CLI is never called: all calls go through the
     $global:LabAzHandler seam, and the blocker scripts only run their dry-run.
     Run with:
@@ -209,7 +209,7 @@ Describe 'Detection and blocker sources' {
         $script:Sources = @(Get-ChildItem -LiteralPath $script:DetectionDir, $script:BlockerDir -Recurse -File)
     }
 
-    It 'contain no em dash, en dash, spec numbering or course wording' {
+    It 'contain no em dash, en dash, spec numbering or teaching wording' {
         $dash = '[' + [char]0x2014 + [char]0x2013 + ']'
         foreach ($f in $script:Sources) {
             $text = Get-Content -LiteralPath $f.FullName -Raw
@@ -218,7 +218,7 @@ Describe 'Detection and blocker sources' {
         }
     }
 
-    It 'do not hard-code the old workspace name or reach into a sibling NimbusDFIR folder' {
+    It 'do not hard-code the old workspace name or reach into a sibling core library folder' {
         foreach ($f in $script:Sources | Where-Object { $_.Extension -eq '.ps1' }) {
             $text = Get-Content -LiteralPath $f.FullName -Raw
             $text | Should -Not -Match 'law-sangyshop-lab' -Because $f.Name

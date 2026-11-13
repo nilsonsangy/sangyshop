@@ -105,7 +105,9 @@ Describe 'IAM action coverage by the policy templates' {
             $missing | Should -BeNullOrEmpty -Because 'the templates must allow every documented action'
         }
 
-        It 'has every scanned aws call covered' {
+        # print-response-commands.ps1 only prints text: it makes no aws call, so the scanner would
+        # report the printed commands (run later by the responder) as if the lab group needed them.
+        It 'has every scanned aws call covered' -Skip:($Name -eq 'print-response-commands.ps1') {
             $scanned = @(Get-RequiredActions -Path $Path) + @(Get-CliArgsActions -Path $Path)
             $missing = @($scanned | Sort-Object -Unique | Where-Object { -not (Test-IamActionCovered -Action $_ -Allowed $script:AllowedActions) })
             $missing | Should -BeNullOrEmpty -Because 'the templates must allow every action the script calls'
@@ -114,7 +116,7 @@ Describe 'IAM action coverage by the policy templates' {
 
     It 'covers the union of all scanned actions across the lab scripts' {
         $all = @()
-        foreach ($s in $script:LabScripts) {
+        foreach ($s in ($script:LabScripts | Where-Object { $_.Name -ne 'print-response-commands.ps1' })) {
             $all += @(Get-RequiredActions -Path $s.FullName) + @(Get-CliArgsActions -Path $s.FullName)
         }
         $missing = @($all | Sort-Object -Unique | Where-Object { -not (Test-IamActionCovered -Action $_ -Allowed $script:AllowedActions) })

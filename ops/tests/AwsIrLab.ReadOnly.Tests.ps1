@@ -83,7 +83,7 @@ BeforeDiscovery {
     for ($i = 0; $i -lt 20; $i++) {
         [void]$printCases.Add(@{
                 Index = $i; Region = $regions[$rng.Next($regions.Count)]
-                Evidence = ($i % 2 -eq 0); Nimbus = ($rng.Next(2) -eq 1)
+                Evidence = ($i % 2 -eq 0)
                 Instance = $(if ($rng.Next(2) -eq 1) { 'i-' + ('{0:x8}' -f $rng.Next()) } else { '' })
             })
     }
@@ -94,7 +94,6 @@ BeforeAll {
     $script:LabDir = (Resolve-Path (Join-Path $PSScriptRoot '..\aws\ir-lab')).Path
     $script:SavedManifest = $env:LAB_MANIFEST_PATH
     $script:SavedConfigPath = $env:LAB_CONFIG_PATH
-    $script:SavedNimbus = $env:NIMBUSDFIR_PATH
     $script:Work = Join-Path ([System.IO.Path]::GetTempPath()) ('lab-ro-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $script:Work -Force | Out-Null
 
@@ -111,7 +110,6 @@ BeforeAll {
 }
 '@
     $env:LAB_CONFIG_PATH = $script:ConfigFile
-    $env:NIMBUSDFIR_PATH = $null
 
     $global:LabReadOnlyVerbs = '^(describe|get|list)-'
 
@@ -189,7 +187,8 @@ BeforeAll {
     function script:Invoke-Tool {
         param([string]$Script, [hashtable]$Params)
         $global:LASTEXITCODE = $null
-        $text = (& (Join-Path $script:LabDir $Script) @Params *>&1 | Out-String)
+        # A fixed width keeps long command lines unwrapped whatever the host console width is.
+        $text = (& (Join-Path $script:LabDir $Script) @Params *>&1 | Out-String -Width 4096)
         return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Text = $text }
     }
 
@@ -210,7 +209,6 @@ AfterAll {
     $global:LabReadOnlyVerbs = $null
     $env:LAB_MANIFEST_PATH = $script:SavedManifest
     $env:LAB_CONFIG_PATH = $script:SavedConfigPath
-    $env:NIMBUSDFIR_PATH = $script:SavedNimbus
     if ($script:Work -and (Test-Path -LiteralPath $script:Work)) {
         Remove-Item -LiteralPath $script:Work -Recurse -Force -ErrorAction SilentlyContinue
     }
@@ -297,43 +295,40 @@ Describe 'check-detection-ready.ps1 (fixed seed, 60 cases)' {
 
 Describe 'print-response-commands.ps1 (fixed seed, 20 cases)' {
 
-    It 'case <Index>: makes no AWS call, runs nothing, exit 4 without attack evidence' -ForEach $script:PrintCases {
+    It 'case <Index>: makes no AWS call, prints only native aws commands, exit 4 without attack evidence' -ForEach $script:PrintCases {
         $dir = Initialize-Case -State @{ Deny = $null } -Email 'x@example.com' -Name "print-$Index"
         $evidence = Join-Path $dir 'attack-steps.jsonl'
         if ($Evidence) { Set-Content -LiteralPath $evidence -Value '{"step":1}' -Encoding UTF8 }
 
-        $marker = Join-Path $dir 'executed.marker'
-        $nimbus = Join-Path $dir 'nimbus'
         $p = @{ Region = $Region; AttackEvidencePath = $evidence }
-        if ($Nimbus) {
-            New-Item -ItemType Directory -Path (Join-Path $nimbus 'ir_lab_core') -Force | Out-Null
-            New-Item -ItemType Directory -Path (Join-Path $nimbus 'aws') -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $nimbus 'ir_lab_core\__init__.py') -Value ''
-            Set-Content -LiteralPath (Join-Path $nimbus 'aws\ec2_evidence_preservation.py') -Value ''
-            foreach ($t in 'cloudtrail_collect', 'guardduty_findings_export', 'iam_credential_containment', 'ec2_evidence_preservation') {
-                Set-Content -LiteralPath (Join-Path $nimbus "aws\$t.ps1") -Value "Set-Content -LiteralPath '$marker' -Value ran"
-            }
-            $p['NimbusDfirPath'] = $nimbus
-        }
         if ($Instance) { $p['InstanceId'] = $Instance }
 
         $r = Invoke-Tool -Script 'print-response-commands.ps1' -Params $p
 
+        # Printing is not executing: no AWS call reaches the fake CLI.
         $global:LabReadCalls.Count | Should -Be 0 -Because "calls: $($global:LabReadCalls -join ', ')"
-        Test-Path -LiteralPath $marker | Should -BeFalse
+        $global:LabMutating.Count | Should -Be 0
 
         if (-not $Evidence) {
             $r.ExitCode | Should -Be 4
-            $r.Text | Should -Not -Match 'cloudtrail_collect'
+            $r.Text | Should -Match 'attack simulation'
+            $r.Text | Should -Not -Match '(?m)^\s+aws\s'
             return
         }
         $r.ExitCode | Should -Be 0
-        $r.Text | Should -Match '(?i)-Tag lab=\S+'
         $r.Text | Should -Match 'Next step:'
-        $commandLines = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^\s+&\s' })
-        $commandLines.Count | Should -Be 5
-        @($commandLines | Where-Object { $_ -match '-Execute' }).Count | Should -Be 0
-        if ($Instance) { $r.Text | Should -Match ([regex]::Escape($Instance)) }
-        if ($Nimbus) { $r.Text | Should -Match ([regex]::Escape($nimbus)) }
+        $commandLines = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^\s+aws\s' })
+        $commandLines.Count | Should -Be 9
+        # Every printed command is a native aws command, with no other tool or path.
+        @($commandLines | Where-Object { $_ -notmatch '^\s+aws (cloudtrail|guardduty|ec2|iam) ' }).Count | Should -Be 0
+        $r.Text | Should -Not -Match '-Execute'
+        $r.Text | Should -Not -Match '(?m)^\s+&\s'
+        foreach ($needle in 'cloudtrail lookup-events', 'guardduty list-findings', 'guardduty get-findings',
+            'ec2 create-snapshot', 'ec2 modify-instance-attribute', 'iam update-access-key', 'iam put-user-policy') {
+            $r.Text | Should -Match ([regex]::Escape($needle))
+        }
+        $r.Text | Should -Match '--status Inactive'
+        $r.Text | Should -Match ([regex]::Escape("--region $Region"))
+        if ($Instance) { $r.Text | Should -Match ([regex]::Escape($Instance)) } else { $r.Text | Should -Match '<instance-id>' }
     }
 }

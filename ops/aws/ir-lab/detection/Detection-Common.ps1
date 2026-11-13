@@ -22,8 +22,7 @@
       - Manifest access through Add-LabManifestEntry (ops/lib/Common.ps1).
       - Alert e-mail through Resolve-LabAlertEmail and region through
         Resolve-LabRegion (both from ops/lib/Common.ps1).
-      - Output masking: Redact-Secrets from a NimbusDFIR checkout when one is
-        configured (see ops/lib/NimbusDfir.ps1), otherwise Hide-LabSecrets.
+      - Output masking through Hide-LabSecrets (ops/lib/Common.ps1).
 
     Configuration is read with Get-CloudConfig -Cloud Aws -Modality ec2 from
     ops/cloud.config.ps1. Set LAB_CONFIG_PATH to use another config file.
@@ -33,7 +32,6 @@
 
 . (Join-Path $PSScriptRoot '..\..\..\lib\Common.ps1')
 . (Join-Path $PSScriptRoot '..\..\AwsLabNames.ps1')
-. (Join-Path $PSScriptRoot '..\..\..\lib\NimbusDfir.ps1')
 . (Join-Path $PSScriptRoot '..\..\..\lib\LabPermissions.ps1')
 . (Join-Path $PSScriptRoot '..\..\..\lib\LabPreflight.ps1')
 
@@ -98,18 +96,9 @@ $script:LabMetricName = [string]$script:LabNames['MetricName']
 # Matches the access log schema of the application (event=auth_login, result=failure).
 $script:LabFilterPattern = [string]$script:LabNames['FilterPattern']
 
-# Optional output masking. A configured NimbusDFIR checkout provides Redact-Secrets;
-# without one, Hide-LabSecrets from Common.ps1 is used. Secrets must never reach the console.
-$script:NimbusRoot = Resolve-NimbusDfirPath -Config $script:LabConfig -Optional
-if ($script:NimbusRoot) {
-    $redactPath = Join-Path $script:NimbusRoot 'ir_lab_core\Redact-Secrets.ps1'
-    if (Test-Path -LiteralPath $redactPath -PathType Leaf) { . $redactPath }
-}
-
 function Protect-LabText {
-    <# Masks secrets in text that is about to be printed. #>
+    <# Masks secrets in text that is about to be printed (secrets must never reach the console). #>
     param([string]$Text)
-    if (Get-Command Redact-Secrets -ErrorAction SilentlyContinue) { return [string](Redact-Secrets -InputObject $Text) }
     return [string](Hide-LabSecrets -Text $Text)
 }
 

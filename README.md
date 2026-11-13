@@ -101,8 +101,9 @@ This repository contains everything needed to run the cloud incident response la
 - `attack-simulation/` runs the controlled attack. It refuses to start without a fresh readiness
   stamp from `check-detection-ready.ps1`, unless you pass `--ack-no-detection`.
 
-The generic response tools (evidence collection, containment) live in the separate NimbusDFIR
-project. Point the scripts to your local checkout with the `NIMBUSDFIR_PATH` environment variable.
+After the attack, `print-response-commands.ps1` (AWS and Azure) prints native `aws` or `az` commands
+for evidence collection and containment. It only prints them and never runs them. It exits with code 4
+when the attack evidence file is missing and 2 on a configuration problem.
 The detection alert e-mail is read from `LAB_ALERT_EMAIL` or from `ops/.env` (copy `ops/.env.example`);
 it is never stored in the repository. See [`ops/README.md`](ops/README.md) for the full flow, the
 permissions each cloud needs and the exit codes.

@@ -3,15 +3,14 @@
     Prints ready-to-run incident response commands for the Azure lab. Runs nothing.
 
 .DESCRIPTION
-    Builds the commands of the generic NimbusDFIR Azure tools (VM isolation, disk snapshot,
-    activity log collection) with the real lab values filled in: VM name, resource group,
-    subscription, region and, when the subscription is given, the OS disk name read from
-    Azure. The commands are only printed. Every NimbusDFIR tool is a dry-run unless you add
-    -Execute, so review each command before you run it.
+    Prints native Azure CLI commands for the lab resources, with the real lab values filled
+    in: VM name, resource group, subscription, region and, when the subscription is given,
+    the OS disk name read from Azure. The commands cover the Activity Log, Defender for Cloud
+    alerts, a snapshot of the OS disk, isolation of the VM network interface and removal of
+    the leaked service principal credential.
 
-    The NimbusDFIR checkout is found with Resolve-NimbusDfirPath, in this order: -NimbusDfirPath,
-    the NIMBUSDFIR_PATH environment variable, then Common.NimbusDfirPath in the cloud config.
-    When no valid checkout is found the commands are still printed with a <NimbusDFIR> placeholder.
+    The commands are only printed. The snapshot, the network interface change and the
+    credential removal modify the subscription, so review each command before you run it.
 
     Exit codes:
       0  commands printed
@@ -28,8 +27,6 @@
     Lab resource group. Defaults to the group derived from the cloud config.
 .PARAMETER Region
     Lab region. Defaults to the location in the cloud config.
-.PARAMETER NimbusDfirPath
-    Path of the NimbusDFIR checkout (overrides NIMBUSDFIR_PATH and the cloud config).
 .PARAMETER AttackEvidencePath
     Attack step log written by the simulated attack. Defaults to attack-simulation/out/attack-steps.jsonl.
 
@@ -41,7 +38,6 @@ param(
     [string]$Subscription,
     [string]$ResourceGroup,
     [string]$Region,
-    [string]$NimbusDfirPath,
     [string]$AttackEvidencePath
 )
 . "$PSScriptRoot\detection\Detection-Common.ps1"
@@ -63,6 +59,7 @@ $names = Get-VmLabNames -Config $script:LabConfig
 if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { $ResourceGroup = $script:LabResourceGroup }
 $region = if ([string]::IsNullOrWhiteSpace($Region)) { $script:LabLocation } else { (($Region -replace '\s', '').ToLowerInvariant()) }
 $vmName = $names['VmName']
+$leakedSp = $names['LeakedSp']
 $subText = '<subscription-id>'
 $diskName = '<os-disk-name>'
 
@@ -82,23 +79,7 @@ if (-not [string]::IsNullOrWhiteSpace($Subscription)) {
     }
 }
 
-# Locate the NimbusDFIR tools. A missing checkout is not fatal: the commands keep a placeholder.
-$root = Resolve-NimbusDfirPath -Path $NimbusDfirPath -Config $script:LabConfig -Optional
-$rootText = '<NimbusDFIR>'
-if ($root) { $rootText = $root }
-else { Write-LabWarn 'NimbusDFIR checkout not found. Set NIMBUSDFIR_PATH or pass -NimbusDfirPath, then run this script again.' }
-
-function Format-ToolPath {
-    param([string]$Relative)
-    if ($root) {
-        try { return (Get-NimbusToolPath -NimbusDfirPath $root -Relative $Relative) } catch { Write-LabWarn "$($_.Exception.Message)" }
-    }
-    return (Join-Path $rootText ($Relative -replace '/', '\'))
-}
-
-$isolate = Format-ToolPath -Relative 'azure/vm_isolate.ps1'
-$snapshot = Format-ToolPath -Relative 'azure/disk_snapshot_hash.ps1'
-$activity = Format-ToolPath -Relative 'azure/azure_activity_collect.ps1'
+$snapshotName = "$vmName-evidence-snapshot"
 
 Write-Host ''
 Write-Host "Lab tag     : $($script:LabTagKey)=$($script:LabTagValue)"
@@ -106,14 +87,23 @@ Write-Host "VM          : $vmName"
 Write-Host "Group       : $ResourceGroup"
 Write-Host "Region      : $region"
 Write-Host ''
-Write-Host '# 1. Isolate the VM (dry-run first, add -Execute to apply; use -Restore -Record <file> to undo)'
-Write-Host "& '$isolate' -VmName '$vmName' -ResourceGroup '$ResourceGroup' -Subscription '$subText' -Region '$region'"
+Write-Host '# 1. Collect the Activity Log for the attack window (fill in the UTC times from the attack step log)'
+Write-Host "az monitor activity-log list --subscription '$subText' --resource-group '$ResourceGroup' --start-time '<start-utc>' --end-time '<end-utc>' --output json"
 Write-Host ''
-Write-Host '# 2. Snapshot and hash the OS disk (dry-run first, add -Execute to apply)'
-Write-Host "& '$snapshot' -DiskName '$diskName' -ResourceGroup '$ResourceGroup' -Subscription '$subText' -Region '$region'"
+Write-Host '# 2. List the Defender for Cloud alerts'
+Write-Host "az security alert list --subscription '$subText' --output json"
 Write-Host ''
-Write-Host '# 3. Collect the activity log for the attack window (fill in the UTC times from the attack step log)'
-Write-Host "& '$activity' -StartUtc '<start-utc>' -EndUtc '<end-utc>' -Subscription '$subText' -Region '$region'"
+Write-Host '# 3. Snapshot the OS disk as evidence'
+Write-Host "az snapshot create --subscription '$subText' --resource-group '$ResourceGroup' --location '$region' --name '$snapshotName' --source '$diskName' --tags $($script:LabTagKey)=$($script:LabTagValue)"
 Write-Host ''
-Write-Host 'Nothing was executed. Review each command, then run it yourself.'
+Write-Host '# 4. Isolate the VM: find its network interface, then attach a network security group that denies all traffic'
+Write-Host "az vm show --subscription '$subText' --resource-group '$ResourceGroup' --name '$vmName' --query 'networkProfile.networkInterfaces[0].id' --output tsv"
+Write-Host "az network nic update --ids '<nic-id>' --network-security-group '<quarantine-nsg-id>'"
+Write-Host ''
+Write-Host "# 5. Contain the leaked service principal '$leakedSp': find it, list its credentials, delete the leaked one"
+Write-Host "az ad sp list --display-name '$leakedSp' --query '[0].appId' --output tsv"
+Write-Host "az ad sp credential list --id '<app-id>' --output json"
+Write-Host "az ad sp credential delete --id '<app-id>' --key-id '<key-id>'"
+Write-Host ''
+Write-Host 'Nothing was executed. Steps 3, 4 and 5 change the subscription. Review each command, then run it yourself.'
 exit 0
